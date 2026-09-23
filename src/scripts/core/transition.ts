@@ -29,17 +29,17 @@ import { resetCursorMarquee } from '../chrome/cursor-marquee';
 interface Page { container: HTMLElement; namespace: string; url: { href: string; path?: string } }
 interface Data { current: Page; next: Page }
 
-// Timing. The name resolves as the sheet arrives and unwinds as soon as it has read: there is no
-// hold for a page load, because Barba fetched the next page while the sheet was rising (and
-// usually on hover, before the click). Whole gesture: about 2.6s.
+// Timing, as designed. The name unwinds as soon as it has finished arriving: there is no hold for
+// a page load, because Barba fetched the next page while the sheet was rising (and usually on
+// hover, before the click).
 const T = {
-  cover: 0.9, // sheet up, page settles back
-  lettersAt: 0.35, letterStagger: 0.022, letterDur: 1.1,
-  numAfter: 0.3, push: 0.9,
-  read: 0.35, // after the number lands, how long the name stays before it unwinds
-  hold: 0, unwindStagger: 0.014, unwindDur: 0.6,
-  drop: 1.4, dropAfter: 0.12, // the sheet starts down just after the name starts leaving
-  entranceAfterDrop: 0.3,
+  cover: 1, // sheet up, page settles back
+  lettersAt: 0.7, letterStagger: 0.028, letterDur: 2.2,
+  numAfter: 0.9, push: 1.2,
+  read: 1.0, // from the number starting to rise until the name unwinds (it has landed by then)
+  hold: 0.1, unwindStagger: 0.018, unwindDur: 0.75,
+  drop: 1.75, dropAfter: -0.12,
+  entranceAfterDrop: 0.35,
 };
 
 const panel = () => document.querySelector<HTMLElement>('[data-pt-panel]')!;
