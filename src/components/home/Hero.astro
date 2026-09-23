@@ -1,0 +1,30 @@
+---
+/**
+ * Full-screen video under the headline. Stays pinned while the paper sheet slides over
+ * it, receding and dimming (systems/recede.ts). The video upgrades to the HLS stream when
+ * one can play (systems/hero-video.ts); the local MP4 and the poster are the fallbacks.
+ */
+import Cta from '../ui/Cta.astro';
+import { getHome, getSite } from '../../lib/content';
+
+const [home, site] = await Promise.all([getHome(), getSite()]);
+const { lines, corner, video } = home.hero;
+---
+<section data-screen-label="Hero" data-hero data-entrance="film" data-recede-panel="[data-sheet]" data-recede-scale="0.88" data-recede-y="24" style="position:sticky;top:0;z-index:1;height:100vh;min-height:640px;overflow:hidden;color:#F7F4EC;transform-origin:50% 50%">
+  <div data-hero-mask style="position:absolute;inset:0;overflow:hidden">
+    <video data-hero-img data-hls={video.hls} src={video.mp4} poster={video.poster} autoplay muted loop playsinline preload="auto" aria-label={video.alt} style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 40%;display:block"></video>
+    <span style="position:absolute;inset:0;background:var(--scrim-floor)"></span>
+    <span style="position:absolute;inset:0;background:var(--scrim-band)"></span>
+    <span style="position:absolute;left:0;right:0;top:0;height:160px;background:linear-gradient(180deg,rgba(0,0,0,.28),transparent)"></span>
+  </div>
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px;padding:0 24px;text-align:center">
+    <h1 data-hero-title style="max-width:720px;font:300 clamp(40px,4.45vw,64px)/1.2 var(--font-display);letter-spacing:-.02em;color:#F7F4EC;margin:0">
+      {lines.map((line) => <span data-hero-line style="display:block">{line}</span>)}
+    </h1>
+    <div data-hero-cta style="display:flex;flex-direction:column;align-items:center">
+      <Cta label={site.labels.reserve} href="/reserve" marquee data-hero-reserve style="color:var(--ink-on-image)" labelAttrs={{ 'data-hero-reserve-label': true }} ruleAttrs={{ 'data-hero-reserve-rule': true }} />
+    </div>
+  </div>
+  <span data-hero-corner style="position:absolute;right:64px;bottom:40px;font:500 10px/1 var(--font-body);letter-spacing:.22em;text-transform:uppercase;color:rgba(247,244,236,.6)">{corner}</span>
+  <span data-recede-dim style="position:absolute;inset:0;background:#000;opacity:0;pointer-events:none"></span>
+</section>

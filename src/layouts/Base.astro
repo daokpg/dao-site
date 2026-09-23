@@ -1,0 +1,75 @@
+---
+/**
+ * Every page renders inside this. Two zones:
+ *  - Persistent chrome (loader, cursor pill, nav, menu, transition sheet) sits OUTSIDE the
+ *    Barba container and lives for the whole visit.
+ *  - The page itself is the Barba container (<main>), swapped on every navigation.
+ * Anything inside <main> that needs JS must go through the registry (src/scripts/core/registry.ts).
+ */
+import '../styles/tokens/fonts.css';
+import '../styles/tokens/colors.css';
+import '../styles/tokens/typography.css';
+import '../styles/tokens/spacing.css';
+import '../styles/tokens/grid.css';
+import '../styles/tokens/texture.css';
+import '../styles/tokens/motion.css';
+import '../styles/tokens/base.css';
+import '../styles/global.css';
+import '../styles/chrome.css';
+import '../styles/pages/home.css';
+import '../styles/pages/story.css';
+import '../styles/pages/evening.css';
+import '../styles/pages/reserve.css';
+
+import Loader from '../components/chrome/Loader.astro';
+import CursorMarquee from '../components/chrome/CursorMarquee.astro';
+import Nav from '../components/chrome/Nav.astro';
+import Menu from '../components/chrome/Menu.astro';
+import TransitionSheet from '../components/chrome/TransitionSheet.astro';
+import type { PageKey, Seo } from '../content/types';
+
+interface Props {
+  page: PageKey;
+  seo: Seo;
+  /** Nav tone on arrival: cream over photography or dark ground, ink over paper. */
+  tone: 'cream' | 'ink';
+  /** Render the intro loader (home only). */
+  intro?: boolean;
+}
+
+const { page, seo, tone, intro = false } = Astro.props;
+
+// Blocks reveal in small waves: every Nth block restarts the stagger. "N step" per page, as designed.
+const blockRhythm = { home: '4 0.08', story: '5 0.08', evening: '6 0.07', reserve: '6 0.07' }[page];
+---
+<!doctype html>
+<html lang="en" data-nav-tone={tone}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{seo.title}</title>
+    <meta name="description" content={seo.description} />
+    <meta property="og:title" content={seo.title} />
+    <meta property="og:description" content={seo.description} />
+    <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#15130F" />
+    <link rel="icon" href="/assets/dao-mark.svg" type="image/svg+xml" />
+    <link rel="preload" href="/fonts/SeasonMixTRIAL-Light.otf" as="font" type="font/otf" crossorigin />
+    <!-- Before first paint: mark JS as running so pre-hidden states apply (no-JS visitors see the finished page). -->
+    <script is:inline>document.documentElement.classList.add('js');</script>
+    <slot name="head" />
+  </head>
+  <body data-barba="wrapper" data-page={page}>
+    {intro && <Loader />}
+    <CursorMarquee />
+    <Nav />
+    <Menu />
+    <main data-barba="container" data-barba-namespace={page} data-page={page} data-tone={tone} data-block-rhythm={blockRhythm}>
+      <slot />
+    </main>
+    <TransitionSheet />
+    <script>
+      import '../scripts/app';
+    </script>
+  </body>
+</html>

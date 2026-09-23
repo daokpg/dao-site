@@ -1,0 +1,14 @@
+---
+/**
+ * The intro: the mark on a charcoal sheet, the tagline arriving letter by letter, then
+ * the sheet drops and the mark flies into the nav. Rendered on the home page only and
+ * played only on a real page load (never after a transition). See systems/intro.ts.
+ */
+import { getSite } from '../../lib/content';
+
+const site = await getSite();
+---
+<div data-loader class="loader" aria-hidden="true">
+  <span data-loader-tag class="loader__tag">{Array.from(site.tagline).map((ch) => <span data-char>{ch === ' ' ? ' ' : ch}</span>)}</span>
+</div>
+<span data-loader-logo class="loader__logo" aria-hidden="true"></span>

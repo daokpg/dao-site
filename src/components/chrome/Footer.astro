@@ -1,0 +1,39 @@
+---
+/**
+ * The same close on every page: the four pages as frames, the next available date set
+ * to the full width, then reserve, contact and place.
+ */
+import Cta from '../ui/Cta.astro';
+import { getSite } from '../../lib/content';
+import type { PageKey } from '../../content/types';
+
+interface Props {
+  current: PageKey;
+  /** Home closes on a full screen with generous space above. */
+  tall?: boolean;
+}
+
+const { current, tall = false } = Astro.props;
+const site = await getSite();
+const { email, phone, area } = site.contact;
+---
+<footer data-screen-label="Reserve and footer" data-container class:list={['footer', tall && 'footer--tall']}>
+  <div data-footer-strip class="footer__strip">
+    {site.pages.map((p) => (
+      <a href={p.href} data-footer-page class="footer__page" aria-current={p.key === current ? 'page' : undefined}>
+        <span data-mask data-parallax class="footer__mask"><span data-zoom class="footer__zoom"><img src={p.image.src} alt="" style={p.image.position ? `object-position:${p.image.position}` : undefined} loading="lazy" decoding="async" /></span></span>
+        <span class="footer__meta"><span class="footer__name">{p.label}</span><span class="footer__num dao-num">{p.num}</span></span>
+      </a>
+    ))}
+  </div>
+  <p data-reveal-soft data-split="softlines" class="footer__label">{site.labels.nextAvailable}</p>
+  <p data-reveal-soft data-split="softlines" data-fit class="footer__date">{site.nextSeats.date}</p>
+  <div data-reveal-soft data-split="none" class="footer__bar">
+    <div class="footer__cta"><Cta label={site.labels.reserve} href="/reserve" marquee /></div>
+    <div class="footer__contact">
+      <a href={`mailto:${email}`}>{email}</a>
+      <a href={`tel:${phone.replace(/\s/g, '')}`} class="dao-num">{phone}</a>
+    </div>
+    <div class="footer__place"><span>{area}</span><span>{site.copyright}</span></div>
+  </div>
+</footer>

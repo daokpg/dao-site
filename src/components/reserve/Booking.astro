@@ -1,0 +1,101 @@
+---
+/**
+ * The booking: a month of nights as columns of marks, then seats, menu, wine and your
+ * details, each step waking once the one before is answered, with a ticket that fills in
+ * beside them. Rendered here in its empty state; systems/booking.ts runs it from there,
+ * using the same markup builders (src/lib/booking.ts).
+ */
+import Letters from '../ui/Letters.astro';
+import { getReserve, getSite } from '../../lib/content';
+import { initialState, monthHtml, seatOptionsHtml, view, type BookingConfig } from '../../lib/booking';
+
+const [reserve, site] = await Promise.all([getReserve(), getSite()]);
+const config: BookingConfig = {
+  months: reserve.months,
+  seatWords: reserve.seatWords,
+  copy: reserve.copy,
+  pricing: site.pricing,
+  contactEmail: site.contact.email,
+};
+const state = initialState();
+const v = view(state, config);
+const { steps, ticket } = reserve;
+const choice = 'font:300 clamp(24px,2.4vw,40px)/1 var(--font-display);letter-spacing:-.01em';
+const fields: { id: string; type: 'text' | 'email' | 'tel'; label: string; placeholder: string; autocomplete: string }[] = [
+  { id: 'name', type: 'text', label: steps.fields.name, placeholder: steps.fields.namePlaceholder, autocomplete: 'name' },
+  { id: 'email', type: 'email', label: steps.fields.email, placeholder: steps.fields.emailPlaceholder, autocomplete: 'email' },
+  { id: 'phone', type: 'tel', label: steps.fields.phone, placeholder: steps.fields.phonePlaceholder, autocomplete: 'tel' },
+  { id: 'note', type: 'text', label: steps.fields.note, placeholder: steps.fields.notePlaceholder, autocomplete: 'off' },
+];
+const arrow = 'M0 4h26M22.5 .5 26 4l-3.5 3.5';
+---
+<div data-booking>
+  <script type="application/json" data-booking-config set:html={JSON.stringify(config)} />
+
+  <section data-screen-label="Month" data-container class="g12" style="padding:180px 64px 96px;align-items:end">
+    <h1 data-month-name style="grid-column:1 / span 6;margin:0;font:300 clamp(48px,6vw,96px)/.95 var(--font-display);letter-spacing:-.03em;color:var(--ink);max-width:none">{v.monthName}</h1>
+    <p data-reveal-soft data-split="softlines" class="lead" data-measure="lead" style="grid-column:8 / span 5;font-size:clamp(18px,1.6vw,22px);color:var(--ink-2)">{reserve.intro}</p>
+  </section>
+
+  <section data-screen-label="Nights" data-container class="g12" style="padding:0 64px 120px;align-items:start">
+    <div data-month-clip style="grid-column:1 / span 12;overflow:hidden">
+      <div data-month style="display:grid;grid-template-columns:repeat(16,minmax(0,1fr));gap:0 16px;align-items:end;border-bottom:1px solid var(--rule);padding-bottom:0;will-change:transform" set:html={monthHtml(config, state)} />
+    </div>
+    <div data-month-nav style="grid-column:1 / span 12;display:flex;justify-content:space-between;align-items:center;gap:24px;margin-top:20px">
+      <button type="button" class="mn" data-month-prev disabled={!v.hasPrev} style="display:inline-flex;align-items:center;gap:14px"><svg data-flip width="28" height="8" viewBox="0 0 28 8" fill="none" aria-hidden="true" style="display:block;transform:scaleX(-1)"><path d={arrow} stroke="currentColor" stroke-width="1" stroke-linecap="square" /></svg><span data-prev-name>{v.prevName}</span></button>
+      <p data-night-line class="word" style="font-size:13px;color:var(--ink-3);margin:0;text-align:center">{v.nightLine}</p>
+      <button type="button" class="mn" data-month-next disabled={!v.hasNext} style="display:inline-flex;align-items:center;gap:14px"><span data-next-name>{v.nextName}</span><svg width="28" height="8" viewBox="0 0 28 8" fill="none" aria-hidden="true" style="display:block;transform:none"><path d={arrow} stroke="currentColor" stroke-width="1" stroke-linecap="square" /></svg></button>
+    </div>
+  </section>
+
+  <section data-screen-label="Your seats" data-container data-after class="g12" style="padding:0 64px 200px;align-items:start;opacity:.35;filter:blur(2px);pointer-events:none;transition:opacity 1s cubic-bezier(.16,1,.3,1),filter 1s cubic-bezier(.16,1,.3,1)">
+    <div style="grid-column:1 / span 7;display:flex;flex-direction:column;gap:64px">
+      <div data-gate data-live="false" style="display:flex;flex-direction:column;gap:24px">
+        <p class="num" style="font-size:12px">{steps.seats.label}</p>
+        <p data-seats-left class="word" style="font-size:13px;color:var(--ink-2);margin-top:-8px">{v.seatsLeftLine}</p>
+        <div data-seat-options style="display:flex;gap:20px 28px;flex-wrap:wrap;align-items:baseline;max-width:640px" set:html={seatOptionsHtml(v.left, state.seats)} />
+        <p class="word" data-measure="m" style="font-size:12px;color:var(--ink-3)">{steps.seats.note}</p>
+      </div>
+      <div data-gate data-live="false" style="display:flex;flex-direction:column;gap:24px">
+        <p class="num" style="font-size:12px">{steps.menu.label}</p>
+        <div style="display:flex;gap:36px;flex-wrap:wrap;align-items:baseline">
+          <button type="button" class="ch" aria-pressed="false" data-pick-menu="meat" style={choice}>{steps.menu.meat}</button>
+          <button type="button" class="ch" aria-pressed="false" data-pick-menu="fish" style={choice}>{steps.menu.fish}</button>
+        </div>
+      </div>
+      <div data-gate data-live="false" style="display:flex;flex-direction:column;gap:24px">
+        <p class="num" style="font-size:12px">{steps.wine.label}</p>
+        <div style="display:flex;gap:36px;flex-wrap:wrap;align-items:baseline">
+          <button type="button" class="ch" aria-pressed="false" data-pick-pairing="0" style={choice}>{steps.wine.none}</button>
+          <button type="button" class="ch" aria-pressed="false" data-pick-pairing="4" style={choice}>{steps.wine.four}</button>
+          <button type="button" class="ch" aria-pressed="false" data-pick-pairing="5" style={choice}>{steps.wine.five}</button>
+        </div>
+        <p class="word" data-measure="m" style="font-size:12px;color:var(--ink-3)">{steps.wine.note}</p>
+      </div>
+      <div data-gate data-live="false" data-fields style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 24px">
+        {fields.map((f) => (
+          <label style="display:flex;flex-direction:column;gap:8px"><span class="num" style="font-size:12px">{f.label}</span><input data-field={f.id} id={`rd-${f.id}`} type={f.type} placeholder={f.placeholder} autocomplete={f.autocomplete} /></label>
+        ))}
+      </div>
+    </div>
+    <aside style="grid-column:9 / span 4;position:sticky;top:140px;align-self:start;display:flex;flex-direction:column;gap:40px">
+      <div data-ticket style="display:flex;flex-direction:column;gap:6px">
+        <span class="num" style="font-size:12px;margin-bottom:12px">{ticket.label}</span>
+        <span data-ticket-date style="font:300 clamp(28px,2.6vw,40px)/1.1 var(--font-display);letter-spacing:-.02em;color:var(--ink)">{v.ticketDate}</span>
+        <span data-ticket-line class="word" style="font-size:13px;margin-top:8px">{v.ticketLine}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding-top:24px;border-top:1px solid var(--rule)">
+        <span class="word" style="font-size:13px">{ticket.depositLabel}</span>
+        <span data-deposit style="font:300 clamp(40px,4vw,64px)/1 var(--font-display);letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:var(--ink)">{v.deposit}</span>
+        <span data-remainder class="word" style="font-size:12px;color:var(--ink-3);margin-top:6px">{v.remainder}</span>
+      </div>
+      <div data-hold-wrap data-can="false" style="transition:opacity .75s cubic-bezier(.16,1,.3,1)">
+        <button type="button" data-confirm class="lt-host cta" aria-label={ticket.hold}><span class="lt"><span class="a" aria-hidden="true"><Letters text={ticket.hold} /></span><span class="b" aria-hidden="true"><Letters text={ticket.hold} /></span></span><span class="rl"><span class="l"></span><span class="r"></span><span class="c"></span></span></button>
+      </div>
+    </aside>
+    <div data-done aria-live="polite" style="grid-column:1 / span 8;display:none;flex-direction:column;gap:32px">
+      <p data-done-head style="margin:0;font:300 clamp(32px,3.4vw,56px)/1.15 var(--font-display);letter-spacing:-.02em;color:var(--ink);max-width:22ch;text-wrap:pretty"></p>
+      <p data-done-body class="body" data-measure="m"></p>
+    </div>
+  </section>
+</div>

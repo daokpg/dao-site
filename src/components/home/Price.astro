@@ -1,0 +1,42 @@
+---
+/**
+ * What it costs, stated plainly, then the press as quiet proof: three marks visible,
+ * the rest rotating through them (systems/press-wall.ts).
+ */
+import Cta from '../ui/Cta.astro';
+import PressLogo from '../ui/PressLogo.astro';
+import { getHome, getSite } from '../../lib/content';
+import { money } from '../../lib/format';
+
+const [home, site] = await Promise.all([getHome(), getSite()]);
+const { price } = home;
+const { pricing, press } = site;
+const pairings = [
+  { label: price.pairingLabels.four, amount: pricing.pairingFour },
+  { label: price.pairingLabels.five, amount: pricing.pairingFive },
+];
+---
+<section data-screen-label="Price and pairing" data-container class="g12" style="padding:200px 64px 180px">
+  <div style="grid-column:4 / span 6;display:flex;flex-direction:column;align-items:center;text-align:center;gap:48px">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:14px">
+      <p data-reveal-soft data-split="softlines" style="margin:0;font:300 clamp(64px,7vw,112px)/1 var(--font-display);letter-spacing:-.02em;color:var(--ink);max-width:none">{money(pricing.menu, pricing.currency)}</p>
+      <p data-reveal-soft data-split="softlines" style="margin:0;font:400 12px/1.5 var(--font-body);color:var(--ink-2);max-width:none">{price.note}</p>
+    </div>
+    <div data-pairings style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;width:100%">
+      {pairings.map((p) => (
+        <div data-block style="display:flex;flex-direction:column;gap:20px;padding-top:20px;border-top:1px solid var(--rule)">
+          <span style="font:500 10px/1 var(--font-body);letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3)">{p.label}</span>
+          <span style="font:300 clamp(40px,4vw,64px)/1 var(--font-display);letter-spacing:-.02em;color:var(--ink)">{money(p.amount, pricing.currency)}</span>
+        </div>
+      ))}
+    </div>
+    <p data-reveal-soft data-split="softlines" data-measure="l" style="margin:0;font:400 14px/1.55 var(--font-body);color:var(--ink-2);max-width:none">{price.details}</p>
+    <div data-press-wall data-block style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;width:min(100%, 520px);margin:8px auto 0;color:var(--ink-3)">
+      {press.slice(0, 3).map((outlet) => (
+        <span data-press-slot style="position:relative;display:flex;align-items:center;justify-content:center;height:48px;overflow:hidden"><PressLogo outlet={outlet} data-press-logo /></span>
+      ))}
+      <span data-press-pool style="display:none">{press.slice(3).map((outlet) => <PressLogo outlet={outlet} data-press-logo />)}</span>
+    </div>
+    <div data-reveal-soft data-split="none" style="margin-top:0"><Cta label={site.labels.reserve} href="/reserve" marquee /></div>
+  </div>
+</section>

@@ -1,0 +1,14 @@
+---
+import Base from '../layouts/Base.astro';
+import Booking from '../components/reserve/Booking.astro';
+import Footer from '../components/chrome/Footer.astro';
+import { getReserve } from '../lib/content';
+
+const reserve = await getReserve();
+---
+<Base page="reserve" seo={reserve.seo} tone="cream">
+  <div data-sheet class="dao-paper" data-theme="dark" style="position:relative;min-height:100vh;background:#15130F;color:var(--ink);--ink:#EDE8DC;--ink-2:rgba(237,232,220,.7);--ink-3:rgba(237,232,220,.45);--rule:rgba(237,232,220,.18)">
+    <Booking />
+    <Footer current="reserve" />
+  </div>
+</Base>

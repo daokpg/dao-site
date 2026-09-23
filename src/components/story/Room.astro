@@ -1,0 +1,23 @@
+---
+import Cta from '../ui/Cta.astro';
+import MaskImage from '../ui/MaskImage.astro';
+import { getStory } from '../../lib/content';
+
+const { room, toEvening } = await getStory();
+---
+<section data-screen-label="Room" data-container class="g12" style="padding:0 64px 200px;align-items:start">
+  <div style="grid-column:2 / span 4;display:flex;flex-direction:column;gap:40px;margin-top:8%">
+    <h2 data-reveal-soft data-split="softlines" style="margin:0;font:300 clamp(32px,3vw,48px)/1.1 var(--font-display);letter-spacing:-.02em;color:var(--ink);max-width:none;text-wrap:pretty">{room.heading}</h2>
+    <p data-reveal-soft data-split="softlines" data-measure="m" style="margin:0;font:400 15px/1.6 var(--font-body);color:var(--ink-2);max-width:none;text-wrap:pretty">{room.text}</p>
+  </div>
+  <figure style="grid-column:7 / span 6;margin:0;display:flex;flex-direction:column;gap:16px">
+    <MaskImage image={room.image} aspect="644 / 720" />
+    <figcaption data-reveal-soft data-split="softlines" style="font:400 12px/1.5 var(--font-body);color:var(--ink-2);max-width:340px">{room.caption}</figcaption>
+  </figure>
+</section>
+
+<section data-screen-label="To the evening" data-container class="g12" style="padding:0 64px 200px">
+  <div style="grid-column:1 / span 12;margin-bottom:96px"><MaskImage image={toEvening.image} aspect="21 / 9" /></div>
+  <p data-reveal-soft data-split="softlines" data-measure="m" style="grid-column:4 / span 6;justify-self:center;margin:0;text-align:center;font:300 clamp(24px,2.25vw,32px)/1.4 var(--font-display);letter-spacing:-.01em;color:var(--ink);max-width:none;text-wrap:pretty">{toEvening.text}</p>
+  <div data-reveal-soft data-split="none" style="grid-column:4 / span 6;display:flex;justify-content:center;margin-top:32px"><Cta label={toEvening.cta.label} href={toEvening.cta.href} /></div>
+</section>

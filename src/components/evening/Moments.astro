@@ -1,0 +1,96 @@
+---
+/**
+ * The evening as it happens. A rail on the left holds the clock (it flies there from the
+ * hero), the light (Dusk, Nightfall, Night) and the moment in view; the page itself runs
+ * from paper to charcoal as the clock moves (systems/evening-clock.ts).
+ *
+ * The past menu reads as meat & fish or fish, and the pairing choice marks which courses
+ * carry a glass and totals the evening (systems/tasting-menu.ts). Everything that changes
+ * is in the HTML as data attributes; the script only swaps it.
+ */
+import Cta from '../ui/Cta.astro';
+import MaskImage from '../ui/MaskImage.astro';
+import { getEvening, getSite } from '../../lib/content';
+import { money } from '../../lib/format';
+
+const [evening, site] = await Promise.all([getEvening(), getSite()]);
+const { rail, arrival, nir, menu, wine, music, lastGlass } = evening;
+const { pricing } = site;
+const moment = (min: string, bottom = 160) => `min-height:${min};padding:0 0 ${bottom}px;display:flex;flex-direction:column;justify-content:center`;
+---
+<section data-screen-label="Moments" data-moments data-container class="g12" style="padding:0 64px;align-items:start">
+  <div data-rail style="grid-column:1 / span 4;position:sticky;top:140px;align-self:start;display:flex;flex-direction:column;gap:14px">
+    <p data-clock-target style="margin-bottom:10px">{evening.hero.time}</p>
+    <p data-rail-word data-light={JSON.stringify(rail.light)} class="word" style="font-size:13px">{rail.light[0].word}</p>
+    <p data-rail-name class="word" style="font-size:13px;color:var(--ink-3)">{rail.name}</p>
+  </div>
+
+  <div style="grid-column:5 / span 8;display:flex;flex-direction:column">
+    <article data-moment data-time={arrival.time} data-name={arrival.name} style={`${moment('90vh')};gap:40px`}>
+      <p data-reveal-soft data-split="softlines" class="lead" data-measure="lead">{arrival.lead}</p>
+      <div data-moment-split style="display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:0 24px;align-items:start">
+        <figure style="grid-column:1 / span 4;margin:0;display:flex;flex-direction:column;gap:16px">
+          <MaskImage image={arrival.image} aspect="4 / 5" />
+          <figcaption data-reveal-soft data-split="softlines" class="word">{arrival.caption}</figcaption>
+        </figure>
+        <p data-reveal-soft data-split="softlines" class="body" data-measure="s" style="grid-column:6 / span 3;margin-top:24%">{arrival.body}</p>
+      </div>
+    </article>
+
+    <article data-moment data-time={nir.time} data-name={nir.name} style={`${moment('80vh')};gap:40px`}>
+      <p data-reveal-soft data-split="softlines" data-measure="big" style="margin:0;font:300 clamp(32px,3.4vw,56px)/1.15 var(--font-display);letter-spacing:-.02em;color:var(--ink);max-width:none;text-wrap:pretty">{nir.statement}</p>
+      <p data-reveal-soft data-split="softlines" class="body" data-measure="s">{nir.body}</p>
+    </article>
+
+    <article data-moment data-time={menu.time} data-name={menu.name} style={`${moment('90vh')};gap:48px`}>
+      <p data-reveal-soft data-split="softlines" class="lead" data-measure="lead">{menu.lead}</p>
+      <div data-block style="display:flex;flex-direction:column;gap:6px">
+        <p class="num" style="font-size:12px;color:var(--ink)">{menu.servedOn}</p>
+        <p class="word" style="font-size:13px;color:var(--ink-3)">{menu.servedNote}</p>
+      </div>
+      <div data-block data-menu-choice style="display:flex;gap:32px;align-items:baseline">
+        <span class="num" style="font-size:12px">{menu.readAs}</span>
+        <button type="button" class="ch" aria-pressed="true" data-pick-menu="meat">{menu.choices.meat}</button>
+        <button type="button" class="ch" aria-pressed="false" data-pick-menu="fish">{menu.choices.fish}</button>
+      </div>
+      <div data-courses style="display:flex;flex-direction:column">
+        {menu.courses.map((c) => (
+          <div class="course" data-block>
+            <p class="cn">{c.name}</p>
+            <p class="word cd" data-measure="l" style="font-size:13px" data-course-desc data-meat={c.meat} data-fish={c.fish}>{c.description ?? c.meat}</p>
+            <p class="num cg" data-course-glass data-on="false">{menu.glassLabel}</p>
+          </div>
+        ))}
+        <div style="border-top:1px solid var(--rule)"></div>
+      </div>
+      <p data-reveal-soft data-split="softlines" class="body" data-measure="m" style="font-size:13px">{menu.after}</p>
+    </article>
+
+    <article data-moment data-time={wine.time} data-name={wine.name} style={`${moment('80vh')};gap:48px`}>
+      <p data-reveal-soft data-split="softlines" class="lead" data-measure="lead">{wine.lead}</p>
+      <div data-block data-pairing-choice style="display:flex;gap:32px;align-items:baseline;flex-wrap:wrap">
+        <span class="num" style="font-size:12px">{wine.label}</span>
+        <button type="button" class="ch" aria-pressed="true" data-pick-pairing="0">{wine.choices.none}</button>
+        <button type="button" class="ch" aria-pressed="false" data-pick-pairing="4">{wine.choices.four}</button>
+        <button type="button" class="ch" aria-pressed="false" data-pick-pairing="5">{wine.choices.five}</button>
+      </div>
+      <div data-block style="display:flex;flex-direction:column;gap:12px">
+        <p data-total data-currency={pricing.currency} data-menu-price={pricing.menu} data-four={pricing.pairingFour} data-five={pricing.pairingFive} data-glass-label={menu.glassLabel} style="margin:0;font:300 clamp(56px,7vw,112px)/1 var(--font-display);letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:var(--ink);max-width:none">{money(pricing.menu, pricing.currency)}</p>
+        <p class="word" data-measure="m" style="font-size:13px">{wine.totalNote}</p>
+      </div>
+    </article>
+
+    <article data-moment data-time={music.time} data-name={music.name} style={`${moment('70vh')};gap:40px`}>
+      <p data-reveal-soft data-split="softlines" class="lead" data-measure="lead">{music.lead}</p>
+      <figure style="margin:0;width:62%;display:flex;flex-direction:column;gap:16px">
+        <MaskImage image={music.image} aspect="3 / 2" />
+        <figcaption data-reveal-soft data-split="softlines" class="word">{music.caption}</figcaption>
+      </figure>
+    </article>
+
+    <article data-moment data-time={lastGlass.time} data-name={lastGlass.name} style={`${moment('80vh', 200)};gap:48px`}>
+      <p data-reveal-soft data-split="softlines" data-measure="big" style="margin:0;font:300 clamp(32px,3.4vw,56px)/1.15 var(--font-display);letter-spacing:-.02em;color:var(--ink);max-width:none;text-wrap:pretty">{lastGlass.statement}</p>
+      <div data-reveal-soft data-split="none"><Cta label={lastGlass.cta.label} href={lastGlass.cta.href} marquee /></div>
+    </article>
+  </div>
+</section>

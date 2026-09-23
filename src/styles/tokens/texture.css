@@ -1,0 +1,16 @@
+/* Dao paper. A photographed grain laid over every page ground with .dao-paper.
+   Light ground: the layer multiplies, so the paper darkens where the wall does.
+   Dark ground: the same surface read in low light, overlaid in greyscale.
+   It should be felt, not stared at. */
+:root{
+  --grain-image:url("/assets/grain.webp"); /* @kind other */
+  --grain-size:1440px auto; /* @kind other */
+  --grain-blend:multiply; /* @kind other */
+  --grain-opacity:.55; /* @kind other */
+  --grain-blend-dark:overlay; /* @kind other */
+  --grain-opacity-dark:.42; /* @kind other */
+}
+.dao-paper{position:relative;background:var(--ground)}
+.dao-paper::after{content:"";position:absolute;inset:0;pointer-events:none;background-image:var(--grain-image);background-size:var(--grain-size);background-attachment:fixed;background-position:center top;mix-blend-mode:var(--grain-blend);opacity:var(--grain-opacity);z-index:0}
+[data-theme="dark"] .dao-paper::after,.dao-paper[data-theme="dark"]::after{mix-blend-mode:var(--grain-blend-dark);opacity:var(--grain-opacity-dark);filter:grayscale(1)}
+.dao-paper>*{position:relative;z-index:1}

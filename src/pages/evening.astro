@@ -1,0 +1,26 @@
+---
+import Base from '../layouts/Base.astro';
+import Moments from '../components/evening/Moments.astro';
+import Footer from '../components/chrome/Footer.astro';
+import { getEvening } from '../lib/content';
+
+const evening = await getEvening();
+const { hero } = evening;
+---
+<Base page="evening" seo={evening.seo} tone="ink">
+  <!-- The flying clock. It sits outside the sheet so its ink is the page default, and the dusk system recolours it. -->
+  <p data-clock aria-hidden="true">{hero.time}</p>
+
+  <div data-sheet class="dao-paper" data-theme="light" style="position:relative;min-height:100vh;background:#F7F4EC;color:var(--ink);--ink:#1A1815;--ink-2:rgba(26,24,21,.7);--ink-3:rgba(26,24,21,.45);--rule:rgba(26,24,21,.16)">
+    <section data-screen-label="Hero" data-hero data-container class="g12" style="position:relative;height:100vh;min-height:640px;padding:0 64px;box-sizing:border-box;align-content:center">
+      <div style="grid-column:1 / span 12;display:flex;flex-direction:column;align-items:center;gap:40px;text-align:center">
+        <p data-clock-hero>{hero.time}</p>
+        <h1 data-reveal-soft data-split="softlines" data-measure="hero" style="margin:0;font:300 clamp(20px,1.7vw,24px)/1.4 var(--font-display);letter-spacing:-.01em;color:var(--ink-2);max-width:none;text-wrap:pretty">{hero.line}</h1>
+      </div>
+      <span data-hero-corner style="position:absolute;right:64px;bottom:40px;font:500 10px/1 var(--font-body);letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3)">{hero.corner}</span>
+    </section>
+
+    <Moments />
+    <Footer current="evening" />
+  </div>
+</Base>

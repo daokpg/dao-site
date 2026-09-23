@@ -1,0 +1,108 @@
+/* Rules every page shares. Page-only rules live in styles/pages/*.css, scoped to
+   [data-page="…"] on the Barba container, because after a transition every page's
+   CSS is loaded at once and unscoped page rules would collide. */
+
+html,body{margin:0;padding:0;height:auto;overflow:visible}
+html{overflow-x:clip}
+body{background:#000}
+a{color:inherit;text-decoration:none;border-bottom:0;transition:border-color var(--dur-hover) var(--ease-out),color var(--dur-hover) var(--ease-out)}
+a:hover{color:inherit}
+button{font:inherit;color:inherit}
+
+/* per-page ground behind the Barba container (the void a receding hero sinks into) */
+body[data-page="home"],body[data-page="story"]{background:#000}
+body[data-page="evening"]{background:#F7F4EC}
+body[data-page="reserve"]{background:#15130F}
+
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* container principle: every section grid is 12 columns inside a 1440 max, centred */
+[data-container]{max-width:1440px;margin-left:auto;margin-right:auto}
+.g12{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:0 24px}
+
+/* type helpers used across pages */
+.word{font:400 12px/1.5 var(--font-body);color:var(--ink-2);margin:0;max-width:none}
+.meta{font:500 10px/1 var(--font-body);letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3)}
+.num{font:400 12px/1.5 var(--font-body);color:var(--ink-3);margin:0;font-variant-numeric:tabular-nums}
+.body{font:400 15px/1.6 var(--font-body);color:var(--ink-2);margin:0;max-width:none;text-wrap:pretty}
+.lead{font:300 clamp(24px,2.25vw,32px)/1.4 var(--font-display);letter-spacing:-.01em;color:var(--ink);margin:0;max-width:none;text-wrap:pretty}
+.fig2{font:300 clamp(40px,4vw,64px)/1 var(--font-display);letter-spacing:-.02em;color:var(--ink);margin:0;max-width:none}
+.img{position:absolute;inset:-8% 0;width:100%;height:116%;object-fit:cover;display:block}
+[data-measure="s"]{max-width:38ch !important}
+[data-measure="m"]{max-width:52ch !important}
+[data-measure="l"]{max-width:64ch !important}
+[data-measure="lead"]{max-width:34ch !important}
+[data-measure="hero"]{max-width:30ch !important}
+[data-measure="big"]{max-width:22ch !important}
+
+/* soft lines: each line is its own block, rising and sharpening in place */
+[data-line-soft]{display:block;white-space:nowrap;opacity:0;transform:translateY(18px);filter:blur(8px)}
+/* masked lines (captions) and split characters (the loader tagline) */
+[data-line-inner],[data-char]{display:inline-block;transform:translateY(115%)}
+[data-line]{display:block;overflow:hidden;padding-bottom:.06em;margin-bottom:-.06em}
+[data-line-inner]{display:block}
+
+/* ---------- pre-hidden states ----------
+   Only when JS is running (html.js is set by an inline script in <head>). Without JS
+   the finished page simply stands; with JS the entrance/reveal systems take these
+   targets back to their rest state. */
+html.js [data-nav]{opacity:0}
+html.js [data-block]{opacity:0;transform:translateY(18px);filter:blur(8px)}
+html.js [data-split="none"]{opacity:0;transform:translateY(18px);filter:blur(8px)}
+html.js [data-split="softlines"]:not([data-split-ready]){opacity:0}
+html.js [data-mask],html.js [data-menu-mask],html.js [data-hero-mask]{clip-path:polygon(50% 100%,50% 100%,50% 100%,50% 100%)}
+html.js [data-split="lines"]:not([data-split-ready]){opacity:0}
+html.js [data-hero-img]{transform:scale(1.18)}
+html.js [data-hero-line]{transform:translateY(28px);filter:blur(8px);opacity:0}
+html.js [data-hero-corner]{opacity:0}
+html.js [data-hero-reserve-label]{opacity:0;transform:translateY(8px)}
+html.js [data-hero-reserve-rule]{transform:scaleX(0)}
+html:not(.js) [data-loader],html:not(.js) [data-loader-logo]{display:none}
+
+/* ---------- letter hover language ----------
+   letters leave upward into blur, copies rise in sharp; the rule retracts to the
+   middle and regrows from centre */
+.lt{position:relative;display:inline-block;line-height:1}
+.lt .b{position:absolute;left:0;top:0}
+.lt [data-c]{display:inline-block;white-space:pre;transition:transform var(--lt-d,1.2s) cubic-bezier(.16,1,.3,1),opacity var(--lt-d,1.2s) cubic-bezier(.16,1,.3,1),filter var(--lt-d,1.2s) cubic-bezier(.16,1,.3,1);transition-delay:calc(var(--i)*.025s)}
+.lt .b [data-c]{transform:translateY(90%);filter:blur(5px);opacity:0}
+.lt-host:hover .lt .a [data-c]{transform:translateY(-90%);filter:blur(5px);opacity:0}
+.lt-host:hover .lt .b [data-c]{transform:translateY(0);filter:blur(0);opacity:1}
+/* press: a short pulse that plays through regardless of hold, letters dip soft and return sharp */
+.lt-host.is-pressed .lt{animation:ltPress .55s cubic-bezier(.16,1,.3,1)}
+@keyframes ltPress{0%{filter:blur(0)}30%{filter:blur(2.5px)}100%{filter:blur(0)}}
+.rl{position:relative;display:block;width:148px;height:1px}
+.rl span{position:absolute;top:0;height:1px;background:currentColor;opacity:.8}
+.rl .l{left:0;width:50%;transform-origin:0 50%}.rl .r{right:0;width:50%;transform-origin:100% 50%}.rl .c{left:0;width:100%;transform:scaleX(0);transform-origin:50% 50%}
+.lt-host:hover .rl .l,.lt-host:hover .rl .r{animation:rlRetract 1.8s cubic-bezier(.16,1,.3,1) both}
+.lt-host:hover .rl .c{animation:rlRegrow 1.8s cubic-bezier(.16,1,.3,1) both}
+@keyframes rlRetract{0%{transform:scaleX(1)}35%{transform:scaleX(0)}100%{transform:scaleX(0)}}
+@keyframes rlRegrow{0%{transform:scaleX(0)}18%{transform:scaleX(0)}100%{transform:scaleX(1)}}
+
+/* the call to action: tracked label over a hairline */
+.cta{display:inline-flex;flex-direction:column;gap:12px;align-items:center;background:none;border:0;padding:0;cursor:pointer;font:500 12px/1 var(--font-body);letter-spacing:.22em;text-transform:uppercase;white-space:nowrap;color:var(--ink);--lt-d:1.6s;text-decoration:none}
+
+/* the choice: words only, the chosen one in full ink */
+.ch{background:none;border:0;padding:0;cursor:pointer;font:400 13px/1.5 var(--font-body);color:var(--ink-3);transition:color .75s cubic-bezier(.16,1,.3,1)}
+.ch:hover{color:var(--ink-2)}
+.ch[aria-pressed="true"]{color:var(--ink)}
+.ch:disabled{color:var(--ink-3);opacity:.4;cursor:default;pointer-events:none}
+
+/* ---------- mobile layer, one breakpoint ---------- */
+@media (max-width: 820px){
+  /* touch targets */
+  .ch{padding:10px 0 !important;min-height:44px}
+  .lt-host{min-height:44px}
+  [data-fit]{letter-spacing:-.03em !important}
+  /* sections collapse to one column, offsets go to 24 */
+  [data-container]{grid-template-columns:minmax(0,1fr) !important;padding-left:24px !important;padding-right:24px !important}
+  [data-container] > *{grid-column:1 / -1 !important;justify-self:stretch !important;max-width:none !important;margin-left:0 !important;margin-right:0 !important}
+  [data-hero]{min-height:0 !important;height:100svh !important}
+  [data-hero-title]{font-size:clamp(32px,9vw,44px) !important}
+  [data-hero-corner]{right:24px !important}
+}
+
+@media (prefers-reduced-motion: reduce){
+  .lt [data-c],.cm-card,.cm-text{transition:none !important}
+  .cm-text{animation:none !important}
+}

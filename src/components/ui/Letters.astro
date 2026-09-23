@@ -1,0 +1,11 @@
+---
+/**
+ * One span per character, each carrying its index for the staggered hover in .lt.
+ * Rendered at build time so the hover works before any JS runs.
+ */
+interface Props {
+  text: string;
+}
+const { text } = Astro.props;
+---
+{Array.from(text).map((ch, i) => <span data-c style={`--i:${i}`}>{ch}</span>)}

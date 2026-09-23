@@ -1,0 +1,22 @@
+---
+import { getSite } from '../../lib/content';
+
+const site = await getSite();
+const { email, phone, address } = site.contact;
+---
+<div data-menu-scrim class="menu-scrim"></div>
+<div data-menu-panel id="site-menu" class="menu dao-paper" data-theme="dark" inert>
+  <div class="menu__list">
+    {site.pages.map((p) => (
+      <a href={p.href} data-menu-item data-page-key={p.key} class="menu__item">
+        <span data-menu-mask class="menu__mask"><img src={p.image.src} alt="" style={p.image.position ? `object-position:${p.image.position}` : undefined} decoding="async" /></span>
+        <span data-menu-label class="menu__label"><span class="menu__num dao-num">{p.num}</span><span class="menu__name">{p.label}</span></span>
+      </a>
+    ))}
+  </div>
+  <div data-menu-contact class="menu__contact">
+    <a href={`mailto:${email}`}>{email}</a>
+    <a href={`tel:${phone.replace(/\s/g, '')}`} class="dao-num">{phone}</a>
+    <span>{address}</span>
+  </div>
+</div>

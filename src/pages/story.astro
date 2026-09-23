@@ -1,0 +1,27 @@
+---
+import Base from '../layouts/Base.astro';
+import Hero from '../components/story/Hero.astro';
+import Route from '../components/story/Route.astro';
+import Morning from '../components/story/Morning.astro';
+import Press from '../components/story/Press.astro';
+import Room from '../components/story/Room.astro';
+import Footer from '../components/chrome/Footer.astro';
+import { getStory } from '../lib/content';
+
+const story = await getStory();
+---
+<Base page="story" seo={story.seo} tone="cream">
+  <div style="position:relative;background:#000;min-height:100vh">
+    <Hero />
+    <div data-sheet data-tone-flip class="dao-paper" data-theme="light" style="position:relative;z-index:2;overflow-x:clip;color:var(--ink)">
+      <section data-screen-label="Family" data-container class="g12" style="padding:180px 64px 160px">
+        <p data-reveal-soft data-split="softlines" data-measure="m" style="grid-column:3 / span 8;justify-self:center;max-width:none;text-align:center;font:300 clamp(24px,2.25vw,32px)/1.4 var(--font-display);letter-spacing:-.01em;color:var(--ink);text-wrap:pretty">{story.family}</p>
+      </section>
+      <Route />
+      <Morning />
+      <Press />
+      <Room />
+      <Footer current="story" />
+    </div>
+  </div>
+</Base>

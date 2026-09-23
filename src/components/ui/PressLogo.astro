@@ -1,0 +1,17 @@
+---
+/** A publication's mark, drawn in currentColor through an SVG mask at its intrinsic size. */
+import type { PressOutlet } from '../../content/types';
+
+interface Props {
+  outlet: PressOutlet;
+  label?: string;
+  class?: string;
+  style?: string;
+  /** Attributes the caller needs on the mark (the press wall keys on data-press-logo). */
+  [key: string]: unknown;
+}
+
+const { outlet, label, class: cls, style = '', ...rest } = Astro.props;
+const { name, logo, width, height } = outlet;
+---
+<span class={cls} role="img" aria-label={label ?? name} style={`--w:${width}px;--h:${height}px;display:block;width:${width}px;height:${height}px;background:currentColor;-webkit-mask:url(${logo}) center/contain no-repeat;mask:url(${logo}) center/contain no-repeat;${style}`} {...rest}></span>

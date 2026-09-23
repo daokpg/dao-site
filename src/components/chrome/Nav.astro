@@ -1,0 +1,15 @@
+---
+import Letters from '../ui/Letters.astro';
+import { getSite } from '../../lib/content';
+
+const site = await getSite();
+const { menu, close } = site.labels;
+---
+<nav data-nav class="nav" aria-label="Main">
+  <span data-nav-left class="nav__left">{site.place}</span>
+  <a href="/" data-nav-mark class="nav__mark" aria-label={site.name}></a>
+  <button type="button" data-nav-menu class="lt-host nav__menu" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu">
+    <span data-word="menu" class="lt nav__word" aria-hidden="true"><span class="a"><Letters text={menu} /></span><span class="b"><Letters text={menu} /></span></span>
+    <span data-word="close" class="lt nav__word nav__word--close" aria-hidden="true"><span class="a"><Letters text={close} /></span><span class="b"><Letters text={close} /></span></span>
+  </button>
+</nav>

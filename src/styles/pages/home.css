@@ -1,0 +1,91 @@
+/* Home. Scoped to the Barba container so it cannot reach another page. */
+[data-page="home"]{
+  [data-sheet][data-theme="dark"]{background-color:#15130F !important}
+  [data-press-slot] [data-press-logo]{position:absolute;left:50%;top:50%}
+
+  /* the evening facts: a hairline list; on hover the row opens from its centre line and shows the moment */
+  .hr{position:relative}
+  .hr>*{position:relative;z-index:1}
+  .hr .hv{position:absolute;inset:0;z-index:0;pointer-events:none;clip-path:inset(50% 0% 50% 0%);transition:clip-path 1s cubic-bezier(.16,1,.3,1)}
+  .hr:hover .hv{clip-path:inset(0% 0% 0% 0%)}
+  .hr .hv img{position:absolute;inset:-10% 0;width:100%;height:120%;object-fit:cover;display:block;transform:scale(1.08);transition:transform 2s cubic-bezier(.16,1,.3,1),opacity 1.5s cubic-bezier(.16,1,.3,1),filter 1.5s cubic-bezier(.16,1,.3,1);opacity:.35;filter:blur(6px)}
+  .hr:hover .hv img{transform:scale(1);opacity:.6;filter:blur(0)}
+  .hr .hv .sc{position:absolute;inset:0;background:rgba(0,0,0,.5)}
+  .hr .meta,.hr .word{transition:color 1s cubic-bezier(.16,1,.3,1)}
+  .hr:hover .meta,.hr:hover .word{color:#EDE8DC}
+
+  /* the trail: frames open from bottom centre as they reach the line */
+  [data-tmask] img{transform:scale(1.14)}
+
+  /* FAQ: the answer writes itself in, character by character */
+  .q{font:300 clamp(22px,2.1vw,30px)/1.25 var(--font-display);letter-spacing:-.01em;color:var(--ink);margin:0;max-width:none;text-wrap:pretty}
+  .fq{cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .fq .rule{border-top:1px solid var(--rule);transition:border-color .75s cubic-bezier(.16,1,.3,1)}
+  .fq:hover .rule,.fq[data-open] .rule{border-top-color:var(--ink)}
+  .ic{--l:20px;position:relative;display:block;width:20px;height:20px;flex:0 0 auto}
+  .ic i{position:absolute;left:50%;top:50%;display:block;background:currentColor;transition:width .7s cubic-bezier(.16,1,.3,1),height .7s cubic-bezier(.16,1,.3,1),transform .7s cubic-bezier(.16,1,.3,1)}
+  .ic .h{width:20px;height:1px;transform:translate(-50%,-50%) rotate(0deg)}
+  .ic .v{width:1px;height:20px;transform:translate(-50%,-50%) rotate(0deg)}
+  .fq .ic{color:var(--ink-3);transition:color .75s cubic-bezier(.16,1,.3,1)}
+  .fq:hover .ic,.fq[data-open] .ic{color:var(--ink)}
+  .fq[data-open] .ic-a .h{transform:translate(-50%,-50%) rotate(45deg)}
+  .fq[data-open] .ic-a .v{transform:translate(-50%,-50%) rotate(45deg)}
+  .fq[data-open] .ic.pulse .h{animation:icH .7s cubic-bezier(.16,1,.3,1)}
+  .fq[data-open] .ic.pulse .v{animation:icV .7s cubic-bezier(.16,1,.3,1)}
+  .fq.closing .ic.pulse .h{animation:icHc .7s cubic-bezier(.16,1,.3,1)}
+  .fq.closing .ic.pulse .v{animation:icVc .7s cubic-bezier(.16,1,.3,1)}
+  .fq[data-chars]{position:relative}
+  .fq[data-chars] .fq-ch{display:inline-block;opacity:0;filter:blur(5px);white-space:pre;will-change:opacity,filter}
+  .fq[data-chars] .rule{will-change:height}
+
+  @media (max-width: 820px){
+    .fq{min-height:56px}
+    [data-press-wall]{width:100% !important;gap:16px !important}
+    [data-press-slot]{height:40px !important}
+  }
+
+  /* mobile layer: sections collapse to one column, the trail runs vertically */
+  @media (max-width: 820px){
+    [data-container] figure{margin-top:0 !important}
+    [data-screen-label="Paragraph"]{padding-top:120px !important;padding-bottom:96px !important}
+    [data-screen-label="Duo"]{gap:48px 0 !important;padding-bottom:0 !important}
+    [data-screen-label="The evening"],[data-screen-label="Price and pairing"]{padding-top:120px !important;padding-bottom:120px !important}
+    [data-screen-label="Nir"]{padding-top:96px !important;padding-bottom:140px !important}
+    [data-screen-label="The evening"] [data-mask]{aspect-ratio:4 / 5 !important}
+    [data-screen-label="The evening"] .hr{display:flex !important;flex-direction:column !important;gap:10px !important;padding:24px 0 !important}
+    [data-screen-label="The evening"] .hr .meta{order:1}
+    [data-screen-label="The evening"] .hr .fig2{order:2;font-size:44px !important}
+    [data-screen-label="The evening"] .hr .word{order:3}
+    [data-screen-label="The evening"] .hr .hv{display:none}
+    [data-screen-label="Price and pairing"] > div{gap:48px !important}
+    /* As shipped, one rule stacks both the pairings and the press wall into a single column on phones
+       (a later rule asking for three press columns never won). Kept as is; see CLAUDE.md "Known quirks". */
+    [data-screen-label="Price and pairing"] [data-pairings],[data-screen-label="Price and pairing"] [data-press-wall]{grid-template-columns:minmax(0,1fr) !important}
+    [data-press-wall]{gap:12px !important;width:100% !important}
+    [data-screen-label="Nir"] [data-mask]{width:100%}
+    [data-screen-label="The shared table"] [data-corner]{right:24px !important}
+    [data-recede]{height:100svh !important;min-height:0 !important}
+    [data-recede] p{font-size:clamp(22px,6vw,28px) !important;width:auto !important}
+
+    [data-trail]{height:auto !important;overflow:visible !important}
+    [data-track]{display:grid !important;grid-template-columns:repeat(12,minmax(0,1fr)) !important;gap:0 12px !important;width:auto !important;height:auto !important;padding:32px 24px 96px !important;align-items:start !important;transform:none !important}
+    /* the wave, vertical: two columns that overlap in y. Odd frames wide on the left, even frames narrower on the right, each starting before the one above ends */
+    [data-tmask]{height:auto !important;width:auto !important;align-self:start !important;transform:none !important;will-change:transform}
+    [data-tmask]:nth-of-type(odd){grid-column:1 / span 7 !important;margin-top:-18vw}
+    [data-tmask]:nth-of-type(even){grid-column:7 / span 6 !important;margin-top:-10vw}
+    [data-tmask]:first-of-type{margin-top:0 !important}
+    /* the bend: sides stay strict, only the start offset moves */
+    [data-tmask]:nth-of-type(3),[data-tmask]:nth-of-type(7){grid-column:2 / span 6 !important}
+    [data-tmask]:nth-of-type(4),[data-tmask]:nth-of-type(10){grid-column:6 / span 7 !important}
+    [data-trail-text] + [data-tmask]{margin-top:0 !important}
+    [data-tmask] img{inset:0 !important;width:100% !important;height:100% !important}
+    [data-trail-text]{position:static !important;grid-column:1 / span 12 !important;width:auto !important;min-width:0 !important;max-width:30ch !important;font-size:clamp(22px,6vw,28px) !important;padding:40px 0 40px;margin:0 !important}
+    [data-trail-text]:nth-of-type(2){justify-self:end;text-align:left}
+  }
+
+  @media (max-width: 820px){
+    [data-screen-label="FAQ"] h2{position:static !important;margin-bottom:56px !important}
+    [data-screen-label="FAQ"] button{padding-right:44px !important}
+  }
+}
+html.js [data-page="home"] [data-tmask]{clip-path:polygon(50% 100%,50% 100%,50% 100%,50% 100%)}

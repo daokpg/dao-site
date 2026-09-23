@@ -1,0 +1,21 @@
+---
+import MaskImage from '../ui/MaskImage.astro';
+import { getHome } from '../../lib/content';
+
+const home = await getHome();
+const [left, right] = home.duo;
+---
+<section data-screen-label="Paragraph" data-container class="g12" style="padding:180px 64px 160px">
+  <p data-reveal-soft data-split="softlines" data-measure="m" style="grid-column:4 / span 6;justify-self:center;max-width:none;text-align:center;font:300 clamp(24px,2.25vw,32px)/1.4 var(--font-display);letter-spacing:-.01em;color:var(--ink);text-wrap:pretty">{home.intro}</p>
+</section>
+
+<section data-screen-label="Duo" data-container class="g12" style="padding:0 64px 64px;align-items:start">
+  <figure style="grid-column:2 / span 5;margin:0;display:flex;flex-direction:column;gap:16px">
+    <MaskImage image={left.image} aspect="533 / 684" />
+    <figcaption data-reveal data-split="lines" style="font:400 12px/1.5 var(--font-body);color:var(--ink-2);max-width:340px">{left.caption}</figcaption>
+  </figure>
+  <figure style="grid-column:9 / 13;margin:26% 0 0;display:flex;flex-direction:column;gap:16px">
+    <MaskImage image={right.image} aspect="421 / 550" />
+    <figcaption data-reveal data-split="lines" style="font:400 12px/1.5 var(--font-body);color:var(--ink-2);max-width:300px">{right.caption}</figcaption>
+  </figure>
+</section>

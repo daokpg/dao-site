@@ -1,0 +1,12 @@
+/* Dao webfonts.
+   Display: Season Mix. These are the TRIAL cuts as supplied; swap in licensed woff2
+   files (same family name) before launch.
+   Body, small text and data: Inter, self-hosted through @fontsource.
+   No italic was supplied, so any italic accent is synthesised by the browser. */
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+
+@font-face{font-family:"Season Mix";src:url("/fonts/SeasonMixTRIAL-Light.otf") format("opentype");font-weight:300;font-style:normal;font-display:swap}
+@font-face{font-family:"Season Mix";src:url("/fonts/SeasonMixTRIAL-Regular.otf") format("opentype");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Season Mix";src:url("/fonts/SeasonMixTRIAL-Medium.otf") format("opentype");font-weight:500;font-style:normal;font-display:swap}
