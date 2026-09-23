@@ -29,15 +29,17 @@ import { resetCursorMarquee } from '../chrome/cursor-marquee';
 interface Page { container: HTMLElement; namespace: string; url: { href: string; path?: string } }
 interface Data { current: Page; next: Page }
 
-// Timing, as designed. The cover is held long enough for the name to read on a still sheet.
+// Timing. The name resolves as the sheet arrives and unwinds as soon as it has read: there is no
+// hold for a page load, because Barba fetched the next page while the sheet was rising (and
+// usually on hover, before the click). Whole gesture: about 2.6s.
 const T = {
-  cover: 1, // sheet up, page settles back
-  lettersAt: 0.7, letterStagger: 0.028, letterDur: 2.2,
-  numAfter: 0.9, push: 1.2,
-  coverMin: 3.0, // minimum time the name is up before the swap
-  hold: 0.3, unwindStagger: 0.018, unwindDur: 0.75,
-  drop: 1.75, dropAfter: -0.12,
-  entranceAfterDrop: 0.35,
+  cover: 0.9, // sheet up, page settles back
+  lettersAt: 0.35, letterStagger: 0.022, letterDur: 1.1,
+  numAfter: 0.3, push: 0.9,
+  read: 0.35, // after the number lands, how long the name stays before it unwinds
+  hold: 0, unwindStagger: 0.014, unwindDur: 0.6,
+  drop: 1.4, dropAfter: 0.12, // the sheet starts down just after the name starts leaving
+  entranceAfterDrop: 0.3,
 };
 
 const panel = () => document.querySelector<HTMLElement>('[data-pt-panel]')!;
@@ -93,7 +95,7 @@ async function leave(data: Data): Promise<void> {
   const numAt = T.lettersAt + letters.length * T.letterStagger + T.numAfter;
   tl.to(numE, { opacity: 1, y: 0, filter: 'blur(0px)', duration: T.push, ease: E }, numAt);
   tl.to(nEl, { y: 0, duration: T.push, ease: E }, numAt);
-  const go = Math.max(numAt + 0.7, T.cover + T.coverMin - 0.3);
+  const go = Math.max(numAt + T.read, T.cover);
   await new Promise<void>((resolve) => void tl.call(resolve, undefined, go));
 }
 
@@ -147,7 +149,21 @@ function finish(container: HTMLElement) {
 /** Fonts decide where lines break; wait for them (briefly) before the first split. */
 const fontsReady = () => Promise.race([document.fonts?.ready ?? Promise.resolve(), wait(2500)]);
 
+/** Fetch a page as soon as a pointer reaches its link, so the transition never waits on the network. */
+function prefetchOnIntent() {
+  const seen = new Set<string>();
+  const warm = (e: Event) => {
+    const a = (e.target as Element).closest?.('a[href]') as HTMLAnchorElement | null;
+    if (!a || a.origin !== location.origin || a.pathname === location.pathname || seen.has(a.href)) return;
+    seen.add(a.href);
+    barba.prefetch(a.href);
+  };
+  document.addEventListener('pointerover', warm, { passive: true });
+  document.addEventListener('touchstart', warm, { passive: true });
+}
+
 export function initTransitions() {
+  prefetchOnIntent();
   barba.init({
     preventRunning: true,
     timeout: 10000,
