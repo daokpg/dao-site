@@ -1,7 +1,11 @@
-// Cloudflare Workers static assets. The build step (npm run build) writes ./dist; this serves it.
+// Cloudflare Workers static assets. `wrangler deploy` runs the build first, then serves ./dist,
+// so the Cloudflare dashboard needs no build command of its own.
 {
   "name": "dao-design",
   "compatibility_date": "2026-09-01",
+  "build": {
+    "command": "npm run build"
+  },
   "assets": {
     "directory": "./dist",
     "not_found_handling": "404-page",

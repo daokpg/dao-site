@@ -20,8 +20,9 @@ npm run check     # astro + TypeScript checks
 
 Cloudflare Workers (static assets), Worker name `dao-design`, connected to this GitHub repo.
 **A push to `main` deploys to production.** Work on a branch and merge when it is right.
-`wrangler.jsonc` points Cloudflare at `dist/`; the Cloudflare build command must be
-`npm run build` (deploy command `npx wrangler deploy`).
+`wrangler.jsonc` runs `npm run build` itself before deploying and serves `dist/`, so
+Cloudflare's deploy command `npx wrangler deploy` is all that is needed. Other branches get
+preview builds.
 
 ## Layout of the repo
 
