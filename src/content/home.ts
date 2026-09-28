@@ -74,7 +74,7 @@ export const home: HomeContent = {
       { label: 'Arrival', text: 'Everyone arrives together. The door opens at a quarter past seven.', figure: '19:30', image: { src: '/assets/photos/facade.jpg', alt: '', position: '55% 50%' } },
       { label: 'Duration', text: 'Nobody is hurried out.', figure: '~3 h', image: { src: '/assets/photos/last-garnish.jpg', alt: '', position: '60% 50%' } },
       { label: 'Seats', text: 'One table. Singles, pairs and groups sit together.', figure: '16', image: { src: '/assets/photos/table-guests.jpg', alt: '', position: '40% 50%' } },
-      { label: 'Menu', text: 'Chosen when you book.', figure: 'Meat & fish or fish', image: { src: '/assets/photos/dish-slate.jpg', alt: '', position: '50% 50%' } },
+      { label: 'Menu', text: 'Tell us in the note when you book.', figure: 'Meat & fish or fish', image: { src: '/assets/photos/dish-slate.jpg', alt: '', position: '50% 50%' } },
     ],
   },
   sharedTable: {
@@ -85,7 +85,7 @@ export const home: HomeContent = {
   price: {
     note: 'Per guest, the full menu. Water and tea are included.',
     pairingLabels: { four: 'Wine pairing, four glasses', five: 'Wine pairing, five glasses' },
-    details: 'Half the menu at booking, refundable up to 48 hours before. No dress code, it is a warm island evening. Sri Thanu, west coast, ten minutes by scooter from Thong Sala, and a pin is sent with the booking. Seats open four months ahead. Dietary needs are taken at booking, not at the table.',
+    details: 'Nothing is paid at booking. A card holds your seats and is only charged if you do not come or cancel within 48 hours. No dress code, it is a warm island evening. Sri Thanu, west coast, ten minutes by scooter from Thong Sala, and a pin is sent with the booking. Seats open four months ahead. Dietary needs are taken at booking, not at the table.',
   },
   nir: {
     name: 'Nir Mesika',
@@ -98,15 +98,15 @@ export const home: HomeContent = {
     items: [
       { question: 'What is Dao?', answer: 'A sixteen-seat chef’s table in Sri Thanu, Koh Phangan, led by Nir Mesika. One communal table, one arrival time, one fixed multi-course menu that changes with the week. Thai produce, Israeli and Moroccan cooking.' },
       { question: 'How does the evening work?', answer: 'Everyone arrives at 19:30 and sits together at the one table. Nir introduces the evening, then the courses are walked out one at a time. It lasts about three hours and nobody is hurried out.' },
-      { question: 'How much does it cost?', answer: 'THB 3,900 per guest for the menu. The wine pairing is THB 2,200 for four glasses or THB 2,700 for five. Water and tea are included. A deposit holds the seat and the rest is paid on the night.' },
+      { question: 'How much does it cost?', answer: 'THB 3,900 per guest for the menu. The wine pairing is THB 2,200 for four glasses or THB 2,700 for five. Water and tea are included. Everything is paid on the night. A card holds your seats when you book, and is only charged if you do not come.' },
       { question: 'Can I come alone?', answer: 'Yes, and many do. Singles, pairs and groups sit together at the one table, and the seating is arranged so nobody is at an end by themselves.' },
       { question: 'Will I have to talk to strangers?', answer: 'You will be seated with people you have not met. The first fifteen minutes can be quiet. Then Nir comes out, introduces the evening, and the table stops being a room full of strangers. Nobody is made to perform.' },
       { question: 'Can I see the menu in advance?', answer: 'No. The menu is built from what the morning found, so it is fixed only on the day. The Evening page shows a menu from a past dinner so you know the shape of it; yours will be different.' },
-      { question: 'What if I do not eat meat, or have an allergy?', answer: 'Choose the fish menu when you book. Allergies and anything else go in the note at booking, not at the table, and the menu is adapted per seat. Fully plant-based menus are not offered.' },
+      { question: 'What if I do not eat meat, or have an allergy?', answer: 'Say so in the note when you book and your seat gets the fish menu. Allergies and anything else go in the note too, not at the table, and the menu is adapted per seat. Fully plant-based menus are not offered.' },
       { question: 'Is there wine, and can I skip it?', answer: 'One wine pairing is poured through the meal, four glasses or five. You can skip it. There is no cocktail bar and no wine list; that is a choice about the evening, not a gap in the offer.' },
       { question: 'Can I book for a group or the whole table?', answer: 'Up to eleven seats can be booked online. Twelve or more take the whole table, so write to us and we will hold the night for you.' },
       { question: 'What happens if I am late?', answer: 'The table is served together, so the first course leaves the kitchen at 19:30 whether every seat is filled or not. If you are running late, call and we will hold your plate for as long as we can.' },
-      { question: 'What if I need to cancel?', answer: 'The deposit is refunded in full if you cancel more than 48 hours before the evening. Inside 48 hours the seat is hard to fill, so the deposit is kept unless we can fill it for you.' },
+      { question: 'What if I need to cancel?', answer: 'Cancel more than 48 hours before the evening and nothing is charged. Inside 48 hours the seat is hard to fill, so the card that holds it is charged THB 1,950 per seat, unless we can fill it for you. The same applies if you do not come.' },
       { question: 'Where is Dao and how do I get there?', answer: 'In Sri Thanu, on the west coast of Koh Phangan, about fifteen minutes by scooter or taxi from Thong Sala pier. The exact pin comes with your confirmation.' },
     ],
   },

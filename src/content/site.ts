@@ -13,16 +13,13 @@ export const site: SiteSettings = {
     area: 'Sri Thanu, Koh Phangan',
   },
   copyright: '© Dao, 2026',
-  nextSeats: {
-    date: 'Tuesday 14 October',
-    short: 'Next seats, 14 October',
-  },
   pricing: {
     currency: 'THB',
     menu: 3900,
     pairingFour: 2200,
     pairingFive: 2700,
-    depositShare: 0.5,
+    noShowFee: 1950,
+    cake: 400,
   },
   pages: [
     { key: 'home', label: 'Home', num: '01', href: '/', image: { src: '/assets/photos/table-guests.jpg', alt: '', position: '35% 50%' } },
@@ -42,6 +39,5 @@ export const site: SiteSettings = {
     menu: 'Menu',
     close: 'Close',
     reserve: 'Reserve a seat',
-    nextAvailable: 'Next available date',
   },
 };

@@ -23,7 +23,6 @@ import { resetTone } from './tone';
 import { runAfter, runBefore, teardown } from './registry';
 import { killEntrance, playEntrance } from '../systems/entrance';
 import { resetMenu, setMenuCurrent } from '../chrome/menu';
-import { resetCursorMarquee } from '../chrome/cursor-marquee';
 
 /** The pieces of Barba's transition data used here (its bundled typings do not resolve). */
 interface Page { container: HTMLElement; namespace: string; url: { href: string; path?: string } }
@@ -71,7 +70,6 @@ async function leave(data: Data): Promise<void> {
   // as 'auto'). Without it, "back" would restore an old scroll position into a swapped page.
   history.scrollRestoration = 'manual';
   stopScroll();
-  resetCursorMarquee();
   if (reducedMotion) {
     await gsap.to(page, { opacity: 0, duration: 0.3 });
     return;

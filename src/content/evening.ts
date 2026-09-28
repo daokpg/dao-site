@@ -95,7 +95,7 @@ export const evening: EveningContent = {
       { name: 'Sweet', description: 'A Moroccan pastry made the way his grandfather made them, and fruit from the drying trays.' },
     ],
     glassLabel: 'Glass',
-    after: 'This menu is gone. Yours is cooked from what the morning finds, adapted per seat, with the meat and fish or fish only choice made at booking. Dietary needs are taken then, not at the table.',
+    after: 'This menu is gone. Yours is cooked from what the morning finds, adapted per seat from the note you leave when you book. Dietary needs are taken then, not at the table.',
   },
   wine: {
     time: '21:00',

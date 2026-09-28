@@ -2,30 +2,25 @@
 /**
  * The site's call to action: a tracked label whose letters roll on hover, over a
  * hairline that retracts and regrows. A link when given `href`, otherwise a button.
- * `marquee` makes the cursor pill show the next available date over it.
  */
 import type { HTMLAttributes } from 'astro/types';
 import Letters from './Letters.astro';
-import { getSite } from '../../lib/content';
 
 interface Props extends Omit<HTMLAttributes<'a'>, 'type'> {
   label: string;
   href?: string;
-  marquee?: boolean;
   /** Extra attributes for the label and the rule, used by the hero entrance. */
   labelAttrs?: Record<string, string | boolean>;
   ruleAttrs?: Record<string, string | boolean>;
 }
 
-const { label, href, marquee = false, labelAttrs = {}, ruleAttrs = {}, class: cls, ...rest } = Astro.props;
-const site = await getSite();
+const { label, href, labelAttrs = {}, ruleAttrs = {}, class: cls, ...rest } = Astro.props;
 const Tag = href ? 'a' : 'button';
 ---
 <Tag
   href={href}
   type={href ? undefined : ('button' as const)}
   class:list={['lt-host', 'cta', cls]}
-  data-cursor-marquee-text={marquee ? `${site.nextSeats.short}  ·  ` : undefined}
   aria-label={label}
   {...rest}
 >
