@@ -22,7 +22,6 @@ import '../styles/pages/evening.css';
 import '../styles/pages/reserve.css';
 
 import Loader from '../components/chrome/Loader.astro';
-import CursorMarquee from '../components/chrome/CursorMarquee.astro';
 import Nav from '../components/chrome/Nav.astro';
 import Menu from '../components/chrome/Menu.astro';
 import TransitionSheet from '../components/chrome/TransitionSheet.astro';
@@ -61,7 +60,6 @@ const blockRhythm = { home: '4 0.08', story: '5 0.08', evening: '6 0.07', reserv
   </head>
   <body data-barba="wrapper" data-page={page}>
     {intro && <Loader />}
-    <CursorMarquee />
     <Nav />
     <Menu />
     <main data-barba="container" data-barba-namespace={page} data-page={page} data-tone={tone} data-block-rhythm={blockRhythm}>

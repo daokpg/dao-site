@@ -90,7 +90,7 @@ const moment = (min: string, bottom = 160) => `min-height:${min};padding:0 0 ${b
 
     <article data-moment data-time={lastGlass.time} data-name={lastGlass.name} style={`${moment('80vh', 200)};gap:48px`}>
       <p data-reveal-soft data-split="softlines" data-measure="big" style="margin:0;font:300 clamp(32px,3.4vw,56px)/1.15 var(--font-display);letter-spacing:-.02em;color:var(--ink);max-width:none;text-wrap:pretty">{lastGlass.statement}</p>
-      <div data-reveal-soft data-split="none"><Cta label={lastGlass.cta.label} href={lastGlass.cta.href} marquee /></div>
+      <div data-reveal-soft data-split="none"><Cta label={lastGlass.cta.label} href={lastGlass.cta.href} /></div>
     </article>
   </div>
 </section>

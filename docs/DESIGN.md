@@ -28,7 +28,7 @@ the money. Nothing else is the job.
   words where a number is part of a sentence's rhythm ("sixteen-seat", "nine children").
 - **Never:** emoji; eyebrows or kickers above a headline; balanced aphorisms with a reversal;
   poetic pointing instead of naming; course numbering; scarcity claims ("limited seats").
-  Scarcity is shown by exposing the next available date.
+  Scarcity is shown on the booking page, night by night; a full night offers its waitlist.
 
 ## Colour
 
@@ -60,8 +60,8 @@ identical section anatomy repeating down a page. One breakpoint: 820px.
 
 ## Surfaces
 
-- No cards, no shadows under content, no border-radius, no backdrop-blur panels (the cursor pill
-  is the one frosted exception). Content sits on the ground, separated by 1px hairlines.
+- No cards, no shadows under content, no border-radius, no backdrop-blur panels. Content sits
+  on the ground, separated by 1px hairlines.
 - No images behind text except full photographs with a scrim, and every scrim is two layers:
   a flat 38% floor plus a vertical band. Type on a photograph is full-opacity cream.
 - Every ground carries the paper grain (`.dao-paper`). It should be felt, not stared at.

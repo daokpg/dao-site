@@ -10,12 +10,10 @@ import { initLenis } from './core/lenis';
 import { initTransitions } from './core/transition';
 import { initSamePageLinks } from './core/links';
 import { initMenu } from './chrome/menu';
-import { initCursorMarquee } from './chrome/cursor-marquee';
 import { initPressPulse } from './chrome/pulse';
 
 initLenis();
 initMenu();
-initCursorMarquee();
 initPressPulse();
 initSamePageLinks();
 initTransitions();

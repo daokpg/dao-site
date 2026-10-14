@@ -103,6 +103,5 @@ html:not(.js) [data-loader],html:not(.js) [data-loader-logo]{display:none}
 }
 
 @media (prefers-reduced-motion: reduce){
-  .lt [data-c],.cm-card,.cm-text{transition:none !important}
-  .cm-text{animation:none !important}
+  .lt [data-c]{transition:none !important}
 }

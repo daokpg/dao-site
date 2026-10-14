@@ -31,7 +31,7 @@ src/
   pages/            one file per route; assembles sections, passes nothing but the page key
   layouts/Base.astro  <head>, persistent chrome, the Barba container (<main>)
   components/
-    chrome/         nav, menu, footer, cursor pill, loader, transition sheet (shared by every page)
+    chrome/         nav, menu, footer, loader, transition sheet (shared by every page)
     ui/             small shared pieces: Cta, MaskImage, PressLogo, Letters
     home/ story/ evening/ reserve/   the sections of each page
   content/          ALL copy, images and numbers (see "Content" below)
@@ -65,7 +65,7 @@ templates with `{tokens}` filled by `fill()`.
 Stack: **Astro + Barba + GSAP (ScrollTrigger) + Lenis**. The site is multi-page, but Barba swaps
 only the page container, so the document lives for the whole visit.
 
-**Two zones.** Persistent chrome (nav, menu, cursor pill, loader, transition sheet) sits outside
+**Two zones.** Persistent chrome (nav, menu, loader, transition sheet) sits outside
 `<main data-barba="container">` and is bound once in `src/scripts/app.ts`. Everything inside
 `<main>` is swapped on navigation.
 

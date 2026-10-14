@@ -22,7 +22,7 @@ const { lines, corner, video } = home.hero;
       {lines.map((line) => <span data-hero-line style="display:block">{line}</span>)}
     </h1>
     <div data-hero-cta style="display:flex;flex-direction:column;align-items:center">
-      <Cta label={site.labels.reserve} href="/reserve" marquee data-hero-reserve style="color:var(--ink-on-image)" labelAttrs={{ 'data-hero-reserve-label': true }} ruleAttrs={{ 'data-hero-reserve-rule': true }} />
+      <Cta label={site.labels.reserve} href="/reserve" data-hero-reserve style="color:var(--ink-on-image)" labelAttrs={{ 'data-hero-reserve-label': true }} ruleAttrs={{ 'data-hero-reserve-rule': true }} />
     </div>
   </div>
   <span data-hero-corner style="position:absolute;right:64px;bottom:40px;font:500 10px/1 var(--font-body);letter-spacing:.22em;text-transform:uppercase;color:rgba(247,244,236,.6)">{corner}</span>

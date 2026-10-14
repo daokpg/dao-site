@@ -55,8 +55,13 @@ export interface Pricing {
   menu: number;
   pairingFour: number;
   pairingFive: number;
-  /** Share of the menu price taken per seat at booking. */
-  depositShare: number;
+  /**
+   * Nothing is paid at booking: a card is saved with Stripe to hold the seats, and charged this
+   * much per seat only for a no-show or a cancellation inside 48 hours.
+   */
+  noShowFee: number;
+  /** A birthday cake, offered when the occasion is a birthday. Paid on the night. */
+  cake: number;
 }
 
 export interface SiteSettings {
@@ -72,12 +77,6 @@ export interface SiteSettings {
     area: string;
   };
   copyright: string;
-  nextSeats: {
-    /** "Tuesday 14 October": the large footer line. */
-    date: string;
-    /** "Next seats, 14 October": the cursor pill over reserve buttons. */
-    short: string;
-  };
   pricing: Pricing;
   pages: PageLink[];
   press: PressOutlet[];
@@ -85,6 +84,5 @@ export interface SiteSettings {
     menu: string;
     close: string;
     reserve: string;
-    nextAvailable: string;
   };
 }

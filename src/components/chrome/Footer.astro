@@ -1,7 +1,6 @@
 ---
 /**
- * The same close on every page: the four pages as frames, the next available date set
- * to the full width, then reserve, contact and place.
+ * The same close on every page: the four pages as frames, then reserve, contact and place.
  */
 import Cta from '../ui/Cta.astro';
 import { getSite } from '../../lib/content';
@@ -26,10 +25,8 @@ const { email, phone, area } = site.contact;
       </a>
     ))}
   </div>
-  <p data-reveal-soft data-split="softlines" class="footer__label">{site.labels.nextAvailable}</p>
-  <p data-reveal-soft data-split="softlines" data-fit class="footer__date">{site.nextSeats.date}</p>
   <div data-reveal-soft data-split="none" class="footer__bar">
-    <div class="footer__cta"><Cta label={site.labels.reserve} href="/reserve" marquee /></div>
+    <div class="footer__cta"><Cta label={site.labels.reserve} href="/reserve" /></div>
     <div class="footer__contact">
       <a href={`mailto:${email}`}>{email}</a>
       <a href={`tel:${phone.replace(/\s/g, '')}`} class="dao-num">{phone}</a>
