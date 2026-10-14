@@ -24,6 +24,10 @@ Cloudflare Workers (static assets), Worker name `dao-design`, connected to this 
 Cloudflare's deploy command `npx wrangler deploy` is all that is needed. Other branches get
 preview builds.
 
+No domain is attached yet: `main` is served at https://dao-design.dry-forest-5ebe.workers.dev,
+which the team uses as **staging**. Going public means adding the real domain to the
+`dao-design` Worker in Cloudflare (and replacing the placeholder `daokohphangan.com` email).
+
 ## Layout of the repo
 
 ```
