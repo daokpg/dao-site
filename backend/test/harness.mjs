@@ -92,6 +92,14 @@ const ctx = {
   console,
 };
 vm.createContext(ctx);
+// The checks are written against the October board as of 28 Sep 2026; pin "today" there so they
+// keep passing as real dates go by. `serve` keeps the real clock.
+if (process.argv[2] === 'test') {
+  vm.runInContext(`const _D = Date; Date = class extends _D {
+    constructor(...a) { if (a.length) super(...a); else super(2026, 8, 28, 12); }
+    static now() { return new _D(2026, 8, 28, 12).getTime(); }
+  };`, ctx);
+}
 vm.runInContext(GS, ctx);
 SDate = vm.runInContext('Date', ctx);
 loadFixture();
