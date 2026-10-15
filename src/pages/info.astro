@@ -1,0 +1,27 @@
+---
+/**
+ * Info: every question, by topic. Not in the menu or the footer: reached from the questions on
+ * the home page ("All questions"). The page transition still names it (site.unlisted).
+ */
+import Base from '../layouts/Base.astro';
+import Head from '../components/info/Head.astro';
+import Topic from '../components/info/Topic.astro';
+import Close from '../components/info/Close.astro';
+import Footer from '../components/chrome/Footer.astro';
+import { getInfo, getSite } from '../lib/content';
+import { fillAnswers } from '../lib/faq';
+import { faqLd } from '../lib/structured-data';
+import { scriptJson } from '../lib/json';
+
+const [info, site] = await Promise.all([getInfo(), getSite()]);
+const topics = info.topics.map((t) => ({ ...t, items: fillAnswers(t.items, site) }));
+---
+<Base page="info" seo={info.seo} tone="ink">
+  <script type="application/ld+json" slot="head" set:html={scriptJson(faqLd(topics.flatMap((t) => t.items)))} />
+  <div data-sheet class="dao-paper" data-theme="light" style="position:relative;min-height:100vh;color:var(--ink)">
+    <Head />
+    {topics.map((t, i) => <Topic topic={t} num={i + 1} />)}
+    <Close />
+    <Footer current="info" />
+  </div>
+</Base>

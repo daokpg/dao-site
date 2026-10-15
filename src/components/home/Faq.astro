@@ -1,25 +1,20 @@
 ---
 /**
- * Questions. Opening one writes the answer in beside the question, character by
- * character, while the row grows with the text (systems/faq.ts). The answer is in the
- * HTML for visitors without JS; the script takes it out and writes it back on open.
+ * Questions: the few most asked (picked from the info page's, content/home.ts), then the way to
+ * all of them on the info page, which is in neither the menu nor the footer.
  */
-import { getHome } from '../../lib/content';
+import Cta from '../ui/Cta.astro';
+import FaqList from '../ui/FaqList.astro';
+import { getHome, getSite } from '../../lib/content';
+import { fillAnswers } from '../../lib/faq';
 
-const { faq } = await getHome();
+const [{ faq }, site] = await Promise.all([getHome(), getSite()]);
+const items = fillAnswers(faq.items, site);
 ---
-<section data-screen-label="FAQ" data-container class="g12" aria-labelledby="faq-h" style="padding:120px 64px 200px;box-sizing:border-box;align-items:start">
-  <h2 id="faq-h" data-reveal-soft data-split="softlines" style="grid-column:2 / span 3;position:sticky;top:140px;align-self:start;margin:0;font:300 clamp(36px,3.6vw,56px)/1.05 var(--font-display);letter-spacing:-.02em;color:#F3EFE5;max-width:none;text-wrap:pretty">{faq.heading}</h2>
-  <ul data-faq style="grid-column:5 / span 8;display:flex;flex-direction:column;margin:0;padding:0">
-    {faq.items.map((item, i) => (
-      <li class="fq" data-fq data-chars style="list-style:none;margin:0;position:relative">
-        <h3 class="rule" style="margin:0;padding:0;font:inherit">
-          <button type="button" aria-expanded="false" aria-controls={`faq-a${i}`} id={`faq-q${i}`} style="display:block;width:100%;text-align:left;background:none;border:0;padding:26px 56px 26px 0;margin:0;cursor:pointer;font:inherit;color:inherit;box-sizing:border-box;line-height:1.25">
-            <span class="q" style="display:block;color:#F3EFE5;line-height:1.25">{item.question} <span class="ansin" id={`faq-a${i}`} role="region" aria-labelledby={`faq-q${i}`} style="color:var(--ink-2)"><span class="a" data-chars-text={item.answer} style="font:inherit;color:inherit;max-width:none">{item.answer}</span></span></span>
-            <span style="position:absolute;right:0;top:calc(26px + .625em - 10px);pointer-events:none;font-size:clamp(22px,2.1vw,30px)"><span class="ic ic-a pulse" aria-hidden="true"><i class="h"></i><i class="v"></i></span></span>
-          </button>
-        </h3>
-      </li>
-    ))}
-  </ul>
+<section data-screen-label="FAQ" data-container class="g12" aria-labelledby="faq-h" style="padding:120px 64px 200px;box-sizing:border-box;align-items:start;--fq-ink:var(--cream-bright)">
+  <h2 id="faq-h" data-reveal-soft data-split="softlines" style="grid-column:2 / span 3;position:sticky;top:140px;align-self:start;margin:0;font:300 clamp(36px,3.6vw,56px)/1.05 var(--font-display);letter-spacing:-.02em;color:var(--cream-bright);max-width:none;text-wrap:pretty">{faq.heading}</h2>
+  <div style="grid-column:5 / span 8;display:flex;flex-direction:column">
+    <FaqList items={items} idPrefix="faq" />
+    <div data-reveal-soft data-split="none" data-faq-more style="margin-top:56px"><Cta label={faq.more.label} href={faq.more.href} /></div>
+  </div>
 </section>

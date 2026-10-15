@@ -1,5 +1,5 @@
 /**
- * FAQ (home). Opening a question writes its answer in beside it, character by character,
+ * Questions (home and info, components/ui/FaqList.astro). Opening one writes its answer in beside it, character by character,
  * while the row grows with the text as it lands; closing unwinds it from the end. One open
  * at a time. The answers ship in the HTML (for no-JS); this takes them out on entry.
  */
@@ -29,6 +29,9 @@ function before(scope: HTMLElement) {
     const target = el.querySelector<HTMLElement>('[data-chars-text]')!;
     const rule = el.querySelector<HTMLElement>('.rule')!;
     const btn = el.querySelector<HTMLButtonElement>('button')!;
+    // what screen readers get: the answer region, there only while the question is open
+    const region = el.querySelector<HTMLElement>('[data-fq-answer]');
+    if (region) region.hidden = true;
     const text = target.dataset.charsText ?? '';
     target.textContent = '';
     rule.style.boxSizing = 'border-box';
@@ -38,9 +41,9 @@ function before(scope: HTMLElement) {
 
     const run = (open: boolean) => {
       btn.setAttribute('aria-expanded', String(open));
+      if (region) region.hidden = !open;
       if (open) {
         el.setAttribute('data-open', '');
-        el.classList.remove('closing');
         target.innerHTML = '';
         rule.style.height = '';
         const startH = rule.offsetHeight;
@@ -86,9 +89,6 @@ function before(scope: HTMLElement) {
         t.to(rule, { duration: chars.length * 0.005 + 1.4, ease: 'none', onUpdate: grow }, 0);
       } else {
         el.removeAttribute('data-open');
-        el.classList.remove('closing');
-        void el.offsetWidth;
-        el.classList.add('closing');
         const chars = Array.from(target.querySelectorAll('.fq-ch'));
         if (reducedMotion) { target.innerHTML = ''; return; }
         const fullH = rule.offsetHeight;

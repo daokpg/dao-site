@@ -1,0 +1,16 @@
+---
+/** The end of the info page: for anything not answered, write, or book and say it in the note. */
+import Cta from '../ui/Cta.astro';
+import { getInfo, getSite } from '../../lib/content';
+
+const [info, site] = await Promise.all([getInfo(), getSite()]);
+const { email } = site.contact;
+---
+<section data-screen-label="Anything else" data-container class="g12 info-close">
+  <h2 data-reveal-soft data-split="softlines" class="info-close__heading">{info.close.heading}</h2>
+  <p data-reveal-soft data-split="softlines" class="info-close__text">{info.close.text}</p>
+  <div data-reveal-soft data-split="none" class="info-close__links">
+    <a href={`mailto:${email}`} class="info-close__email">{email}</a>
+    <Cta label={info.close.cta.label} href={info.close.cta.href} />
+  </div>
+</section>

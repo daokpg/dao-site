@@ -1,0 +1,21 @@
+---
+/**
+ * The top of the info page, set on the same columns as the topics below so it reads as the start
+ * of the list: the title where the topic names stand (rises in on arrival, systems/entrance.ts,
+ * data-entrance="page"), the topics as a row of links over the questions, gliding to each
+ * (systems/info-index.ts; plain anchors without JS).
+ */
+import { getInfo } from '../../lib/content';
+
+const info = await getInfo();
+---
+<section data-screen-label="FAQ" data-entrance="page" data-container class="g12 info-head">
+  <h1 class="info-head__title"><span class="info-head__line"><span data-hero-line style="display:block">{info.title}</span></span></h1>
+  <nav class="info-head__index" aria-label="Topics" data-block>
+    <ol>
+      {info.topics.map((t) => (
+        <li><a href={`#${t.id}`} data-info-jump data-barba-prevent class="info-head__topic">{t.title}</a></li>
+      ))}
+    </ol>
+  </nav>
+</section>
