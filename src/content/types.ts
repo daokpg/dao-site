@@ -34,7 +34,15 @@ export interface PageLink {
   image: Image;
 }
 
-export type PageKey = 'home' | 'story' | 'evening' | 'reserve';
+export type PageKey = 'home' | 'story' | 'evening' | 'reserve' | 'info';
+
+/** A page reached only by links in the page (not listed in the menu or footer). */
+export interface UnlistedPage {
+  key: PageKey;
+  /** The name the page transition shows on the way there. */
+  label: string;
+  href: string;
+}
 
 export interface PressOutlet {
   name: string;
@@ -46,7 +54,10 @@ export interface PressOutlet {
 }
 
 export interface FaqItem {
+  /** Stable slug, so other pages can pick a question (the home page shows a few of the info page's). */
+  id: string;
   question: string;
+  /** May hold {tokens} for prices ({menu}, {pairingFour}, {pairingFive}, {noShowFee}, {cake}), filled from site.pricing. */
   answer: string;
 }
 
@@ -77,8 +88,22 @@ export interface SiteSettings {
     area: string;
   };
   copyright: string;
+  /** The evening's facts the copy repeats: read from here, written once. */
+  service: {
+    /** Everyone arrives at this time ("19:30"). */
+    arrival: string;
+    /** Seats at the one table (Saturdays have fewer; the booking backend sends each night's). */
+    seats: number;
+  };
   pricing: Pricing;
+  /** The picture shown when a page is shared (link previews). */
+  shareImage: Image;
+  /** The page for an address that does not exist. */
+  notFound: { seo: Seo; heading: string; text: string };
+  /** The menu and footer list these, in this order. */
   pages: PageLink[];
+  /** Pages outside the menu and footer, reached from a link in the page (the info page). */
+  unlisted: UnlistedPage[];
   press: PressOutlet[];
   labels: {
     menu: string;

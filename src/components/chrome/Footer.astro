@@ -3,8 +3,9 @@
  * The same close on every page: the four pages as frames, then reserve, contact and place.
  */
 import Cta from '../ui/Cta.astro';
-import { getSite } from '../../lib/content';
+import { getSite, pageHref } from '../../lib/content';
 import type { PageKey } from '../../content/types';
+import { cropStyle } from '../../lib/format';
 
 interface Props {
   current: PageKey;
@@ -20,13 +21,13 @@ const { email, phone, area } = site.contact;
   <div data-footer-strip class="footer__strip">
     {site.pages.map((p) => (
       <a href={p.href} data-footer-page class="footer__page" aria-current={p.key === current ? 'page' : undefined}>
-        <span data-mask data-parallax class="footer__mask"><span data-zoom class="footer__zoom"><img src={p.image.src} alt="" style={p.image.position ? `object-position:${p.image.position}` : undefined} loading="lazy" decoding="async" /></span></span>
+        <span data-mask data-parallax class="footer__mask"><span data-zoom class="footer__zoom"><img src={p.image.src} alt="" style={cropStyle(p.image.position)} loading="lazy" decoding="async" /></span></span>
         <span class="footer__meta"><span class="footer__name">{p.label}</span><span class="footer__num dao-num">{p.num}</span></span>
       </a>
     ))}
   </div>
   <div data-reveal-soft data-split="none" class="footer__bar">
-    <div class="footer__cta"><Cta label={site.labels.reserve} href="/reserve" /></div>
+    <div class="footer__cta"><Cta label={site.labels.reserve} href={pageHref('reserve')} /></div>
     <div class="footer__contact">
       <a href={`mailto:${email}`}>{email}</a>
       <a href={`tel:${phone.replace(/\s/g, '')}`} class="dao-num">{phone}</a>

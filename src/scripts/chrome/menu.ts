@@ -53,7 +53,12 @@ function setOpenState(next: boolean) {
   button.setAttribute('aria-expanded', String(next));
   button.setAttribute('aria-label', next ? 'Close menu' : 'Open menu');
   panel.toggleAttribute('inert', !next);
+  // while the menu is open the page behind it is out of reach (keyboard, screen readers)
+  document.querySelector('[data-barba="container"]')?.toggleAttribute('inert', next);
   setTone('menu', next);
+  // focus goes into the menu, and back to its button when it closes from inside
+  if (next) panel.querySelector<HTMLElement>('a')?.focus({ preventScroll: true });
+  else if (panel.contains(document.activeElement)) button.focus({ preventScroll: true });
 }
 
 function killMenuTweens() {
@@ -142,5 +147,7 @@ export function initMenu() {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && open) closeMenu();
   });
+  // a click on the page around the menu closes it
+  parts().scrim.addEventListener('click', () => { if (open && !swapping) closeMenu(); });
   setMenuCurrent(document.querySelector<HTMLElement>('[data-barba="container"]')?.dataset.page);
 }

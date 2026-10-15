@@ -7,13 +7,20 @@
  * so that swap is a body change, not a signature change.
  */
 import { site } from '../content/site';
+import type { PageKey } from '../content/types';
 import { home } from '../content/home';
 import { story } from '../content/story';
 import { evening } from '../content/evening';
 import { reserve } from '../content/reserve';
+import { info } from '../content/info';
 
 export const getSite = async () => site;
 export const getHome = async () => home;
 export const getStory = async () => story;
 export const getEvening = async () => evening;
 export const getReserve = async () => reserve;
+export const getInfo = async () => info;
+
+/** A page's address from the one list of pages (site.pages, then site.unlisted), so a link never hard-codes it. */
+export const pageHref = (key: PageKey) =>
+  [...site.pages, ...site.unlisted].find((p) => p.key === key)?.href ?? '/';

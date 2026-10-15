@@ -5,8 +5,8 @@
 /* ---------- nav ----------
    Tone is one attribute on <html>: cream over photography and dark ground, ink over paper.
    core/tone.ts owns it. */
-.nav{position:fixed;top:0;left:0;right:0;z-index:80;display:grid;grid-template-columns:1fr auto 1fr;align-items:start;padding:22px 40px;color:#1A1815;transition:color 1s cubic-bezier(.16,1,.3,1)}
-html[data-nav-tone="cream"] .nav{color:#F7F4EC}
+.nav{position:fixed;top:0;left:0;right:0;z-index:80;display:grid;grid-template-columns:1fr auto 1fr;align-items:start;padding:22px 40px;color:var(--ink-warm);transition:color 1s cubic-bezier(.16,1,.3,1)}
+html[data-nav-tone="cream"] .nav{color:var(--paper)}
 .nav__left{font:500 10px/1 var(--font-body);letter-spacing:.22em;text-transform:uppercase;opacity:.7;justify-self:start;margin-top:12px}
 .nav__mark{display:block;width:60px;height:29px;background:currentColor;-webkit-mask:url(/assets/dao-mark.svg) center/contain no-repeat;mask:url(/assets/dao-mark.svg) center/contain no-repeat}
 .nav__menu{justify-self:end;margin-top:12px;background:none;border:0;padding:0;cursor:pointer;font:500 10px/1 var(--font-body);letter-spacing:.22em;text-transform:uppercase;color:inherit;position:relative;display:grid}
@@ -15,7 +15,7 @@ html[data-nav-tone="cream"] .nav{color:#F7F4EC}
 
 /* ---------- menu ---------- */
 .menu-scrim{position:fixed;inset:0;z-index:69;background:#000;opacity:0;pointer-events:none}
-.menu{position:fixed;left:40px;right:40px;top:80px;bottom:0;z-index:70;background:#15130F;color:#EDE8DC;visibility:hidden;display:flex;flex-direction:column;justify-content:space-between;padding:0 40px;box-sizing:border-box;overflow:hidden}
+.menu{position:fixed;left:40px;right:40px;top:80px;bottom:0;z-index:70;background:var(--night);color:var(--cream);visibility:hidden;display:flex;flex-direction:column;justify-content:space-between;padding:0 40px;box-sizing:border-box;overflow:hidden}
 .menu__list{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px;flex:1;min-height:0;align-items:end;padding:48px 0 40px}
 .menu__item{display:flex;flex-direction:column;gap:16px;text-decoration:none;color:inherit;border:0}
 .menu__mask{display:block;position:relative;aspect-ratio:2 / 3;overflow:hidden;width:min(100%, calc((100vh - 336px) * 2 / 3))}
@@ -25,20 +25,21 @@ html[data-nav-tone="cream"] .nav{color:#F7F4EC}
 .menu__name{font:300 24px/1.1 var(--font-display);letter-spacing:-.01em}
 .menu__contact{flex:none;display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;padding:20px 0 28px;border-top:1px solid rgba(237,232,220,.18);font:400 12px/1.5 var(--font-body);color:rgba(237,232,220,.7)}
 .menu__contact a{color:inherit}
-[data-menu-item] img{transition:transform 1.25s cubic-bezier(.16,1,.3,1)}
-[data-menu-item]:hover img{transform:scale(1.08) !important}
+/* hover zoom on the `scale` property, which multiplies with the transform GSAP animates on open/close instead of fighting it */
+[data-menu-item] img{transition:scale 1.25s cubic-bezier(.16,1,.3,1)}
+[data-menu-item]:hover img{scale:1.08}
 
 /* ---------- intro loader (home, first load only) ---------- */
-.loader{position:fixed;inset:0;z-index:100;background:#1C1A17;display:flex;align-items:center;justify-content:center;transform-origin:50% 50%}
+.loader{position:fixed;inset:0;z-index:100;background:var(--charcoal);display:flex;align-items:center;justify-content:center;transform-origin:50% 50%}
 .loader__tag{display:block;position:absolute;left:50%;top:50%;transform:translateX(-50%);margin-top:52px;overflow:hidden;font:500 10px/1.4 var(--font-body);letter-spacing:.22em;text-transform:uppercase;color:rgba(237,232,220,.6);white-space:nowrap}
-.loader__logo{position:fixed;left:50%;top:50%;margin:-30px 0 0 -63px;z-index:101;display:block;width:126px;height:60px;background:#EDE8DC;-webkit-mask:url(/assets/dao-mark.svg) center/contain no-repeat;mask:url(/assets/dao-mark.svg) center/contain no-repeat;pointer-events:none}
+.loader__logo{position:fixed;left:50%;top:50%;margin:-30px 0 0 -63px;z-index:101;display:block;width:126px;height:60px;background:var(--cream);-webkit-mask:url(/assets/dao-mark.svg) center/contain no-repeat;mask:url(/assets/dao-mark.svg) center/contain no-repeat;pointer-events:none}
 
 /* ---------- page transition sheet ----------
    A charcoal sheet rises over the page you leave, the next page's name resolves on it,
    everything swaps behind it, the name unwinds and the sheet drops. */
-.pt{position:fixed;inset:0;z-index:200;background:#15130F;color:#EDE8DC;display:flex;align-items:center;justify-content:center;overflow:hidden;pointer-events:none;visibility:hidden}
+.pt{position:fixed;inset:0;z-index:200;background:var(--night);color:var(--cream);display:flex;align-items:center;justify-content:center;overflow:hidden;pointer-events:none;visibility:hidden}
 .pt__wrap{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:20px;text-align:center}
-.pt__name{margin:0;font:300 clamp(48px,7vw,112px)/1 var(--font-display);letter-spacing:-.03em;color:#EDE8DC;white-space:nowrap;display:flex;max-width:none}
+.pt__name{margin:0;font:300 clamp(48px,7vw,112px)/1 var(--font-display);letter-spacing:-.03em;color:var(--cream);white-space:nowrap;display:flex;max-width:none}
 .pt__name span{display:inline-block;white-space:pre;opacity:0;transform:translateY(14px);filter:blur(8px)}
 .pt__num{margin:0;font:400 12px/1 var(--font-body);color:rgba(237,232,220,.55);font-variant-numeric:tabular-nums;opacity:0;transform:translateY(10px);filter:blur(6px)}
 

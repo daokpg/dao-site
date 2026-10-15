@@ -7,33 +7,23 @@
  *   data-block                                 a block, staggered in small waves
  *   data-mask                                  a frame opens from its bottom centre, the picture settles from a zoom
  *   data-parallax                              the picture drifts inside its frame with the scroll
- *   data-fit                                   a display line sized to fill its cell
  *
  * Every trigger fires once. Pre-hidden states live in global.css under html.js, so without
  * JS the finished text simply stands. With reduced motion everything is set to its finished state.
  */
 import { gsap, ScrollTrigger } from '../core/gsap';
 import { CLOSED, E, OPEN, reducedMotion } from '../core/env';
-import { fitLines, splitLines, splitSoftLines } from '../core/split';
+import { splitLines, splitSoftLines } from '../core/split';
 import type { System } from '../core/registry';
 
-type State = { ac: AbortController; timers: number[]; scope: HTMLElement };
+type State = { ac: AbortController; timers: number[] };
 let state: State | null = null;
 
-/** Other systems (the trail) re-measure when text is re-split. */
-const resplitListeners = new Set<() => void>();
-export const onResplit = (fn: () => void) => {
-  resplitListeners.add(fn);
-  return () => resplitListeners.delete(fn);
-};
-
 function resplit(scope: HTMLElement) {
-  fitLines(scope);
   scope.querySelectorAll<HTMLElement>('[data-split="softlines"]').forEach(splitSoftLines);
-  resplitListeners.forEach((fn) => fn());
 }
 
-export function openImage(el: Element, delay = 0) {
+function openImage(el: Element, delay = 0) {
   gsap.to(el, { clipPath: OPEN, duration: 2, ease: E, delay });
   gsap.to(el.querySelector('img'), { scale: 1, duration: 3, ease: E, delay });
 }
@@ -48,13 +38,12 @@ function destroy() {
 function before(scope: HTMLElement) {
   destroy();
   const ac = new AbortController();
-  state = { ac, timers: [], scope };
+  state = { ac, timers: [] };
   const qa = <T extends Element = HTMLElement>(s: string) => Array.from(scope.querySelectorAll<T>(s));
   const still = reducedMotion;
 
   if (still) qa('[data-reveal-soft]').forEach((el) => (el.dataset.revealed = '1'));
   qa('[data-split="lines"]').forEach(splitLines);
-  fitLines(scope);
   qa('[data-split="softlines"]').forEach(splitSoftLines);
 
   const [group, step] = (scope.dataset.blockRhythm ?? '4 0.08').split(' ').map(Number);
@@ -130,7 +119,7 @@ function before(scope: HTMLElement) {
 }
 
 export const system: System = {
-  selector: '[data-split], [data-block], [data-mask], [data-fit]',
+  selector: '[data-split], [data-block], [data-mask]',
   before,
   destroy,
 };

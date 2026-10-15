@@ -1,16 +1,20 @@
 ---
-/** The evening in four facts. Each row opens from its centre line on hover to show the moment. */
+/**
+ * The evening in four facts. Each row opens from its centre line on hover to show the moment.
+ * data-trail-handoff marks the photograph the day section above carries its last one into (systems/journey/handoff.ts).
+ */
 import MaskImage from '../ui/MaskImage.astro';
 import { getHome } from '../../lib/content';
+import { cropStyle } from '../../lib/format';
 
 const { evening } = await getHome();
 ---
 <section data-screen-label="The evening" data-container class="g12" style="padding:200px 64px 180px;box-sizing:border-box;align-items:start">
-  <div style="grid-column:1 / span 12;margin-bottom:96px"><MaskImage image={evening.image} aspect="21 / 9" /></div>
+  <div data-trail-handoff style="grid-column:1 / span 12;margin-bottom:96px"><MaskImage image={evening.image} aspect="21 / 9" /></div>
   <div style="grid-column:1 / span 12;display:flex;flex-direction:column">
     {evening.rows.map((row) => (
       <div data-block class="hr" style="border-top:1px solid var(--rule);display:grid;grid-template-columns:160px minmax(0,1fr) auto;gap:0 24px;align-items:baseline;padding:28px 0">
-        <span class="hv"><img src={row.image.src} alt="" style={row.image.position ? `object-position:${row.image.position}` : undefined} loading="lazy" decoding="async" /><span class="sc"></span></span>
+        <span class="hv"><img src={row.image.src} alt="" style={cropStyle(row.image.position)} loading="lazy" decoding="async" /><span class="sc"></span></span>
         <span class="meta">{row.label}</span>
         <span class="word" data-measure="l">{row.text}</span>
         <span class="fig2" style="font-size:clamp(48px,5vw,80px);line-height:1.1">{row.figure}</span>

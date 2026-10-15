@@ -14,7 +14,7 @@
 
   @media (max-width: 820px){
     /* the rail becomes a top panel: the clock, the light and the moment on one line over a soft fade */
-    [data-rail]{position:sticky !important;top:0 !important;z-index:5;display:flex !important;flex-direction:row !important;align-items:baseline !important;gap:14px !important;margin:0 -24px !important;padding:76px 24px 22px !important;background:linear-gradient(180deg,var(--sheet,#F7F4EC) 0%,var(--sheet,#F7F4EC) 72%,transparent 100%)}
+    [data-rail]{position:sticky !important;top:0 !important;z-index:5;display:flex !important;flex-direction:row !important;align-items:baseline !important;gap:14px !important;margin:0 -24px !important;padding:76px 24px 22px !important;background:linear-gradient(180deg,var(--sheet,var(--paper)) 0%,var(--sheet,var(--paper)) 72%,transparent 100%)}
     [data-clock-target]{font-size:40px !important;margin-bottom:0 !important;margin-right:6px !important}
     [data-rail-word],[data-rail-name]{font-size:12px !important}
     [data-moment]{min-height:0 !important;padding:72px 0 !important;gap:32px !important}

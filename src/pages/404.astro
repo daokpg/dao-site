@@ -1,0 +1,22 @@
+---
+/** An address that does not exist (Cloudflare serves dist/404.html, wrangler.jsonc). Set like the info page's top. */
+import Base from '../layouts/Base.astro';
+import Cta from '../components/ui/Cta.astro';
+import Footer from '../components/chrome/Footer.astro';
+import { getSite, pageHref } from '../lib/content';
+
+const site = await getSite();
+const { notFound } = site;
+---
+<Base page="info" seo={notFound.seo} tone="ink">
+  <div data-sheet class="dao-paper" data-theme="light" style="position:relative;min-height:100vh;color:var(--ink)">
+    <section data-screen-label="Not found" data-entrance="page" data-container class="g12 info-head" style="padding-bottom:200px">
+      <h1 class="info-head__title" style="grid-column:1 / span 8"><span class="info-head__line"><span data-hero-line style="display:block">{notFound.heading}</span></span></h1>
+      <div style="grid-column:1 / span 6;display:flex;flex-direction:column;gap:32px;margin-top:40px">
+        <p style="margin:0;font:300 clamp(20px,1.7vw,24px)/1.35 var(--font-display);color:var(--ink-2)">{notFound.text}</p>
+        <Cta label={site.labels.reserve} href={pageHref('reserve')} />
+      </div>
+    </section>
+    <Footer current="info" />
+  </div>
+</Base>

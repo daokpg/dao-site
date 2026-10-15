@@ -1,0 +1,21 @@
+---
+/** Dev server only: switch the home page's day section between Rows (in use) and the spine. Reloads with ?trail=… */
+const options = [
+  ['rows', 'Rows'],
+  ['spine', 'Spine'],
+];
+---
+<div class="trail-switch" aria-label="Home photographs">
+  {options.map(([key, label]) => <button type="button" data-trail-pick={key}>{label}</button>)}
+</div>
+<script is:inline>
+  document.querySelectorAll('button[data-trail-pick]').forEach(function (b) {
+    if (b.dataset.trailPick === document.documentElement.dataset.trail) b.setAttribute('aria-pressed', 'true');
+    b.addEventListener('click', function () { location.href = '/?trail=' + b.dataset.trailPick; });
+  });
+</script>
+<style is:global>
+  .trail-switch{position:fixed;left:16px;bottom:16px;z-index:300;display:flex;gap:2px;padding:4px;background:rgba(21,19,15,.88);border-radius:999px;font:500 10px/1 var(--font-body);letter-spacing:.14em;text-transform:uppercase}
+  .trail-switch button{background:none;border:0;color:rgba(237,232,220,.6);padding:8px 12px;border-radius:999px;cursor:pointer}
+  .trail-switch button[aria-pressed="true"]{background:var(--cream);color:var(--night)}
+</style>

@@ -105,7 +105,9 @@ function before(scope: HTMLElement) {
     el.seatsLeft.textContent = v.seatsLeftLine;
     if (v.limit !== shownLeft) { el.seatOptions.innerHTML = seatOptionsHtml(v.limit, s.seats); shownLeft = v.limit; }
     qa('[data-seat]').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.seat) === s.seats)));
-    el.gates.forEach((g, i) => g.setAttribute('data-live', String(v.gates[i])));
+    // a step that is not open yet is out of reach (keyboard and screen readers too), and so is the button until the request is complete
+    el.gates.forEach((g, i) => { g.setAttribute('data-live', String(v.gates[i])); g.inert = !v.gates[i]; });
+    qa<HTMLButtonElement>('[data-confirm]').forEach((b) => { b.disabled = !v.canHold; });
     el.ticketDate.textContent = v.ticketDate;
     el.ticketLine.textContent = v.ticketLine;
     el.holdWrap.setAttribute('data-can', String(v.canHold));
@@ -130,6 +132,7 @@ function before(scope: HTMLElement) {
     render();
     if (key === 'date') {
       el.after.setAttribute('data-live', 'true');
+      el.after.inert = false;
       resolve(el.ticketDate);
       if (firstTime) scrollToEl(el.after, 120, 300);
     }
@@ -192,7 +195,7 @@ function before(scope: HTMLElement) {
 
   // ---- sending the request
   async function confirm() {
-    if (s.done || sending) return;
+    if (s.done || sending || !view(s, cfg).canHold) return;
     if (!cfg.api) return showDone();
     const v = view(s, cfg);
     sending = true;
@@ -209,7 +212,9 @@ function before(scope: HTMLElement) {
         }),
       });
       const out: { ok: boolean; reason?: string; left?: number; cardUrl?: string | null } = await res.json();
-      if (out.ok && out.cardUrl) {
+      // only ever send the guest on to Stripe's own card page (or the local test backend's stand-in)
+      const toCard = !!out.cardUrl && (out.cardUrl.startsWith('https://checkout.stripe.com/') || (cfg.api.startsWith('http://localhost') && out.cardUrl.startsWith('http://localhost')));
+      if (out.ok && toCard && out.cardUrl) {
         try { sessionStorage.setItem(PENDING_KEY, JSON.stringify({ date: s.date, seats: s.seats })); } catch {}
         window.location.href = out.cardUrl;
         return;
@@ -290,6 +295,7 @@ function before(scope: HTMLElement) {
     cfg.months = [{ name: cfg.months[0]?.name ?? '', nights: [] }];
     fillMonth();
     el.after.setAttribute('data-live', 'true');
+    el.after.inert = false;
     showDone(back.get('card') === '0' ? cfg.copy.cardSkipped : '');
   } else if (cfg.api) {
     loadNights();

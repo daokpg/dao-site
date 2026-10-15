@@ -1,5 +1,6 @@
 ---
 import { getSite } from '../../lib/content';
+import { cropStyle } from '../../lib/format';
 
 const site = await getSite();
 const { email, phone, address } = site.contact;
@@ -9,8 +10,8 @@ const { email, phone, address } = site.contact;
   <div class="menu__list">
     {site.pages.map((p) => (
       <a href={p.href} data-menu-item data-page-key={p.key} class="menu__item">
-        <span data-menu-mask class="menu__mask"><img src={p.image.src} alt="" style={p.image.position ? `object-position:${p.image.position}` : undefined} decoding="async" /></span>
-        <span data-menu-label class="menu__label"><span class="menu__num dao-num">{p.num}</span><span class="menu__name">{p.label}</span></span>
+        <span data-menu-mask class="menu__mask"><img src={p.image.src} alt="" style={cropStyle(p.image.position)} decoding="async" /></span>
+        <span data-menu-label class="menu__label"><span class="menu__num dao-num" data-menu-num>{p.num}</span><span class="menu__name" data-menu-name>{p.label}</span></span>
       </a>
     ))}
   </div>

@@ -23,6 +23,7 @@ import { resetTone } from './tone';
 import { runAfter, runBefore, teardown } from './registry';
 import { killEntrance, playEntrance } from '../systems/entrance';
 import { resetMenu, setMenuCurrent } from '../chrome/menu';
+import { cleanPath } from './links';
 
 /** The pieces of Barba's transition data used here (its bundled typings do not resolve). */
 interface Page { container: HTMLElement; namespace: string; url: { href: string; path?: string } }
@@ -45,15 +46,22 @@ const panel = () => document.querySelector<HTMLElement>('[data-pt-panel]')!;
 const nameEl = () => document.querySelector<HTMLElement>('[data-pt-name]')!;
 const numEl = () => document.querySelector<HTMLElement>('[data-pt-num]')!;
 
-/** Name and number for a destination, taken from the menu so there is one list of pages. */
+/**
+ * Name and number for a destination, taken from the menu so there is one list of pages; a page
+ * outside the menu (site.unlisted, listed in TransitionSheet.astro) has a name and no number.
+ */
 function pageMeta(path: string) {
-  const clean = path.replace(/(\/index)?\.html$/, '').replace(/\/$/, '') || '/';
-  const item = Array.from(document.querySelectorAll<HTMLAnchorElement>('[data-menu-item]'))
-    .find((a) => (new URL(a.href).pathname.replace(/\/$/, '') || '/') === clean);
-  return {
-    name: item?.querySelector('.menu__name')?.textContent ?? '',
-    num: item?.querySelector('.menu__num')?.textContent ?? '',
-  };
+  const clean = cleanPath(path);
+  const same = (href: string) => cleanPath(new URL(href, location.href).pathname) === clean;
+  const item = Array.from(document.querySelectorAll<HTMLAnchorElement>('[data-menu-item]')).find((a) => same(a.href));
+  if (item) {
+    return {
+      name: item.querySelector('[data-menu-name]')?.textContent ?? '',
+      num: item.querySelector('[data-menu-num]')?.textContent ?? '',
+    };
+  }
+  const other = Array.from(document.querySelectorAll<HTMLElement>('[data-pt-page]')).find((p) => same(p.dataset.href ?? ''));
+  return { name: other?.dataset.name ?? '', num: '' };
 }
 
 /** Scale around the middle of the screen, wherever the page is scrolled to. */
@@ -137,11 +145,17 @@ async function enter(data: Data): Promise<void> {
   await new Promise<void>((resolve) => void tl.call(() => { gsap.set(p, { visibility: 'hidden' }); resolve(); }, undefined, drop + T.drop + 0.05));
 }
 
-function finish(container: HTMLElement) {
+function finish(container: HTMLElement, navigated = false) {
   runAfter(container);
   startScroll();
   const announcer = document.querySelector('[data-route-announcer]');
   if (announcer) announcer.textContent = document.title;
+  // after a page change, keyboard focus starts at the new page's title (the link that had it is gone)
+  if (navigated) {
+    const title = container.querySelector<HTMLElement>('h1') ?? container;
+    title.tabIndex = -1;
+    title.focus({ preventScroll: true });
+  }
 }
 
 /** Fonts decide where lines break; wait for them (briefly) before the first split. */
@@ -178,7 +192,7 @@ export function initTransitions() {
       afterLeave,
       beforeEnter: (data: Data) => prepare(data.next.container),
       enter,
-      afterEnter: (data: Data) => finish(data.next.container),
+      afterEnter: (data: Data) => finish(data.next.container, true),
     }],
   });
 }

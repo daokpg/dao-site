@@ -5,7 +5,8 @@
 import { scrollToTop } from './lenis';
 import { closeMenu, isMenuOpen } from '../chrome/menu';
 
-const clean = (path: string) => path.replace(/(\/index)?\.html$/, '').replace(/\/$/, '') || '/';
+/** A path as the site names it: no .html, no trailing slash ('/story.html' and '/story/' are '/story'). */
+export const cleanPath = (path: string) => path.replace(/(\/index)?\.html$/, '').replace(/\/$/, '') || '/';
 
 export function initSamePageLinks() {
   window.addEventListener('click', (e) => {
@@ -13,7 +14,7 @@ export function initSamePageLinks() {
     const a = (e.target as Element).closest?.('a[href]') as HTMLAnchorElement | null;
     if (!a || a.target === '_blank') return;
     const url = new URL(a.href, location.href);
-    if (url.origin !== location.origin || url.hash || clean(url.pathname) !== clean(location.pathname)) return;
+    if (url.origin !== location.origin || url.hash || cleanPath(url.pathname) !== cleanPath(location.pathname)) return;
     e.preventDefault();
     e.stopImmediatePropagation();
     if (isMenuOpen()) closeMenu();

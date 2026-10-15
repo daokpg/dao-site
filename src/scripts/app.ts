@@ -18,7 +18,7 @@ initPressPulse();
 initSamePageLinks();
 initTransitions();
 
-// Desktop and phone are two different layouts (the trail, smooth scroll); crossing the
+// Desktop and phone are two different layouts (the home photographs, smooth scroll); crossing the
 // breakpoint rebuilds the page rather than trying to morph one into the other.
 const wasMobile = isMobile();
 let resizeT = 0;

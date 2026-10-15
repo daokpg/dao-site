@@ -5,17 +5,17 @@
  * layout, the image and its crop are content.
  */
 import type { Image } from '../../content/types';
+import { cropStyle } from '../../lib/format';
 
 interface Props {
   image: Image;
   aspect: string;
   /** Extra inline style for the frame (grid placement and the like). */
   style?: string;
-  eager?: boolean;
 }
 
-const { image, aspect, style = '', eager = false } = Astro.props;
+const { image, aspect, style = '' } = Astro.props;
 ---
 <div data-mask data-parallax style={`position:relative;aspect-ratio:${aspect};overflow:hidden;${style}`}>
-  <img class="img" src={image.src} alt={image.alt} style={image.position ? `object-position:${image.position}` : undefined} loading={eager ? 'eager' : 'lazy'} decoding="async" />
+  <img class="img" src={image.src} alt={image.alt} style={cropStyle(image.position)} loading="lazy" decoding="async" />
 </div>

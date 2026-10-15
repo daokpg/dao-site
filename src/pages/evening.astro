@@ -11,7 +11,7 @@ const { hero } = evening;
   <!-- The flying clock. It sits outside the sheet so its ink is the page default, and the dusk system recolours it. -->
   <p data-clock aria-hidden="true">{hero.time}</p>
 
-  <div data-sheet class="dao-paper" data-theme="light" style="position:relative;min-height:100vh;background:#F7F4EC;color:var(--ink);--ink:#1A1815;--ink-2:rgba(26,24,21,.7);--ink-3:rgba(26,24,21,.45);--rule:rgba(26,24,21,.16)">
+  <div data-sheet class="dao-paper" data-theme="light" style="position:relative;min-height:100vh;background:var(--paper);color:var(--ink);--ink:var(--ink-warm);--ink-2:rgba(26,24,21,.7);--ink-3:rgba(26,24,21,.45);--rule:rgba(26,24,21,.16)">
     <section data-screen-label="Hero" data-hero data-container class="g12" style="position:relative;height:100vh;min-height:640px;padding:0 64px;box-sizing:border-box;align-content:center">
       <div style="grid-column:1 / span 12;display:flex;flex-direction:column;align-items:center;gap:40px;text-align:center">
         <p data-clock-hero>{hero.time}</p>

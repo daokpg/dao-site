@@ -68,19 +68,3 @@ export function splitLines(el: HTMLElement) {
   el.setAttribute('data-split-ready', '');
   return el.querySelectorAll<HTMLElement>('[data-line-inner]');
 }
-
-/**
- * Display lines marked data-fit take the width of their cell:
- * font-size = cell width / text width at 100px.
- */
-export function fitLines(scope: ParentNode) {
-  scope.querySelectorAll<HTMLElement>('[data-fit]').forEach((el) => {
-    const probe = document.createElement('span');
-    probe.textContent = el.dataset.text || el.textContent;
-    probe.style.cssText = 'position:absolute;visibility:hidden;white-space:nowrap;font:300 100px/1 var(--font-display);letter-spacing:-.04em';
-    document.body.appendChild(probe);
-    const w = probe.getBoundingClientRect().width;
-    probe.remove();
-    if (w > 0) el.style.fontSize = `${Math.floor((el.clientWidth / w) * 100 * 0.995)}px`;
-  });
-}

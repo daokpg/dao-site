@@ -1,7 +1,7 @@
 import type { Seo } from './types';
 
-/** [label, seats still open]. 0 = full. */
-export type Night = [string, number];
+/** [label, seats still open, seats that night]. 0 open = full. Seats default to 16 (Saturdays have 14). */
+export type Night = [string, number, number?];
 
 export type Occasion = 'birthday' | 'anniversary' | 'engagement';
 
@@ -9,10 +9,12 @@ export interface ReserveContent {
   seo: Seo;
   intro: string;
   /**
-   * Placeholder availability from the design phase. The booking system will feed this;
-   * until then it is edited here.
+   * Placeholder nights, shown only while no booking backend is set (PUBLIC_BOOKING_API); the real
+   * ones come from the reservations sheet. Monday to Thursday and Saturday, as the restaurant opens.
    */
   months: { name: string; nights: Night[] }[];
+  /** The most seats one online request can take; more take the whole table, by writing to us (steps.seats.note). */
+  onlineMax: number;
   /** Seat counts are written as words in sentences. Index 0 = one seat. */
   seatWords: string[];
   steps: {
@@ -69,10 +71,11 @@ export const reserve: ReserveContent = {
   },
   intro: 'Every night is a column. Each mark is a seat still open. Pick a night, then take as many as you are.',
   months: [
-    { name: 'October', nights: [['Tuesday 14 October', 6], ['Wednesday 15 October', 2], ['Thursday 16 October', 16], ['Friday 17 October', 9], ['Saturday 18 October', 0], ['Sunday 19 October', 12], ['Tuesday 21 October', 16], ['Wednesday 22 October', 4], ['Thursday 23 October', 16], ['Friday 24 October', 0], ['Saturday 25 October', 7], ['Sunday 26 October', 16], ['Tuesday 28 October', 16], ['Wednesday 29 October', 11], ['Thursday 30 October', 16], ['Friday 31 October', 3]] },
-    { name: 'November', nights: [['Saturday 1 November', 16], ['Sunday 2 November', 14], ['Tuesday 4 November', 16], ['Wednesday 5 November', 16], ['Thursday 6 November', 8], ['Friday 7 November', 16], ['Saturday 8 November', 5], ['Sunday 9 November', 16], ['Tuesday 11 November', 16], ['Wednesday 12 November', 16], ['Thursday 13 November', 12], ['Friday 14 November', 0], ['Saturday 15 November', 16], ['Sunday 16 November', 16], ['Tuesday 18 November', 16], ['Wednesday 19 November', 16]] },
-    { name: 'December', nights: [['Tuesday 2 December', 16], ['Wednesday 3 December', 16], ['Thursday 4 December', 16], ['Friday 5 December', 10], ['Saturday 6 December', 16], ['Sunday 7 December', 16], ['Tuesday 9 December', 16], ['Wednesday 10 December', 16], ['Thursday 11 December', 16], ['Friday 12 December', 16], ['Saturday 13 December', 16], ['Sunday 14 December', 16], ['Tuesday 16 December', 16], ['Wednesday 17 December', 16], ['Thursday 18 December', 16], ['Friday 19 December', 2]] },
+    { name: 'October', nights: [['Monday 19 October', 6], ['Tuesday 20 October', 2], ['Wednesday 21 October', 16], ['Thursday 22 October', 9], ['Saturday 24 October', 0, 14], ['Monday 26 October', 12], ['Tuesday 27 October', 16], ['Wednesday 28 October', 4], ['Thursday 29 October', 16], ['Saturday 31 October', 11, 14]] },
+    { name: 'November', nights: [['Monday 2 November', 7], ['Tuesday 3 November', 16], ['Wednesday 4 November', 3], ['Thursday 5 November', 16], ['Saturday 7 November', 8, 14], ['Monday 9 November', 5], ['Tuesday 10 November', 16], ['Wednesday 11 November', 14], ['Thursday 12 November', 0], ['Saturday 14 November', 10, 14], ['Monday 16 November', 16], ['Tuesday 17 November', 16], ['Wednesday 18 November', 2], ['Thursday 19 November', 12], ['Saturday 21 November', 14, 14], ['Monday 23 November', 16], ['Tuesday 24 November', 9], ['Wednesday 25 November', 4], ['Thursday 26 November', 16], ['Saturday 28 November', 14, 14], ['Monday 30 November', 6]] },
+    { name: 'December', nights: [['Tuesday 1 December', 16], ['Wednesday 2 December', 16], ['Thursday 3 December', 1], ['Saturday 5 December', 14, 14], ['Monday 7 December', 11], ['Tuesday 8 December', 16], ['Wednesday 9 December', 16], ['Thursday 10 December', 7], ['Saturday 12 December', 14, 14], ['Monday 14 December', 16], ['Tuesday 15 December', 3], ['Wednesday 16 December', 16], ['Thursday 17 December', 16], ['Saturday 19 December', 6, 14]] },
   ],
+  onlineMax: 11,
   seatWords: ['One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen'],
   steps: {
     seats: { label: 'Seats', note: 'Singles, pairs and groups sit together at the one table. Twelve or more take the whole table, write to us and we will hold the night for you.' },
@@ -94,9 +97,9 @@ export const reserve: ReserveContent = {
   copy: {
     pickFirst: 'Pick a night first.',
     wholeTableOpen: 'The whole table is open on {date}.',
-    someSeatsOpen: '{left} of sixteen seats are still open on {date}.',
+    someSeatsOpen: '{left} of {capacity} seats are still open on {date}.',
     nightLineWhole: '{date}, the whole table is open.',
-    nightLineSome: '{date}, {left} of sixteen seats open.',
+    nightLineSome: '{date}, {left} of {capacity} seats open.',
     ticketEmpty: 'Take your seats below.',
     datePlaceholder: 'Pick a night above',
     seatOne: '{Seats} seat',

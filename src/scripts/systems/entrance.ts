@@ -5,6 +5,7 @@
  *
  *   [data-entrance="film"]   home hero: mask opens, headline lines rise, the reserve link draws in
  *   [data-entrance="photo"]  story hero: same gesture, lines a beat later
+ *   [data-entrance="page"]   info: no photograph, the title lines rise
  *   [data-clock]             evening: the clock resolves out of blur
  *   [data-month]             reserve: the month name, then the nights, then their seats tick in
  *
@@ -15,11 +16,12 @@ import { E, OPEN, SHEET, reducedMotion } from '../core/env';
 import { drawMarks } from './booking';
 
 /** When the home intro plays on a real page load. Never after a transition. */
-export const INTRO: 'every load' | 'once per session' | 'off' = 'every load';
+const INTRO: 'every load' | 'once per session' | 'off' = 'every load';
 
 const HERO = {
   film: { lines: [0, 0.2], nav: 0.3, corner: 1.1 },
   photo: { lines: [0.6, 0.8], nav: 0.5, corner: 1.5 },
+  page: { lines: [0.2, 0.36], nav: 0.3, corner: 1.1 },
 } as const;
 
 let tl: gsap.core.Timeline | null = null;
@@ -62,7 +64,8 @@ function heroIn(t: gsap.core.Timeline, scope: HTMLElement, at: number, withMask 
   if (label) t.to(label, { opacity: 1, y: 0, duration: 1.1, ease: E }, at + 0.6);
   if (rule) t.to(rule, { scaleX: 1, duration: 1.25, ease: E }, at + 0.75);
   t.to('[data-nav]', { opacity: 1, duration: 1, ease: E }, at + timing.nav);
-  t.to($('[data-hero-corner]', scope), { opacity: 1, duration: 1, ease: E }, at + timing.corner);
+  const corner = $('[data-hero-corner]', scope);
+  if (corner) t.to(corner, { opacity: 1, duration: 1, ease: E }, at + timing.corner);
 }
 
 /**
@@ -110,7 +113,7 @@ export function playEntrance(scope: HTMLElement, { delay = 0, firstLoad = false 
   if (hasLoader) hideLoader();
 
   if ($('[data-entrance]', scope)) {
-    heroIn(t, scope, 0.1);
+    heroIn(t, scope, 0.1, !!$('[data-hero-mask]', scope));
   } else if ($('[data-clock]', scope)) {
     t.to($('[data-clock]', scope), { opacity: 1, filter: 'blur(0px)', duration: 1.6, ease: E }, 0.2);
     t.to('[data-nav]', { opacity: 1, duration: 1, ease: E }, 0.6);

@@ -1,8 +1,10 @@
 # Dao site
 
-Marketing site for Dao, a sixteen-seat chef's table on Koh Phangan. Four pages: `/`, `/story`,
-`/evening`, `/reserve`. Static Astro, deployed on Cloudflare. Designed in Claude Design, then
-ported here; from now on all work happens in this repo.
+Marketing site for Dao, a sixteen-seat chef's table on Koh Phangan. Four pages in the menu and
+footer: `/`, `/story`, `/evening`, `/reserve`; and `/info` (every question, by topic), which is
+deliberately in neither: it is reached from "All questions" under the home page's questions.
+Static Astro, deployed on Cloudflare. Designed in Claude Design, then ported here; from now on all
+work happens in this repo.
 
 Read `docs/DESIGN.md` before touching copy, colour, type or motion.
 
@@ -26,7 +28,15 @@ preview builds.
 
 No domain is attached yet: `main` is served at https://dao-design.dry-forest-5ebe.workers.dev,
 which the team uses as **staging**. Going public means adding the real domain to the
-`dao-design` Worker in Cloudflare (and replacing the placeholder `daokohphangan.com` email).
+`dao-design` Worker in Cloudflare (and replacing the placeholder `daokohphangan.com` email), and
+setting two build variables in Cloudflare: `SITE_URL` (the domain, for canonical links, share
+previews and the sitemap) and `INDEXABLE=true` (until then every page is `noindex` and robots.txt
+closes the site, so staging with placeholder prices never reaches search engines).
+`PUBLIC_BOOKING_API` points `/reserve` at the booking backend (docs/booking.md).
+
+**Security headers** are in `public/_headers`; the Content-Security-Policy is finished at build by
+`integrations/security-headers.mjs` (hashes of the inline scripts, the booking API's origin). Adding
+an inline script or a third-party origin means updating that policy, or the browser will block it.
 
 ## Layout of the repo
 
@@ -36,21 +46,24 @@ src/
   layouts/Base.astro  <head>, persistent chrome, the Barba container (<main>)
   components/
     chrome/         nav, menu, footer, loader, transition sheet (shared by every page)
-    ui/             small shared pieces: Cta, MaskImage, PressLogo, Letters
-    home/ story/ evening/ reserve/   the sections of each page
+    ui/             small shared pieces: Cta, MaskImage, PressLogo, Letters, FaqList
+    home/ story/ evening/ reserve/ info/   the sections of each page (home/journey: the day section)
   content/          ALL copy, images and numbers (see "Content" below)
   lib/              content getters, formatting, structured data, booking logic
   scripts/          all JavaScript (see "Motion" below)
   styles/
     tokens/         the design tokens (colour, type, spacing, grid, motion, texture, fonts)
     global.css      shared rules and the pre-hidden states
-    chrome.css      nav, menu, pill, loader, transition sheet, footer
+    chrome.css      nav, menu, loader, transition sheet, footer
     pages/*.css     page-only rules, each scoped to [data-page="…"]
 public/
   assets/photos/    photography (the crops live in content as object-position)
   assets/press/     publication marks (SVG, drawn in currentColor)
   fonts/            Season Mix (TRIAL files, see "Before launch")
 docs/DESIGN.md      the design laws
+docs/booking.md     how reservations work with the restaurant's sheet and Stripe
+backend/            the booking backend (Apps Script) and its tests: node backend/test/harness.mjs test
+integrations/       build steps (the security headers)
 ```
 
 ## Content (and Sanity, later)
@@ -62,7 +75,19 @@ hold copy. Pages read content only through `src/lib/content.ts` (`getHome()`, `g
 Sanity is planned but not connected. When it is: define schemas matching these types, and turn
 each getter in `src/lib/content.ts` into a query returning the same shape. Nothing else changes.
 Prices are numbers (`site.pricing`) and are formatted with `money()`; booking sentences are
-templates with `{tokens}` filled by `fill()`.
+templates with `{tokens}` filled by `fill()`. FAQ answers use the same price tokens (`{menu}`,
+`{noShowFee}`…), filled by `fillAnswers()` in `src/lib/faq.ts`.
+
+Facts the copy repeats are written once and read from there: the arrival time and seats
+(`site.service`), prices (`site.pricing`), contact (`site.contact`), page addresses (`site.pages`,
+`pageHref('reserve')` in `src/lib/content.ts`). Helpers for the markup live in `src/lib/format.ts`
+(`money`, `fill`, `pad2`, `cropStyle`). Colours come from `styles/tokens/colors.css` (`--night`
+is the deepest ground); don't type hex values into components.
+
+Questions are written once, in `src/content/info.ts` (by topic, each with an `id`); the home page
+shows a few of them picked by id (`infoQuestions([...])` in `home.ts`). With Sanity these become
+references. A page outside the menu goes in `site.unlisted` so the page transition can still name
+it (`components/chrome/TransitionSheet.astro`, `pageMeta()` in `core/transition.ts`).
 
 ## Motion architecture
 
@@ -107,8 +132,9 @@ key it on a `data-*` attribute in the markup, add it to the list in `registry.ts
   (`window.scrollTo` fights Lenis). Lenis runs on desktop only; phones scroll natively.
 - Pre-hidden states live in CSS under `html.js` (set by an inline script in `<head>`), so the
   page reads finished without JS. JS takes things away and gives them back.
-- Reduced motion means the finished state, not faster motion. Check `reducedMotion`
-  (`core/env.ts`) in anything that animates.
+- Reduced motion means the finished state, not faster motion. `core/gsap.ts` makes every tween
+  land at once when it is on; anything that loops on its own must also check `reducedMotion`
+  (`core/env.ts`) and not start (the press wall and the hero film do).
 - One breakpoint (820px). Crossing it reloads the page: desktop and phone are different layouts.
 - Never leave an inline `transform` on `<main>`: it becomes the containing block for every
   `position: fixed` inside (the evening clock, the mobile ticket bar).
@@ -129,7 +155,16 @@ anything JS creates at runtime (scoped rules never reach runtime-created nodes).
   `+66 00 000 0000`) were invented for design and are not client-confirmed.
 - **Photography** is a placeholder set.
 - **Press**: publications and years are real; any quote must be pulled verbatim.
-- **Booking** has no backend: "Hold the seats" only shows the confirmation (`src/lib/booking.ts`).
+- **Booking**: without `PUBLIC_BOOKING_API`, "Request the seats" only shows the confirmation and
+  the nights are placeholders (`src/content/reserve.ts`). Setting up the backend: docs/booking.md.
+
+## The home page's day section
+
+Between the intro and the evening facts. In use: **Rows** (`components/home/journey/RowsJourney.astro`,
+`systems/journey/rows.ts`). Kept as an alternative while it is decided: **the spine**, shown with
+`?trail=spine` (a dev-only switcher sits bottom left; `systems/trail-variant.ts` keeps one version
+and removes the other). On desktop both carry their last photograph into the evening section's
+(`systems/journey/handoff.ts`). The original wave trail is archived in git: tag `archive/wave-trail`.
 
 ## Known quirks (kept on purpose, ask before "fixing")
 
@@ -142,6 +177,7 @@ These reproduce the shipped design exactly; each looks accidental:
 
 Check computed values and rects, not only screenshots. After touching motion, do two or three
 round trips between pages and confirm nothing grows: `ScrollTrigger.getAll().length` on arrival,
-one `[data-barba="container"]`, one `.pin-spacer` on home (desktop), `document.body.style` clean.
+one `[data-barba="container"]`, `document.body.style` clean, and on home (desktop) one moving copy
+of the hand-over photograph (`main > div[aria-hidden]` with `position: fixed`).
 A hidden or background browser tab throttles animation frames and will look "stuck"; that is the
 environment, not the code.

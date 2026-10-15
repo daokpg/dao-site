@@ -5,7 +5,7 @@
  */
 import Cta from '../ui/Cta.astro';
 import PressLogo from '../ui/PressLogo.astro';
-import { getHome, getSite } from '../../lib/content';
+import { getHome, getSite, pageHref } from '../../lib/content';
 import { money } from '../../lib/format';
 
 const [home, site] = await Promise.all([getHome(), getSite()]);
@@ -37,6 +37,6 @@ const pairings = [
       ))}
       <span data-press-pool style="display:none">{press.slice(3).map((outlet) => <PressLogo outlet={outlet} data-press-logo />)}</span>
     </div>
-    <div data-reveal-soft data-split="none" style="margin-top:0"><Cta label={site.labels.reserve} href="/reserve" /></div>
+    <div data-reveal-soft data-split="none" style="margin-top:0"><Cta label={site.labels.reserve} href={pageHref('reserve')} /></div>
   </div>
 </section>

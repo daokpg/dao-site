@@ -1,4 +1,7 @@
 import type { Cta, Image, Seo } from './types';
+import { site } from './site';
+
+const { service } = site;
 
 export interface Course {
   name: string;
@@ -52,9 +55,9 @@ export const evening: EveningContent = {
     description: 'One evening at Dao, from the door opening at a quarter past seven to the last glass. Six courses, one wine pairing, one table.',
   },
   hero: {
-    time: '19:30',
+    time: service.arrival,
     line: 'One evening, from the door opening to the last glass. The clock runs as you read.',
-    corner: 'Nightly, one seating',
+    corner: 'Five nights a week, one seating',
   },
   rail: {
     light: [
@@ -65,7 +68,7 @@ export const evening: EveningContent = {
     name: 'Arrival',
   },
   arrival: {
-    time: '19:30',
+    time: service.arrival,
     name: 'Arrival',
     lead: 'The door on the soi opens at a quarter past seven. Sixteen names on sixteen cards, and the seat next to yours belongs to someone you have not met.',
     image: { src: '/assets/photos/door-dao.jpg', alt: 'The door on the soi', position: '50% 50%' },
@@ -116,6 +119,6 @@ export const evening: EveningContent = {
     time: '22:00',
     name: 'The last glass',
     statement: 'The last course is sweet, a pastry the way his grandfather made them. Coffee, tea. Nobody is hurried out.',
-    cta: { label: 'Reserve a seat', href: '/reserve' },
+    cta: { label: site.labels.reserve, href: '/reserve' },
   },
 };

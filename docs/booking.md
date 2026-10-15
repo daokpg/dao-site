@@ -60,7 +60,17 @@ Reviewed 2026-09-28. The file has 123 tabs, from August 2024 to October 2026.
 | Cards | Stripe | client's Stripe account | fees only on no-show charges (§7) |
 | Website | static files on Cloudflare | client's Cloudflare account | free |
 
-The only secret, the Stripe key, lives in the script's properties, never in the website.
+The only secret, the Stripe key, lives in the script's properties, never in the website. Anyone who can
+edit the spreadsheet can read those properties, so use a Stripe **restricted key** (`rk_…`) allowed only
+Customers: write, Checkout Sessions: write and SetupIntents: read, never the full secret key.
+
+**Abuse protection in the script** (the web app's address is public): more than 30 requests in ten
+minutes are refused ("busy"); the same WhatsApp number for the same night is treated as the same request;
+guest text is written into the sheet as text, never as a formula (a note starting with `=` or `+`);
+line breaks are taken out of one-line fields; a failed or over-quota email never fails the guest; and the
+script may only touch its own spreadsheet (`@OnlyCurrentDoc`). Still recommended before going live: Cloudflare
+Turnstile on `/reserve` (verified in `doPost`) and Stripe Radar rules for setup intents. Keep both
+spreadsheets shared as "Restricted".
 
 ---
 

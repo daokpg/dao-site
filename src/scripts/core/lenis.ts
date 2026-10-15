@@ -21,8 +21,6 @@ export function initLenis() {
   gsap.ticker.lagSmoothing(0);
 }
 
-export const getLenis = () => lenis;
-
 export function stopScroll() {
   if (lenis) lenis.stop();
   else document.body.style.overflow = 'hidden';

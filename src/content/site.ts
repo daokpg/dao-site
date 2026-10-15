@@ -13,6 +13,11 @@ export const site: SiteSettings = {
     area: 'Sri Thanu, Koh Phangan',
   },
   copyright: '© Dao, 2026',
+  // To confirm with the client: the restaurant's own booking sheet says 20:30 (docs/booking.md).
+  service: {
+    arrival: '19:30',
+    seats: 16,
+  },
   pricing: {
     currency: 'THB',
     menu: 3900,
@@ -21,11 +26,21 @@ export const site: SiteSettings = {
     noShowFee: 1950,
     cake: 400,
   },
+  shareImage: { src: '/assets/photos/table-guests.jpg', alt: 'Guests at the one table, the kitchen open behind' },
+  notFound: {
+    seo: { title: 'Not found, Dao', description: 'This page is not here.' },
+    heading: 'This page is not here',
+    text: 'The address may have changed. The evening is still on.',
+  },
   pages: [
     { key: 'home', label: 'Home', num: '01', href: '/', image: { src: '/assets/photos/table-guests.jpg', alt: '', position: '35% 50%' } },
     { key: 'story', label: 'Story', num: '02', href: '/story', image: { src: '/assets/photos/foraging.jpg', alt: '', position: '50% 50%' } },
     { key: 'evening', label: 'Evening', num: '03', href: '/evening', image: { src: '/assets/photos/plating-hands.jpg', alt: '', position: '50% 50%' } },
     { key: 'reserve', label: 'Reserve', num: '04', href: '/reserve', image: { src: '/assets/photos/set-table.jpg', alt: '', position: '60% 50%' } },
+  ],
+  // Not in the menu or footer: the info page is reached from the questions on the home page.
+  unlisted: [
+    { key: 'info', label: 'FAQ', href: '/info' },
   ],
   // Publications and years are real; any quote attached to them must be pulled verbatim before launch.
   press: [

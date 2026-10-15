@@ -15,12 +15,13 @@ import { gsap, ScrollTrigger } from '../core/gsap';
 import { E, isMobile } from '../core/env';
 import { setTone } from '../core/tone';
 import type { System } from '../core/registry';
+import { pad2 } from '../../lib/format';
 
 type State = { timers: number[]; els: Element[] };
 let state: State | null = null;
 
 const toMin = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
-const fmt = (m: number) => `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
+const fmt = (m: number) => `${Math.floor(m / 60)}:${pad2(m % 60)}`;
 
 function swapText(el: HTMLElement & { _txt?: string }, txt: string) {
   if (el._txt === txt) return;
@@ -131,8 +132,11 @@ function after(scope: HTMLElement) {
   }
 
   // ---- dusk: the sheet, the ink ladder and the rules run from paper to charcoal with the scroll
-  const L = { bg: '#F7F4EC', ink: '#1A1815', ink2: 'rgba(26,24,21,.7)', ink3: 'rgba(26,24,21,.45)', rule: 'rgba(26,24,21,.16)' };
-  const D = { bg: '#15130F', ink: '#EDE8DC', ink2: 'rgba(237,232,220,.7)', ink3: 'rgba(237,232,220,.45)', rule: 'rgba(237,232,220,.18)' };
+  // the two palettes come from the colour tokens (styles/tokens/colors.css); the ladders are the same as there
+  const token = (name: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const L = { bg: token('--paper'), ink: token('--ink-warm'), ink2: 'rgba(26,24,21,.7)', ink3: 'rgba(26,24,21,.45)', rule: 'rgba(26,24,21,.16)' };
+  const D = { bg: token('--night'), ink: token('--cream'), ink2: 'rgba(237,232,220,.7)', ink3: 'rgba(237,232,220,.45)', rule: 'rgba(237,232,220,.18)' };
+  let palette: typeof L | null = null;
   const bg = gsap.utils.interpolate(L.bg, D.bg);
   const clamp = gsap.utils.clamp(0, 1);
   // the ground eases to charcoal; the ink holds dark until the ground is well past the middle, then flips over a short band
@@ -150,11 +154,15 @@ function after(scope: HTMLElement) {
       document.body.style.backgroundColor = ground;
       // the ink never mixes: it is dark or cream, swapped at the middle of the flip, and the type dips out and back through it
       const P = k < 0.5 ? L : D, a = 1 - Math.sin(k * Math.PI);
-      sheet.style.setProperty('--ink', P.ink);
-      sheet.style.setProperty('--ink-2', P.ink2);
-      sheet.style.setProperty('--ink-3', P.ink3);
-      sheet.style.setProperty('--rule', P.rule);
-      clock.style.color = P.ink;
+      // the ladder is written only when it flips, not every frame (each write restyles the whole sheet)
+      if (P !== palette) {
+        palette = P;
+        sheet.style.setProperty('--ink', P.ink);
+        sheet.style.setProperty('--ink-2', P.ink2);
+        sheet.style.setProperty('--ink-3', P.ink3);
+        sheet.style.setProperty('--rule', P.rule);
+        clock.style.color = P.ink;
+      }
       if (clockGone) return;
       for (const el of fading) {
         el.style.opacity = String(a);

@@ -1,7 +1,7 @@
 ---
 /**
  * Every page renders inside this. Two zones:
- *  - Persistent chrome (loader, cursor pill, nav, menu, transition sheet) sits OUTSIDE the
+ *  - Persistent chrome (loader, nav, menu, transition sheet) sits OUTSIDE the
  *    Barba container and lives for the whole visit.
  *  - The page itself is the Barba container (<main>), swapped on every navigation.
  * Anything inside <main> that needs JS must go through the registry (src/scripts/core/registry.ts).
@@ -20,12 +20,15 @@ import '../styles/pages/home.css';
 import '../styles/pages/story.css';
 import '../styles/pages/evening.css';
 import '../styles/pages/reserve.css';
+import '../styles/pages/info.css';
 
 import Loader from '../components/chrome/Loader.astro';
 import Nav from '../components/chrome/Nav.astro';
 import Menu from '../components/chrome/Menu.astro';
 import TransitionSheet from '../components/chrome/TransitionSheet.astro';
+import TrailSwitcher from '../components/chrome/TrailSwitcher.astro';
 import type { PageKey, Seo } from '../content/types';
+import { getSite } from '../lib/content';
 
 interface Props {
   page: PageKey;
@@ -39,7 +42,16 @@ interface Props {
 const { page, seo, tone, intro = false } = Astro.props;
 
 // Blocks reveal in small waves: every Nth block restarts the stagger. "N step" per page, as designed.
-const blockRhythm = { home: '4 0.08', story: '5 0.08', evening: '6 0.07', reserve: '6 0.07' }[page];
+const blockRhythm = { home: '4 0.08', story: '5 0.08', evening: '6 0.07', reserve: '6 0.07', info: '6 0.07' }[page];
+// share previews and the canonical address need absolute URLs (astro.config.mjs `site`)
+const site = await getSite();
+// pages build to /story.html but live at /story (astro.config.mjs format: 'file')
+const canonical = new URL(Astro.url.pathname.replace(/(\/index)?\.html$/, '').replace(/\/$/, '') || '/', Astro.site);
+const shareImage = new URL(site.shareImage.src, Astro.site);
+// search engines only once the real domain is live (INDEXABLE=true at build); staging stays out
+// (the not-found page is never indexed and names no canonical address)
+const notFound = /\/404(\.html)?$/.test(Astro.url.pathname);
+const indexable = import.meta.env.INDEXABLE === 'true' && !notFound;
 ---
 <!doctype html>
 <html lang="en" data-nav-tone={tone}>
@@ -48,14 +60,23 @@ const blockRhythm = { home: '4 0.08', story: '5 0.08', evening: '6 0.07', reserv
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{seo.title}</title>
     <meta name="description" content={seo.description} />
+    {!notFound && <link rel="canonical" href={canonical} />}
+    {!indexable && <meta name="robots" content="noindex, nofollow" />}
+    <meta property="og:site_name" content={site.name} />
     <meta property="og:title" content={seo.title} />
     <meta property="og:description" content={seo.description} />
     <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={shareImage} />
+    <meta property="og:image:alt" content={site.shareImage.alt} />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="theme-color" content="#15130F" />
     <link rel="icon" href="/assets/dao-mark.svg" type="image/svg+xml" />
     <link rel="preload" href="/fonts/SeasonMixTRIAL-Light.otf" as="font" type="font/otf" crossorigin />
     <!-- Before first paint: mark JS as running so pre-hidden states apply (no-JS visitors see the finished page). -->
     <script is:inline>document.documentElement.classList.add('js');</script>
+    <!-- Which version of the home page's day section to show (?trail=spine to see the alternative), remembered for the visit. Remove with the spine. -->
+    <script is:inline>try{var t=new URLSearchParams(location.search).get('trail');if(t)sessionStorage.setItem('dao-trail',t);document.documentElement.dataset.trail=sessionStorage.getItem('dao-trail')||'rows';}catch(e){document.documentElement.dataset.trail='rows';}</script>
     <slot name="head" />
   </head>
   <body data-barba="wrapper" data-page={page}>
@@ -66,6 +87,7 @@ const blockRhythm = { home: '4 0.08', story: '5 0.08', evening: '6 0.07', reserv
       <slot />
     </main>
     <TransitionSheet />
+    {import.meta.env.DEV && <TrailSwitcher />}
     <script>
       import '../scripts/app';
     </script>

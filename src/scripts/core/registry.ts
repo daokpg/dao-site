@@ -23,13 +23,15 @@
  */
 import { ScrollTrigger } from './gsap';
 import { resizeScroll } from './lenis';
+import * as trailVariant from '../systems/trail-variant';
+import * as journey from '../systems/journey/index';
 import * as reveal from '../systems/reveal';
 import * as sheetTone from '../systems/sheet-tone';
 import * as recede from '../systems/recede';
 import * as heroVideo from '../systems/hero-video';
-import * as trail from '../systems/trail';
 import * as pressWall from '../systems/press-wall';
 import * as faq from '../systems/faq';
+import * as infoIndex from '../systems/info-index';
 import * as eveningClock from '../systems/evening-clock';
 import * as tastingMenu from '../systems/tasting-menu';
 import * as booking from '../systems/booking';
@@ -44,13 +46,15 @@ export interface System {
 
 /** Order matters: reveal splits text before anything else measures it. */
 const systems: System[] = [
+  trailVariant.system, // must run first: removes the home day section's unused version
   reveal.system,
   sheetTone.system,
   heroVideo.system,
   recede.system,
-  trail.system,
+  journey.system,
   pressWall.system,
   faq.system,
+  infoIndex.system,
   eveningClock.system,
   tastingMenu.system,
   booking.system,

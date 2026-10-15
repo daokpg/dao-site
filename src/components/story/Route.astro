@@ -1,6 +1,7 @@
 ---
 /** Where he cooked, in order. Each row opens on hover to show the city. */
 import { getStory } from '../../lib/content';
+import { cropStyle, pad2 } from '../../lib/format';
 
 const { route } = await getStory();
 const last = route.stops.length - 1;
@@ -10,10 +11,10 @@ const last = route.stops.length - 1;
   <div style="grid-column:4 / span 9;display:flex;flex-direction:column">
     {route.stops.map((stop, i) => (
       <div data-block class="hr" style={`border-top:1px solid var(--rule);${i === last ? 'border-bottom:1px solid var(--rule);' : ''}display:grid;grid-template-columns:minmax(max-content,3fr) minmax(0,5fr) minmax(0,1fr);gap:0 24px;align-items:start;padding:28px 0 32px`}>
-        <span class="hv"><img src={stop.image.src} alt="" style={stop.image.position ? `object-position:${stop.image.position}` : undefined} loading="lazy" decoding="async" /><span class="sc"></span></span>
+        <span class="hv"><img src={stop.image.src} alt="" style={cropStyle(stop.image.position)} loading="lazy" decoding="async" /><span class="sc"></span></span>
         <span class="fig2" style="line-height:1;white-space:nowrap;font-size:clamp(36px,3.4vw,56px)">{stop.city}</span>
         <span class="word" data-measure="l" style="padding-top:.35em;font-size:13px;line-height:1.55">{stop.text}</span>
-        <span class="num" style="justify-self:end;padding-top:.4em;line-height:1.55">{String(i + 1).padStart(2, '0')}</span>
+        <span class="num" style="justify-self:end;padding-top:.4em;line-height:1.55">{pad2(i + 1)}</span>
       </div>
     ))}
   </div>

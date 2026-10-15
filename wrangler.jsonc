@@ -1,5 +1,6 @@
 // Cloudflare Workers static assets. `wrangler deploy` runs the build first, then serves ./dist,
-// so the Cloudflare dashboard needs no build command of its own.
+// so the Cloudflare dashboard needs no build command of its own. Pages are /story.html etc.
+// (astro.config.mjs, format: 'file') served as /story, without a trailing slash; 404.html for the rest.
 {
   "name": "dao-design",
   "compatibility_date": "2026-09-01",
@@ -9,6 +10,6 @@
   "assets": {
     "directory": "./dist",
     "not_found_handling": "404-page",
-    "html_handling": "auto-trailing-slash"
+    "html_handling": "drop-trailing-slash"
   }
 }
