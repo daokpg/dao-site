@@ -1,4 +1,6 @@
 /**
+ * @OnlyCurrentDoc  (the script may only touch the spreadsheet it lives in)
+ *
  * Dao reservations: the website's backend, living inside the reservations spreadsheet.
  * Paste into the sheet via Extensions → Apps Script. Plan and setup steps: docs/booking.md.
  *
@@ -17,7 +19,15 @@
  * Script properties (Project settings → Script properties):
  *   NOTIFY_EMAIL       where new requests are emailed (optional)
  *   SITE_URL           e.g. https://dao.example.com, for Stripe to send guests back (needed for cards)
- *   STRIPE_SECRET_KEY  sk_test_… or sk_live_… (optional; without it no card is asked for)
+ *   STRIPE_SECRET_KEY  a *restricted* key (rk_test_… / rk_live_…) allowed only Customers: write,
+ *                      Checkout Sessions: write, SetupIntents: read. Anyone who can edit the sheet
+ *                      can read script properties, so never a full sk_ key. Optional; without it no
+ *                      card is asked for.
+ *
+ * Abuse: the web app address is public, so doPost refuses more than POSTS_PER_10_MIN requests in
+ * ten minutes, treats a repeat of the same WhatsApp number for the same night as the same request,
+ * writes guest text into the sheet as text (never as a formula), and keeps working when the daily
+ * email quota runs out.
  */
 
 const TABS = { requests: 'Website requests', availability: 'Availability', help: 'How it works' };
@@ -26,7 +36,10 @@ const OWN_TABS = Object.values(TABS);
 const CAPACITY = { 1: 16, 2: 16, 3: 16, 4: 16, 6: 14 };
 /** The live board. setupTestCopy() refuses to run on it. */
 const ORIGINAL_BOARD_ID = '1Z97_kIS8euN2z_sv9QK84RePBss-0SVWqI5Wf4NPYvk';
+// Keep the amount in step with the website (src/content/site.ts, pricing.noShowFee).
 const NO_SHOW_POLICY = 'Nothing is charged now. Your card holds your seats and is only charged THB 1,950 per seat if you do not come or cancel within 48 hours of the dinner.';
+/** Requests accepted per ten minutes, all guests together, before the endpoint says it is busy. */
+const POSTS_PER_10_MIN = 30;
 
 const REQUEST_COLS = ['Received', 'Type', 'Status', 'Night', 'Seats', 'Name', 'WhatsApp', 'Email', 'Special occasion', 'Cake', 'Note', 'Card', 'Request ID', 'Stripe customer', 'Stripe session', 'Team notes'];
 const COL = REQUEST_COLS.reduce((o, c, i) => ((o[c] = i + 1), o), {});
@@ -51,8 +64,18 @@ function doPost(e) {
   const r = clean_(body);
   if (r.error) return json_({ ok: false, reason: r.error });
 
+  // a flood (someone posting to this address directly) is refused before it costs anything
+  const cache = CacheService.getScriptCache();
+  const recent = Number(cache.get('posts') || 0);
+  if (recent >= POSTS_PER_10_MIN) return json_({ ok: false, reason: 'busy' });
+  cache.put('posts', String(recent + 1), 600);
+  // the same number for the same night again (a double press, a retry) is the same request
+  const dupKey = 'req:' + r.whatsapp.replace(/\D/g, '') + ':' + r.date + ':' + r.type;
+  const dup = cache.get(dupKey);
+  if (dup) return json_({ ok: true, id: dup, type: r.type, cardUrl: null });
+
   const lock = LockService.getScriptLock();
-  lock.waitLock(20000);
+  if (!lock.tryLock(20000)) return json_({ ok: false, reason: 'busy' });
   let id, row;
   try {
     const night = readNights_().find((n) => n.date === r.date);
@@ -61,18 +84,19 @@ function doPost(e) {
     if (r.type === 'booking' && night.left === 0) r.type = 'waitlist';
     if (r.type === 'booking' && r.seats > night.left) return json_({ ok: false, reason: 'not_enough', left: night.left });
 
-    id = (r.type === 'booking' ? 'DAO-' : 'WL-') + Utilities.getUuid().slice(0, 4).toUpperCase();
+    id = (r.type === 'booking' ? 'DAO-' : 'WL-') + Utilities.getUuid().replace(/-/g, '').slice(0, 8).toUpperCase();
     const sh = sheet_(TABS.requests);
     sh.appendRow([
-      new Date(), r.type === 'booking' ? 'Booking' : 'Waitlist', 'New', parseDate_(r.date), r.seats, r.name, r.whatsapp,
-      r.email, r.occasion, r.cake ? 'yes' : '', r.note, '', id, '', '', '',
+      new Date(), r.type === 'booking' ? 'Booking' : 'Waitlist', 'New', parseDate_(r.date), r.seats, text_(r.name), text_(r.whatsapp),
+      text_(r.email), r.occasion, r.cake ? 'yes' : '', text_(r.note), '', id, '', '', '',
     ]);
     row = sh.getLastRow();
+    cache.put(dupKey, id, 6 * 60 * 60);
   } finally {
     lock.releaseLock();
   }
 
-  notify_(r, id);
+  try { notify_(r, id); } catch (err) { /* the request is saved; a missing email must not fail the guest */ }
 
   if (r.type !== 'booking') return json_({ ok: true, id, type: 'waitlist' });
   const card = startCard_(r, id, row);
@@ -90,7 +114,7 @@ function readNights_() {
   const today = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
   return sh.getRange(2, 1, last - 1, 5).getValues()
     .filter((v) => v[0] instanceof Date && String(v[1]).toLowerCase() === 'yes')
-    .map((v) => ({ date: Utilities.formatDate(v[0], tz, 'yyyy-MM-dd'), left: Math.max(0, Number(v[4]) || 0) }))
+    .map((v) => ({ date: Utilities.formatDate(v[0], tz, 'yyyy-MM-dd'), left: Math.max(0, Number(v[4]) || 0), capacity: Number(v[2]) || 16 }))
     .filter((n) => n.date >= today)
     .sort((a, b) => (a.date < b.date ? -1 : 1));
 }
@@ -191,9 +215,11 @@ function checkCards() {
   const vals = sh.getRange(2, 1, sh.getLastRow() - 1, REQUEST_COLS.length).getValues();
   vals.forEach((v, i) => {
     if (v[COL['Card'] - 1] !== 'pending' || !v[COL['Stripe session'] - 1]) return;
-    const s = stripe_('get', 'checkout/sessions/' + v[COL['Stripe session'] - 1]);
-    const status = s.status === 'complete' ? 'saved' : s.status === 'expired' ? 'missing' : null;
-    if (status) sh.getRange(i + 2, COL['Card']).setValue(status);
+    try {
+      const s = stripe_('get', 'checkout/sessions/' + v[COL['Stripe session'] - 1]);
+      const status = s.status === 'complete' ? 'saved' : s.status === 'expired' ? 'missing' : null;
+      if (status) sh.getRange(i + 2, COL['Card']).setValue(status);
+    } catch (err) { /* one failing row must not stop the others; it is tried again next time */ }
   });
 }
 
@@ -212,13 +238,16 @@ function stripe_(method, path, params) {
 // ---------------------------------------------------------------- helpers
 
 function clean_(b) {
-  const s = (v, max) => String(v == null ? '' : v).trim().slice(0, max);
+  // one line: control characters (line breaks included) become spaces, so nothing can break into an email header
+  const s = (v, max) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, max);
+  // the note keeps its line breaks, nothing else
+  const note = String(b.note == null ? '' : b.note).replace(/[\u0000-\u0009\u000b-\u001f\u007f]/g, ' ').trim().slice(0, 1000);
   const r = {
     type: b.type === 'waitlist' ? 'waitlist' : 'booking',
     date: s(b.date, 10), seats: Math.floor(Number(b.seats)),
     name: s(b.name, 120), whatsapp: s(b.whatsapp, 40), email: s(b.email, 160),
     occasion: ['birthday', 'anniversary', 'engagement'].includes(b.occasion) ? b.occasion : '',
-    cake: b.occasion === 'birthday' && !!b.cake, note: s(b.note, 1000),
+    cake: b.occasion === 'birthday' && !!b.cake, note,
   };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(r.date)) return { error: 'bad_date' };
   if (!(r.seats >= 1 && r.seats <= 16)) return { error: 'bad_seats' };
@@ -230,7 +259,7 @@ function clean_(b) {
 
 function notify_(r, id) {
   const to = PropertiesService.getScriptProperties().getProperty('NOTIFY_EMAIL');
-  if (!to) return;
+  if (!to || MailApp.getRemainingDailyQuota() < 1) return;
   const what = r.type === 'booking' ? 'New request' : 'Waitlist';
   const extra = [r.occasion, r.cake ? 'with cake' : ''].filter(Boolean).join(', ');
   MailApp.sendEmail({
@@ -245,6 +274,8 @@ function notify_(r, id) {
   });
 }
 
+/** Guest text goes into the sheet as text: a leading = + - @ would otherwise make it a formula. */
+function text_(v) { return /^[=+\-@\t\r]/.test(v) ? "'" + v : v; }
 function parseDate_(iso) { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d); }
 function sheet_(name) { return SpreadsheetApp.getActive().getSheetByName(name); }
 function json_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
@@ -271,6 +302,7 @@ function addWebsiteTabs() {
   rq.getRange('L2:L').setDataValidation(list(['pending', 'saved', 'missing', 'charged', 'charge failed']));
   rq.getRange('A2:A').setNumberFormat('d mmm yyyy hh:mm');
   rq.getRange('D2:D').setNumberFormat('ddd d mmm yyyy');
+  rq.getRange('F2:K').setNumberFormat('@'); // guest text stays text
   // New rows stand out until the team has dealt with them
   rq.setConditionalFormatRules([
     SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=$C2="New"').setBackground('#FFF2CC').setRanges([rq.getRange('A2:P')]).build(),

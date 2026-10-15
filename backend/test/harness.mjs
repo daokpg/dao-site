@@ -75,10 +75,10 @@ const ctx = {
     getUuid: () => crypto.randomUUID(),
   },
   CacheService: { getScriptCache: () => ({ get: (k) => cache.get(k) ?? null, put: (k, v) => cache.set(k, v), remove: (k) => cache.delete(k) }) },
-  LockService: { getScriptLock: () => ({ waitLock: () => {}, releaseLock: () => {} }) },
+  LockService: { getScriptLock: () => ({ waitLock: () => {}, tryLock: () => true, releaseLock: () => {} }) },
   PropertiesService: { getScriptProperties: () => ({ getProperty: (k) => props[k] ?? null }) },
   ContentService: { createTextOutput: (s) => ({ body: s, setMimeType() { return this; } }), MimeType: { JSON: 'json' } },
-  MailApp: { sendEmail: (o) => log.push(['mail', o.subject]) },
+  MailApp: { sendEmail: (o) => log.push(['mail', o.subject]), getRemainingDailyQuota: () => 100 },
   ScriptApp: { getProjectTriggers: () => [], deleteTrigger: () => {}, newTrigger: () => chain },
   UrlFetchApp: {
     fetch: (url, o) => {
@@ -144,6 +144,20 @@ if (process.argv[2] === 'test') {
   ss.getSheetByName('5-10/10').data[21][2] = 2; // a table on 6 Oct gets 2 guests
   ctx.onEdit({ range: { getSheet: () => ({ getName: () => '5-10/10' }) } });
   assert(get().nights.find((x) => x.date === '2026-10-06').left === 0, 'placed on the board → 6 Oct now full');
+  // abuse: guest text never becomes a formula, a repeat is the same request, a flood is refused
+  r = post({ type: 'waitlist', date: '2026-10-05', seats: 1, name: '=HYPERLINK("https://evil.example","x")', whatsapp: '+1 555 0100', note: '-no nuts\n=IMAGE("x")' });
+  const inj = rq.data[rq.getLastRow() - 1];
+  assert(r.ok && inj[5].startsWith("'=") && inj[10].startsWith("'-"), 'formula-like text stored as text: ' + JSON.stringify([inj[5], inj[10]]));
+  const rows = rq.getLastRow();
+  const again = post({ type: 'waitlist', date: '2026-10-05', seats: 1, name: 'Again', whatsapp: '+1 (555) 0100' });
+  assert(again.ok && again.id === r.id && rq.getLastRow() === rows, 'the same number for the same night is the same request');
+  r = post({ type: 'waitlist', date: '2026-10-05', seats: 1, name: 'Bad\r\nBcc: x@y.z', whatsapp: '+1 555 0199' });
+  const hdr = rq.data[rq.getLastRow() - 1][5];
+  assert(r.ok && !/[\r\n]/.test(hdr), 'line breaks taken out of one-line fields: ' + JSON.stringify(hdr));
+  cache.set('posts', '30');
+  r = post({ type: 'waitlist', date: '2026-10-05', seats: 1, name: 'Flood', whatsapp: '+1 555 0142' });
+  assert(!r.ok && r.reason === 'busy' && rq.getLastRow() === rows + 1, 'a flood is refused: ' + JSON.stringify(r));
+  cache.delete('posts');
   console.log(log.map((l) => l.join(' ')).join('\n'));
 }
 
@@ -162,5 +176,5 @@ if (process.argv[2] === 'serve') {
       return;
     }
     res.writeHead(200, cors); res.end(ctx.doGet().body);
-  }).listen(4323, () => console.log('fake Apps Script on :4323'));
+  }).listen(4323, '127.0.0.1', () => console.log('fake Apps Script on 127.0.0.1:4323'));
 }
