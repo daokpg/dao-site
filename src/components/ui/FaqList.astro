@@ -1,9 +1,11 @@
 ---
 /**
- * A list of questions. Opening one writes the answer in beside the question, character by
- * character, while the row grows with the text (systems/faq.ts). The answer is in the HTML for
- * visitors without JS; the script takes it out and writes it back on open. Used on the home page
- * (a few) and the info page (all, by topic). `idPrefix` keeps the ids unique when a page has several.
+ * A list of questions. Opening one writes the answer in beside the question, word by word, while
+ * the row grows with the text (systems/faq.ts). The answer is in the HTML for visitors without JS;
+ * the script takes it out and writes it back on open, and sets the open/closed state (so without JS
+ * nothing claims a visible answer is collapsed). Used on the home page (a few) and the info page
+ * (all, by topic). Each question's address is its content id (/info#cancel opens it); `idPrefix`
+ * keeps them apart where the same question appears twice in the site (the home page).
  * The answer drawn inside the button is for the eye only; screen readers get it from the region
  * after the heading, which the button controls (shown while the question is open).
  * The question colour is --fq-ink, the page's ink unless the section sets it.
@@ -12,23 +14,24 @@ import type { FaqItem } from '../../content/types';
 
 interface Props {
   items: FaqItem[];
-  idPrefix: string;
+  idPrefix?: string;
   /** Grid placement and the like. */
   style?: string;
 }
 
 const { items, idPrefix, style = '' } = Astro.props;
+const anchor = (id: string) => (idPrefix ? `${idPrefix}-${id}` : id);
 ---
 <ul data-faq style={`display:flex;flex-direction:column;margin:0;padding:0;${style}`}>
-  {items.map((item, i) => (
-    <li class="fq" data-fq data-chars style="list-style:none;margin:0;position:relative">
+  {items.map((item) => (
+    <li id={anchor(item.id)} class="fq" data-fq data-chars style="list-style:none;margin:0">
       <h3 class="rule" style="margin:0;padding:0;font:inherit">
-        <button type="button" aria-expanded="false" aria-controls={`${idPrefix}-a${i}`} id={`${idPrefix}-q${i}`} style="display:block;width:100%;text-align:left;background:none;border:0;padding:26px 56px 26px 0;margin:0;cursor:pointer;font:inherit;color:inherit;box-sizing:border-box;line-height:1.25">
+        <button type="button" data-answer={`${anchor(item.id)}-a`} id={`${anchor(item.id)}-q`} style="display:block;width:100%;text-align:left;background:none;border:0;padding:26px 56px 26px 0;margin:0;cursor:pointer;font:inherit;color:inherit;box-sizing:border-box;line-height:1.25">
           <span class="q" style="display:block;color:var(--fq-ink,var(--ink));line-height:1.25">{item.question} <span class="ansin" aria-hidden="true" style="color:var(--ink-2)"><span class="a" data-chars-text={item.answer} style="font:inherit;color:inherit;max-width:none">{item.answer}</span></span></span>
           <span style="position:absolute;right:0;top:calc(26px + .625em - 10px);pointer-events:none;font-size:clamp(22px,2.1vw,30px)"><span class="ic ic-a" aria-hidden="true"><i class="h"></i><i class="v"></i></span></span>
         </button>
       </h3>
-      <div id={`${idPrefix}-a${i}`} role="region" aria-labelledby={`${idPrefix}-q${i}`} class="sr-only" data-fq-answer>{item.answer}</div>
+      <div id={`${anchor(item.id)}-a`} role="region" aria-labelledby={`${anchor(item.id)}-q`} class="sr-only" data-fq-answer>{item.answer}</div>
     </li>
   ))}
 </ul>

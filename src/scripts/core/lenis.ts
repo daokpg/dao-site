@@ -9,7 +9,7 @@
 import Lenis from 'lenis';
 import 'lenis/dist/lenis.css';
 import { gsap, ScrollTrigger } from './gsap';
-import { isMobile } from './env';
+import { isMobile, reducedMotion } from './env';
 
 let lenis: Lenis | null = null;
 
@@ -31,14 +31,19 @@ export function startScroll() {
   else document.body.style.overflow = '';
 }
 
+// with reduced motion every programmatic scroll is a jump, on desktop (Lenis) and phones alike
 export function scrollToTop({ immediate = false, duration = 1.6 } = {}) {
-  if (lenis) lenis.scrollTo(0, { immediate, duration, force: true });
-  else window.scrollTo({ top: 0, behavior: immediate ? 'instant' : 'smooth' });
+  const jump = immediate || reducedMotion;
+  if (lenis) lenis.scrollTo(0, { immediate: jump, duration, force: true });
+  else window.scrollTo({ top: 0, behavior: jump ? 'instant' : 'smooth' });
 }
 
+/** Glide to y; a duration of 0 (or reduced motion) jumps. */
 export function scrollToY(y: number, duration = 1.4) {
-  if (lenis) lenis.scrollTo(y, { duration });
-  else window.scrollTo({ top: y, behavior: 'smooth' });
+  const jump = duration === 0 || reducedMotion;
+  // force: a page can ask before scrolling is switched back on after its entrance
+  if (lenis) lenis.scrollTo(y, { duration, immediate: jump, force: true });
+  else window.scrollTo({ top: y, behavior: jump ? 'instant' : 'smooth' });
 }
 
 export function resizeScroll() {

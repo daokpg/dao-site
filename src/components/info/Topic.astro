@@ -16,5 +16,5 @@ const { topic, num } = Astro.props;
     <span class="info-topic__num dao-num" aria-hidden="true">{pad2(num)}</span>
     <h2 id={`${topic.id}-h`} data-reveal-soft data-split="softlines" class="info-topic__title">{topic.title}</h2>
   </div>
-  <FaqList items={topic.items} idPrefix={topic.id} style="grid-column:5 / span 8" />
+  <FaqList items={topic.items} style="grid-column:5 / span 8" />
 </section>

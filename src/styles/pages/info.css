@@ -7,11 +7,10 @@
   .info-head__index{grid-column:5 / span 8}
   .info-head__index ol{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px 32px}
   .info-head__topic{display:inline-block;padding:6px 0;font:500 11px/1.4 var(--font-body);letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3);text-decoration:none;transition:color .6s cubic-bezier(.16,1,.3,1)}
-  .info-head__topic:hover,.info-head__topic:focus-visible{color:var(--ink)}
-  .info-head__topic:focus-visible{outline:1px solid var(--ink);outline-offset:4px}
+  .info-head__topic:hover,.info-head__topic:focus-visible,.info-head__topic[aria-current]{color:var(--ink)}
 
   /* a topic: its name held beside its questions while they pass */
-  .info-topic{padding:96px 64px 120px;align-items:start}
+  .info-topic{padding:96px 64px 120px;align-items:start;scroll-margin-top:40px}
   .info-head + .info-topic{padding-top:72px}
   .info-topic__head{grid-column:1 / span 3;position:sticky;top:140px;align-self:start;display:flex;flex-direction:column;gap:18px}
   .info-topic__num{font:500 11px/1.4 var(--font-body);letter-spacing:.22em;color:var(--ink-3)}
@@ -29,7 +28,8 @@
     .info-head{padding:136px 24px 0 !important;row-gap:28px}
     .info-head__title{font-size:56px}
     .info-head + .info-topic{padding-top:56px !important}
-    .info-topic{padding:64px 24px 72px !important}
+    .info-topic{padding:64px 24px 72px !important;scroll-margin-top:48px}
+    .info-head__topic{padding:10px 0}
     .info-topic__head{position:static;margin-bottom:24px;gap:10px}
     .info-topic [data-faq] button{padding-right:44px !important}
     .info-close{padding:96px 24px 140px !important}

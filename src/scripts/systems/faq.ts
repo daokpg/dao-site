@@ -6,12 +6,14 @@
  */
 import { gsap } from '../core/gsap';
 import { E, reducedMotion } from '../core/env';
+import { scrollToY } from '../core/lenis';
 import type { System } from '../core/registry';
 
 type State = { ac: AbortController; tls: Set<gsap.core.Timeline>; timers: number[] };
 let state: State | null = null;
 
 function destroy() {
+  opener = null;
   if (!state) return;
   state.ac.abort();
   state.tls.forEach((t) => t.kill());
@@ -30,9 +32,13 @@ function before(scope: HTMLElement) {
     const target = el.querySelector<HTMLElement>('[data-chars-text]')!;
     const rule = el.querySelector<HTMLElement>('.rule')!;
     const btn = el.querySelector<HTMLButtonElement>('button')!;
-    // what screen readers get: the answer region, there only while the question is open
+    // the state belongs to the script: without it the answer simply stands and nothing claims otherwise
+    btn.setAttribute('aria-expanded', 'false');
+    if (btn.dataset.answer) btn.setAttribute('aria-controls', btn.dataset.answer);
+    // what screen readers get: the answer region, there only while the question is open. Closed, it is
+    // still found by the browser's find in page, which opens the question (where supported)
     const region = el.querySelector<HTMLElement>('[data-fq-answer]');
-    if (region) region.hidden = true;
+    if (region) region.setAttribute('hidden', 'until-found');
     const text = target.dataset.charsText ?? '';
     target.textContent = '';
     rule.style.boxSizing = 'border-box';
@@ -42,7 +48,9 @@ function before(scope: HTMLElement) {
 
     const run = (open: boolean) => {
       btn.setAttribute('aria-expanded', String(open));
-      if (region) region.hidden = !open;
+      if (region) { if (open) region.removeAttribute('hidden'); else region.setAttribute('hidden', 'until-found'); }
+      // whatever was still moving on this row stops here
+      gsap.killTweensOf(rule);
       if (open) {
         el.setAttribute('data-open', '');
         target.innerHTML = '';
@@ -72,12 +80,7 @@ function before(scope: HTMLElement) {
         const hTo = gsap.quickTo(rule, 'height', { duration: 0.7, ease: E });
         const EACH = 0.03, DUR = 0.9;
         let shown = startH;
-        const t = track(gsap.timeline({
-          onComplete: () => {
-            hTo(fullH);
-            me.timers.push(window.setTimeout(() => { rule.style.height = ''; rule.style.overflow = ''; }, 750));
-          },
-        }));
+        const t = track(gsap.timeline());
         t.to(words, { opacity: 1, y: 0, duration: DUR, ease: E, stagger: { each: EACH } }, 0);
         // a word counts as landed halfway through its fade
         t.to({}, {
@@ -87,6 +90,9 @@ function before(scope: HTMLElement) {
             if (i >= 0 && ends[i] > shown) { shown = ends[i]; hTo(shown); }
           },
         }, 0);
+        // the full height, then the row lets go of it (on the timeline, so a new choice cancels both)
+        t.call(() => hTo(fullH));
+        t.call(() => { rule.style.height = ''; rule.style.overflow = ''; }, undefined, '+=0.75');
       } else {
         el.removeAttribute('data-open');
         const words = Array.from(target.querySelectorAll('.fq-w'));
@@ -115,16 +121,36 @@ function before(scope: HTMLElement) {
     };
     runs.set(el, run);
 
-    btn.addEventListener('click', () => {
-      const open = !el.hasAttribute('data-open');
-      if (open) items.forEach((o) => { if (o !== el && o.hasAttribute('data-open')) runs.get(o)?.(false); });
-      run(open);
-    }, { signal: ac.signal });
+    // one open at a time within a list (on the info page, each topic keeps its own)
+    const list = el.closest('[data-faq]');
+    const openThis = () => {
+      items.forEach((o) => { if (o !== el && o.closest('[data-faq]') === list && o.hasAttribute('data-open')) runs.get(o)?.(false); });
+      run(true);
+    };
+    btn.addEventListener('click', () => (el.hasAttribute('data-open') ? run(false) : openThis()), { signal: ac.signal });
+    region?.addEventListener('beforematch', () => { if (!el.hasAttribute('data-open')) openThis(); }, { signal: ac.signal });
   }
+  opener = (id: string) => {
+    const el = items.find((i) => i.id === id);
+    if (!el) return false;
+    if (!el.hasAttribute('data-open')) el.querySelector('button')?.click();
+    return true;
+  };
+}
+
+/** Opens the question named by the address (/info#cancel) once the page has landed, and goes to it. */
+let opener: ((id: string) => boolean) | null = null;
+function after(scope: HTMLElement) {
+  const id = decodeURIComponent(location.hash.slice(1));
+  if (!id || !opener?.(id)) return;
+  const el = scope.querySelector<HTMLElement>(`[id="${CSS.escape(id)}"]`);
+  // a frame later, after the browser's own jump to the address, so this one is the last word
+  if (el) state?.timers.push(window.setTimeout(() => scrollToY(el.getBoundingClientRect().top + window.scrollY - 120, 0), 60));
 }
 
 export const system: System = {
   selector: '[data-faq]',
   before,
+  after,
   destroy,
 };

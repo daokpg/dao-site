@@ -69,7 +69,7 @@ export const info: InfoContent = {
   close: {
     heading: 'Anything else?',
     text: 'Write to us, or book and say it in the note.',
-    cta: { label: site.labels.reserve, href: '/reserve' },
+    cta: { label: site.labels.reserve, href: site.pages.find((p) => p.key === 'reserve')?.href ?? '/reserve' },
   },
 };
 
