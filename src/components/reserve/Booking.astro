@@ -11,7 +11,7 @@ import Letters from '../ui/Letters.astro';
 import { fill, money, pad2 } from '../../lib/format';
 import { getReserve, getSite } from '../../lib/content';
 import { scriptJson } from '../../lib/json';
-import { initialState, monthHtml, seatOptionsHtml, view, type BookingConfig } from '../../lib/booking';
+import { initialState, monthHtml, seatGridStyle, seatOptionsHtml, view, type BookingConfig } from '../../lib/booking';
 
 const [reserve, site] = await Promise.all([getReserve(), getSite()]);
 const config: BookingConfig = {
@@ -39,6 +39,7 @@ const arrow = 'M0 4h26M22.5 .5 26 4l-3.5 3.5';
 const up = 'M4 26V0M.5 3.5 4 0l3.5 3.5';
 ---
 <div data-booking data-waitlist="false">
+  <p data-announce class="sr-only" aria-live="polite"></p>
   <script type="application/json" data-booking-config set:html={scriptJson(config)} />
 
   <section data-screen-label="Month" data-container class="g12" style="padding:180px 64px 96px;align-items:end">
@@ -49,7 +50,7 @@ const up = 'M4 26V0M.5 3.5 4 0l3.5 3.5';
   <section data-screen-label="Nights" data-container class="g12" style="padding:0 64px 120px;align-items:start">
     <h2 data-month-step class="step" style="grid-column:1 / span 12;margin-bottom:40px"><span class="step__n" aria-hidden="true">{pad2(1)}</span>{steps.night.label}</h2>
     <div data-month-clip style="grid-column:1 / span 12;overflow:hidden">
-      <div data-month data-dense={reserve.months[0].nights.length > 12 ? '' : undefined} style={`display:grid;grid-template-columns:repeat(${reserve.months[0].nights.length},minmax(0,1fr));gap:0 16px;align-items:end;border-bottom:1px solid var(--rule);padding-bottom:0;will-change:transform`} set:html={monthHtml(config, state)} />
+      <div data-month data-dense={reserve.months[0].nights.length > 12 ? '' : undefined} style={`display:grid;grid-template-columns:repeat(${reserve.months[0].nights.length},minmax(0,1fr));gap:0 ${reserve.months[0].nights.length > 16 ? 8 : 16}px;align-items:end;border-bottom:1px solid var(--rule);padding-bottom:0;will-change:transform`} set:html={monthHtml(config, state)} />
     </div>
     <div data-month-nav style="grid-column:1 / span 12;display:flex;justify-content:space-between;align-items:center;gap:24px;margin-top:20px">
       <button type="button" class="mn" data-month-prev disabled={!v.hasPrev} style="display:inline-flex;align-items:center;gap:14px"><svg data-flip width="28" height="8" viewBox="0 0 28 8" fill="none" aria-hidden="true" style="display:block;transform:scaleX(-1)"><path d={arrow} stroke="currentColor" stroke-width="1" stroke-linecap="square" /></svg><span class="sr-only">{monthNav.prev}, </span><span data-prev-name>{v.prevName}</span></button>
@@ -64,7 +65,7 @@ const up = 'M4 26V0M.5 3.5 4 0l3.5 3.5';
       <div data-gate data-live="false" style="display:flex;flex-direction:column;gap:24px">
         <h2 class="step" id="rd-seats-label"><span class="step__n" aria-hidden="true">{pad2(2)}</span>{steps.seats.label}</h2>
         <p data-seats-left class="word" style="font-size:13px;color:var(--ink-2);margin-top:-8px">{v.seatsLeftLine}</p>
-        <div data-seat-options role="group" aria-labelledby="rd-seats-label" class="seats" set:html={seatOptionsHtml(v.limit, state.seats, config.copy)} />
+        <div data-seat-options role="group" aria-labelledby="rd-seats-label" class="seats" style={seatGridStyle(v.limit)} set:html={seatOptionsHtml(v.limit, state.seats, config.copy)} />
         <p class="word" data-measure="m" style="font-size:12px;color:var(--ink-3)">{steps.seats.note}</p>
       </div>
       <div data-gate data-live="false" data-fields style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 24px">
@@ -96,12 +97,13 @@ const up = 'M4 26V0M.5 3.5 4 0l3.5 3.5';
         <span class="word" data-measure="s" style="font-size:12px;color:var(--ink-3)">{ticket.waitlistNote}</span>
       </div>
       <div data-hold-wrap data-can="false" style="transition:opacity .75s cubic-bezier(.16,1,.3,1)">
-        <button type="button" data-confirm data-when="open" disabled class="lt-host cta" aria-label={ticket.hold}><span class="lt"><span class="a" aria-hidden="true"><Letters text={ticket.hold} /></span><span class="b" aria-hidden="true"><Letters text={ticket.hold} /></span></span><span class="rl"><span class="l"></span><span class="r"></span><span class="c"></span></span></button>
-        <button type="button" data-confirm data-when="full" disabled class="lt-host cta" aria-label={ticket.join}><span class="lt"><span class="a" aria-hidden="true"><Letters text={ticket.join} /></span><span class="b" aria-hidden="true"><Letters text={ticket.join} /></span></span><span class="rl"><span class="l"></span><span class="r"></span><span class="c"></span></span></button>
+        <button type="button" data-confirm data-when="open" disabled class="lt-host cta" aria-label={ticket.hold}><span class="lt"><span class="a" aria-hidden="true"><Letters text={ticket.hold} /></span><span class="b" aria-hidden="true"><Letters text={ticket.hold} /></span></span></button>
+        <button type="button" data-confirm data-when="full" disabled class="lt-host cta" aria-label={ticket.join}><span class="lt"><span class="a" aria-hidden="true"><Letters text={ticket.join} /></span><span class="b" aria-hidden="true"><Letters text={ticket.join} /></span></span></button>
         <p data-hold-error role="alert" class="word" hidden style="font-size:12px;color:var(--ink-2);margin-top:14px"></p>
       </div>
+      <p data-hold-missing class="word" hidden style="font-size:12px;color:var(--ink-2);margin-top:-26px"></p>
     </aside>
-    <div data-done aria-live="polite" style="grid-column:1 / span 8;display:none;flex-direction:column;gap:32px">
+    <div data-done style="grid-column:1 / span 8;display:none;flex-direction:column;gap:32px">
       <p data-done-head tabindex="-1" style="margin:0;font:300 clamp(32px,3.4vw,56px)/1.15 var(--font-display);letter-spacing:-.02em;color:var(--ink);max-width:22ch;text-wrap:pretty"></p>
       <p data-done-body class="body" data-measure="m"></p>
     </div>

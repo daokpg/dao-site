@@ -8,11 +8,10 @@
   .nt > *{position:relative;z-index:1;transition:opacity .6s cubic-bezier(.16,1,.3,1)}
   .nt[aria-pressed="true"]{color:var(--ground)}
   .nt[aria-pressed="true"]::before{clip-path:inset(0% 0% 0% 0%)}
-  .nt:focus-visible{outline-offset:2px}
   @media (hover:hover) and (min-width:821px){
     .nt:hover{color:var(--ground)}
     .nt:hover::before{clip-path:inset(0% 0% 0% 0%)}
-    [data-month]:has(.nt:not(:disabled):hover) .nt:not(:hover) > *{opacity:.3}
+    [data-month]:has(.nt:hover) .nt:not(:hover) > *{opacity:.3}
   }
   /* a full night has no marks: it reads "Waitlist" down its column and can still be picked */
   .nt-wait{font:500 10px/1 var(--font-body);letter-spacing:.22em;text-transform:uppercase;writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:5px}
@@ -27,8 +26,20 @@
     [data-month][data-dense] .nt .mk{width:14px}
     [data-month][data-dense] .nt .mk[data-mine="true"]{width:22px}
   }
-  .nt:disabled{color:var(--ink-3);cursor:default}
-  .nt:disabled::before{content:none}
+
+  /* keyboard focus inside the block, in the ink of whatever is under it (a chosen block is the opposite ground) */
+  .nt:focus-visible,.st:focus-visible{outline:1px solid var(--ink);outline-offset:-5px}
+  .nt[aria-pressed="true"]:focus-visible,.st[aria-pressed="true"]:focus-visible,[data-confirm].cta:focus-visible{outline-color:var(--ground);outline-offset:-5px}
+
+  /* sent: the calendar is done with, the confirmation stands alone at the top */
+  [data-booking][data-done] :is([data-month-name],[data-month-intro],[data-screen-label="Nights"]){display:none !important}
+  [data-booking][data-done] [data-screen-label="Month"]{padding-bottom:0 !important}
+  /* no note while the nights are loading or failed to */
+  [data-booking][data-nights] .pick-first{display:none}
+
+  @media (prefers-reduced-motion:reduce){
+    .nt,.nt::before,.nt > *,.st,.st::before,.st > span,.pick-first,[data-gate],[data-after],[data-hold-wrap]{transition:none !important}
+  }
 
   /* while the month slides, its nights can't be hovered or picked (systems/booking.ts) */
   [data-booking][data-sliding] [data-month]{pointer-events:none}
@@ -39,8 +50,10 @@
 
   /* seats: a strip of equal cells between hairlines; like a night, a cell turns to the opposite
      ground when hovered (desktop) or chosen, and the others step back while one is hovered */
-  .seats{display:flex;flex-wrap:wrap;border-left:1px solid var(--rule);border-top:1px solid var(--rule);width:max-content;max-width:100%}
-  .st{position:relative;flex:none;width:64px;height:72px;display:flex;align-items:center;justify-content:center;padding:0;margin:0;background:none;border:0;border-right:1px solid var(--rule);border-bottom:1px solid var(--rule);cursor:pointer;color:var(--ink-2);font:300 28px/1 var(--font-display);letter-spacing:-.02em;font-variant-numeric:tabular-nums;transition:color .6s cubic-bezier(.16,1,.3,1)}
+  .seats{display:grid;grid-template-columns:repeat(var(--n,11),64px);border-left:1px solid var(--rule);border-top:1px solid var(--rule);width:max-content;max-width:100%}
+  /* a row too narrow for every cell: two rows as even as they go, never one cell on its own */
+  @media (max-width:1300px){ .seats{grid-template-columns:repeat(var(--half,6),64px)} }
+  .st{position:relative;width:64px;height:72px;display:flex;align-items:center;justify-content:center;padding:0;margin:0;background:none;border:0;border-right:1px solid var(--rule);border-bottom:1px solid var(--rule);cursor:pointer;color:var(--ink-2);font:300 28px/1 var(--font-display);letter-spacing:-.02em;font-variant-numeric:tabular-nums;transition:color .6s cubic-bezier(.16,1,.3,1)}
   .st::before{content:"";position:absolute;inset:0;z-index:0;background:var(--ink);clip-path:inset(50% 0% 50% 0%);transition:clip-path .9s cubic-bezier(.16,1,.3,1);pointer-events:none}
   .st > span{position:relative;z-index:1;transition:opacity .6s cubic-bezier(.16,1,.3,1)}
   .st[aria-pressed="true"]{color:var(--ground)}
@@ -67,14 +80,12 @@
   [data-after][data-live="true"]{opacity:1 !important;filter:blur(0) !important;pointer-events:auto !important}
   [data-gate]{transition:opacity 1s cubic-bezier(.16,1,.3,1),filter 1s cubic-bezier(.16,1,.3,1)}
   [data-gate][data-live="false"]{opacity:.35;filter:blur(2px);pointer-events:none}
-  /* !important: the steps' entrance leaves an inline opacity on the button */
   /* dimmed on the wrapper: GSAP fades the buttons themselves in as they are scrolled to */
   [data-hold-wrap][data-can="false"]{opacity:.3}
   [data-hold-wrap][data-can="false"] button{pointer-events:none}
   /* the request is the page's one decision, so its button is a solid block rather than a hairline link */
   [data-confirm].cta{display:flex;width:100%;padding:22px 24px;background:var(--ink);color:var(--ground);transition:background-color .75s cubic-bezier(.16,1,.3,1)}
   [data-confirm].cta:hover{background:var(--ink-2)}
-  [data-confirm].cta .rl{display:none}
   [data-hold-wrap][data-sending="true"]{opacity:.5}
   [data-hold-wrap][data-sending="true"] button{pointer-events:none}
   /* while the real nights load, or if they never come, the placeholder month waits faded (and inert, set by the script) */
@@ -101,14 +112,10 @@
   .cake input:focus-visible{outline:1px solid var(--ink);outline-offset:3px}
   [data-field]:focus-visible{border-bottom-color:var(--ink)}
 
-  @media (max-width:820px){
-    [data-month]{grid-template-columns:repeat(4,minmax(0,1fr)) !important;gap:24px 16px !important;border-bottom:0 !important}
-    [data-month-clip]{overflow:visible !important}
-    [data-after] aside{position:static !important;margin-top:64px}
-    [data-after] [data-fields]{grid-template-columns:minmax(0,1fr) !important}
-  }
-
   @media (max-width: 820px){
+    /* the month's sentence sits under its name with room to breathe */
+    [data-month-intro]{margin-top:20px !important}
+    [data-after] [data-fields]{grid-template-columns:minmax(0,1fr) !important}
     [data-screen-label="Nights"]{padding-bottom:96px !important}
     /* the month is a list of nights read from the left: the date, then its seats as ticks you can
        count. A row is a block like on desktop; it runs into the gutter so its type lines up with the page */
@@ -149,7 +156,14 @@
     /* six cells to a row, the strip as wide as the page */
     .seats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));width:auto}
     .st{width:auto;height:64px;font-size:24px}
-    [data-gate] label input{font-size:20px !important}
+    /* what is still missing runs under the bar's night and button */
+    [data-after] aside [data-hold-missing]{grid-column:1 / -1;margin-top:0 !important;font-size:11px !important}
+  }
+  /* a small phone: the night over the button, so a long date never squeezes into a sliver */
+  @media (max-width: 400px){
+    [data-after][data-live="true"] aside{grid-template-columns:minmax(0,1fr) !important}
+    [data-after] aside [data-hold-wrap]{grid-column:1;grid-row:auto}
+    [data-after]{padding-bottom:300px !important}
   }
 }
 /* the month arrives on entry; until the entrance has taken them, these wait hidden */

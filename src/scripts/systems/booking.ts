@@ -15,6 +15,7 @@ import { gsap, ScrollTrigger } from '../core/gsap';
 import { E, isMobile, reducedMotion } from '../core/env';
 import { scrollToY } from '../core/lenis';
 import {
+  seatGridStyle,
   initialState, monthHtml, monthsFromNights, pastLabels, seatLimit, seatOptionsHtml, view,
   type ApiNight, type BookingConfig, type BookingState,
 } from '../../lib/booking';
@@ -42,7 +43,9 @@ export function drawMarks(scope: ParentNode, delay = 0, nightStep = 0.07, each =
   scope.querySelectorAll('[data-night] [data-marks]').forEach((m, i) => {
     const marks = m.querySelectorAll('.mk'); // a full night's waitlist label is not a mark
     if (!marks.length) return;
-    gsap.fromTo(marks, { scaleX: 0, y: 10, transformOrigin: '0 50%' }, { scaleX: 1, y: 0, duration: reducedMotion ? 0 : 1.2, ease: E, stagger: { each, from: 'end' }, delay: delay + i * nightStep });
+    // desktop marks are short lines drawn out from the left; on phones they are upright ticks that grow from the foot
+    const from = isMobile() ? { scaleY: 0, transformOrigin: '50% 100%' } : { scaleX: 0, y: 10, transformOrigin: '0 50%' };
+    gsap.fromTo(marks, from, { scaleX: 1, scaleY: 1, y: 0, duration: reducedMotion ? 0 : 1.2, ease: E, stagger: { each, from: isMobile() ? 'start' : 'end' }, delay: delay + i * nightStep });
   });
 }
 
@@ -79,11 +82,15 @@ function before(scope: HTMLElement) {
     cakeBox: q<HTMLInputElement>('[data-cake-box]'),
     honeypot: q<HTMLInputElement>('[data-honeypot]'),
     holdError: q('[data-hold-error]'),
+    holdMissing: q('[data-hold-missing]'),
+    announce: q('[data-announce]'),
+    pickFirst: q<HTMLButtonElement>('[data-pick-first]'),
   };
   me.els.push(el.monthName, el.month, el.ticketDate, el.done);
 
   let s: BookingState = initialState();
   let shownLeft = seatLimit(cfg, null);
+  let shownGrid = shownLeft;
   let sliding = false;
   let sending = false;
   let isoByLabel: Record<string, string> = {};
@@ -93,6 +100,13 @@ function before(scope: HTMLElement) {
   // (the real ones start from today)
   const past = cfg.api ? new Set<string>() : pastLabels(cfg.months);
   if (past.size) cfg.months = cfg.months.map((m) => ({ ...m, nights: m.nights.filter((n) => !past.has(n[0])) })).filter((m) => m.nights.length);
+  // every placeholder night gone (the placeholders run out): an empty month and the 'no nights' line
+  const noneLeft = !cfg.months.length;
+  if (noneLeft) cfg.months = [{ name: new Date().toLocaleString('en-GB', { month: 'long' }), nights: [] }];
+  // the note pointing back up to the nights, once someone has scrolled on without one
+  let asked = false;
+  // what was last read out, so a render that changes nothing says nothing
+  let spoken = '';
   // the page's own signal, plus a time limit, so a backend that never answers ends in the error message
   // (by hand: AbortSignal.any over AbortSignal.timeout never fired in WebKit when tried)
   const timed = () => {
@@ -132,23 +146,34 @@ function before(scope: HTMLElement) {
     el.doneBody.textContent = v.doneBody;
     el.cake.hidden = !v.showCake;
     el.cakeBox.checked = s.cake;
-    if (s.date) root.setAttribute('data-ask', 'false');
+    root.setAttribute('data-ask', String(asked && !s.date && !s.done));
+    el.holdMissing.textContent = v.missing;
+    el.holdMissing.hidden = !v.missing;
+    if (v.limit !== shownGrid) { el.seatOptions.setAttribute('style', seatGridStyle(v.limit)); shownGrid = v.limit; }
+    // a change of night or seats is read out (the ticket says it all)
+    const say = s.date ? `${v.ticketDate}. ${v.ticketLine}` : '';
+    if (say !== spoken) { spoken = say; el.announce.textContent = say; }
   };
 
   const resolve = (target: HTMLElement) => gsap.fromTo(target, { opacity: 0, filter: 'blur(6px)' }, { opacity: 1, filter: 'blur(0px)', duration: 1.1, ease: E });
   const scrollToEl = (target: HTMLElement, offset: number, ms: number) =>
-    later(() => scrollToY(target.getBoundingClientRect().top + window.scrollY - offset), ms);
+    later(() => scrollToY(target.getBoundingClientRect().top + window.scrollY - offset, reducedMotion ? 0 : 1.4), ms);
 
   // a choice lands: the ticket value resolves through blur, the next step opens and the page moves to it
   function pick<K extends 'date' | 'seats'>(key: K, val: BookingState[K]) {
     if (s.done) return;
     const prev = s[key];
     const patch: Partial<BookingState> = { [key]: val };
-    if (key === 'date' && s.seats > seatLimit(cfg, val as string)) patch.seats = 0;
+    // a night with fewer seats open keeps as many of yours as it can, and says so
+    const cap = key === 'date' ? seatLimit(cfg, val as string) : Infinity;
+    const capped = s.seats > cap;
+    if (capped) patch.seats = cap;
     const firstTime = prev === null || prev === 0;
+    showError('');
     const wasLive = el.gates.map((g) => g.dataset.live === 'true');
     s = { ...s, ...patch };
     render();
+    if (capped) el.announce.textContent = fill(cfg.copy.seatsCapped, { seats: cap });
     // on phones a step only appears once it is open: bring it in, and let the page re-measure
     if (isMobile()) {
       el.gates.forEach((g, i) => { if (!wasLive[i] && g.dataset.live === 'true') gsap.fromTo(g.children, { opacity: 0, y: 14, filter: 'blur(8px)' }, { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1.25, ease: E, stagger: 0.06 }); });
@@ -157,7 +182,8 @@ function before(scope: HTMLElement) {
     if (key === 'date') {
       el.after.setAttribute('data-live', 'true');
       el.after.inert = false;
-      resolve(el.ticketDate);
+      // the first time, the ticket rises with its column as it is scrolled to; after that it resolves in place
+      if (!firstTime || isMobile()) resolve(el.ticketDate);
       if (firstTime) scrollToEl(el.after, 120, 300);
     }
     if (key === 'seats') {
@@ -172,7 +198,7 @@ function before(scope: HTMLElement) {
     sliding = true;
     // the nights can't be hovered or picked until the new month has nearly landed
     root.setAttribute('data-sliding', '');
-    later(() => root.removeAttribute('data-sliding'), 1550);
+    later(() => root.removeAttribute('data-sliding'), reducedMotion ? 0 : 1550);
     gsap.to(el.monthName, { opacity: 0, filter: 'blur(6px)', y: -8, duration: 0.4, ease: 'power2.in' });
     gsap.to(el.month, {
       xPercent: -12 * dir, opacity: 0, filter: 'blur(4px)', duration: 0.7, ease: 'expo.inOut',
@@ -180,6 +206,9 @@ function before(scope: HTMLElement) {
         s = { ...s, month: nextMonth };
         fillMonth();
         render();
+        // an arrow that has just been hidden (the last month) can't keep the focus: the other one takes it
+        const active = document.activeElement as HTMLButtonElement | null;
+        if (active?.disabled && (active === el.prev || active === el.next)) (active === el.next ? el.prev : el.next).focus();
         gsap.fromTo(el.monthName, { opacity: 0, filter: 'blur(6px)', y: 8 }, { opacity: 1, filter: 'blur(0px)', y: 0, duration: 1, ease: E });
         gsap.fromTo(el.month, { xPercent: 12 * dir, opacity: 0, filter: 'blur(4px)' }, { xPercent: 0, opacity: 1, filter: 'blur(0px)', duration: 1.2, ease: E, onComplete: () => { sliding = false; } });
         drawMarks(root, 0.15, 0.03, 0.02);
@@ -189,7 +218,7 @@ function before(scope: HTMLElement) {
 
   /** The month strip has one column per night: sixteen in the placeholder, around twenty-two in a real month. */
   const fillMonth = () => {
-    el.month.innerHTML = monthHtml(cfg, s, past);
+    el.month.innerHTML = monthHtml(cfg, s);
     const n = cfg.months[s.month]?.nights.length ?? 16;
     el.month.style.gridTemplateColumns = `repeat(${n},minmax(0,1fr))`;
     el.month.style.columnGap = n > 16 ? '8px' : '';
@@ -265,8 +294,19 @@ function before(scope: HTMLElement) {
         if (night) { night[1] = 0; fillMonth(); }
       }
       if (out.ok) return showDone();
-      if (out.reason === 'not_enough') showError(fill(cfg.copy.notEnough, { left: out.left ?? 0, date: s.date ?? '' }));
-      else if (out.reason === 'closed') showError(fill(cfg.copy.nightClosed, { date: s.date ?? '' }));
+      // the night changed while the guest was choosing: the calendar takes the backend's word for it
+      const chosen = s.date ?? '';
+      if (out.reason === 'not_enough') {
+        const night = cfg.months.flatMap((m) => m.nights).find((n) => n[0] === chosen);
+        if (night) { night[1] = out.left ?? 0; fillMonth(); render(); }
+        showError(fill(cfg.copy.notEnough, { left: out.left ?? 0, date: chosen }));
+      } else if (out.reason === 'closed') {
+        cfg.months.forEach((m) => { m.nights = m.nights.filter((n) => n[0] !== chosen); });
+        s = { ...s, date: null };
+        fillMonth();
+        render();
+        showError(fill(cfg.copy.nightClosed, { date: chosen }));
+      }
       else showError(fill(cfg.copy.sendError, { contact: cfg.contactEmail }));
     } catch (err) {
       if (!ac.signal.aborted) showError(fill(cfg.copy.sendError, { contact: cfg.contactEmail }));
@@ -277,7 +317,7 @@ function before(scope: HTMLElement) {
     }
   }
 
-  /** The form gives way to the thank-you message. */
+  /** The form gives way to the thank-you message, and the page goes up to it: the calendar is done with. */
   function showDone(extra = '') {
     const out = Array.from(el.after.children).filter((c) => !c.hasAttribute('data-done')) as HTMLElement[];
     gsap.to(out, {
@@ -288,7 +328,10 @@ function before(scope: HTMLElement) {
         render();
         if (extra) el.doneBody.textContent += ` ${extra}`;
         el.after.querySelector('aside')?.style.setProperty('display', 'none', 'important');
+        root.setAttribute('data-done', '');
         el.done.style.display = 'flex';
+        ScrollTrigger.refresh();
+        scrollToY(0, reducedMotion ? 0 : 1.2);
         // focus moves to the heading so a screen reader reads the confirmation out
         el.doneHead.focus({ preventScroll: true });
         gsap.fromTo(el.done.children, { opacity: 0, y: 18, filter: 'blur(8px)' }, { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1.25, ease: E, stagger: 0.1 });
@@ -297,7 +340,8 @@ function before(scope: HTMLElement) {
   }
 
   // ---- the steps and the ticket rise into place as they are scrolled to
-  if (!reducedMotion) {
+  // (phones bring each step in as it appears, in pick())
+  if (!reducedMotion && !isMobile()) {
     qa('[data-after] [data-gate], [data-after] aside > *').forEach((step) => {
       ScrollTrigger.create({
         trigger: step, start: 'top 88%', once: true,
@@ -307,12 +351,19 @@ function before(scope: HTMLElement) {
   }
 
   // ---- scrolled on without a night: a note under the month points back up to it
-  const pickFirst = q('[data-pick-first]');
-  ScrollTrigger.create({
-    trigger: isMobile() ? pickFirst : el.after, start: isMobile() ? 'top 80%' : 'top 70%',
-    onEnter: () => { if (!s.date && !s.done) root.setAttribute('data-ask', 'true'); },
-  });
-  pickFirst.addEventListener('click', () => scrollToY(el.clip.getBoundingClientRect().top + window.scrollY - (isMobile() ? 200 : 260)), { signal: ac.signal });
+  // (not on the way back from Stripe, where there is nothing left to choose)
+  const back = new URLSearchParams(window.location.search);
+  if (!back.get('request')) {
+    ScrollTrigger.create({
+      trigger: isMobile() ? el.pickFirst : el.after, start: isMobile() ? 'top 80%' : 'top 70%',
+      onEnter: () => { asked = true; render(); },
+    });
+  }
+  // up to the nights, and the focus with it (on the chosen night or the first)
+  el.pickFirst.addEventListener('click', () => {
+    scrollToY(el.clip.getBoundingClientRect().top + window.scrollY - (isMobile() ? 200 : 260), reducedMotion ? 0 : 1.4);
+    (root.querySelector<HTMLElement>('[data-night][aria-pressed="true"]') ?? root.querySelector<HTMLElement>('[data-night]'))?.focus({ preventScroll: true });
+  }, { signal: ac.signal });
 
   // ---- input
   let swallow = false;
@@ -332,6 +383,7 @@ function before(scope: HTMLElement) {
 
   root.addEventListener('input', (e) => {
     const t = e.target as HTMLInputElement;
+    showError('');
     if (t.matches('[data-cake-box]')) { s = { ...s, cake: t.checked }; render(); return; }
     const f = t.dataset.field as 'name' | 'email' | 'whatsapp' | 'occasion' | 'note' | undefined;
     if (!f) return;
@@ -342,7 +394,6 @@ function before(scope: HTMLElement) {
   }, { signal: ac.signal });
 
   // ---- back from Stripe, or load the real nights
-  const back = new URLSearchParams(window.location.search);
   if (back.get('request')) {
     let saved: { date?: string; seats?: number } = {};
     try { saved = JSON.parse(sessionStorage.getItem(PENDING_KEY) ?? '{}'); sessionStorage.removeItem(PENDING_KEY); } catch {}
@@ -355,6 +406,11 @@ function before(scope: HTMLElement) {
     showDone(back.get('card') === '0' ? cfg.copy.cardSkipped : '');
   } else if (cfg.api) {
     loadNights();
+  } else if (noneLeft) {
+    root.setAttribute('data-nights', 'none');
+    fillMonth();
+    render();
+    el.nightLine.textContent = fill(cfg.copy.noNights, { contact: cfg.contactEmail });
   } else if (past.size) {
     fillMonth();
     render();

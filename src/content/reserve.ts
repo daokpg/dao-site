@@ -60,6 +60,14 @@ export interface ReserveContent {
     /** The heading when the page no longer knows the night and seats (back from Stripe in a fresh tab). */
     doneHeadShort: string;
     doneBody: string;
+    /** Spoken names of a night (screen readers): {date} {left} {capacity}. */
+    nightFull: string;
+    nightWhole: string;
+    nightSome: string;
+    /** Under the request button while seats are chosen but the details are not complete. */
+    missingDetails: string;
+    /** Read out (screen readers) when a choice changes the seats already taken: {seats}. */
+    seatsCapped: string;
     /** A full night: the label in place of its marks, and the sentences of a waitlist request. */
     waitlistMark: string;
     nightLineFull: string;
@@ -125,6 +133,11 @@ export const reserve: ReserveContent = {
     doneHead: 'Requested. {seats} on {date}.',
     doneHeadShort: 'Requested.',
     doneBody: 'We will be in touch with you on WhatsApp soon to finalise the booking and talk through any dietary needs. Anything else, {contact}.',
+    nightFull: '{date}, full, join the waitlist',
+    nightWhole: '{date}, the whole table open',
+    nightSome: '{date}, {left} of {capacity} seats open',
+    missingDetails: 'Add your name, WhatsApp number and email to send the request.',
+    seatsCapped: 'That night has fewer seats open, so your seats are now {seats}.',
     waitlistMark: 'Waitlist',
     nightLineFull: '{date} is full. The waitlist is open.',
     waitlistSeats: '{date} is full. Tell us how many seats you would take if they open.',

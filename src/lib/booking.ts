@@ -9,7 +9,6 @@
  * Nothing is paid at booking; a saved card holds the seats (see docs/booking.md).
  *
  * A full night is not a dead end: picking it turns the booking into a waitlist request.
- 
  */
 import type { Night, Occasion, ReserveContent } from '../content/reserve';
 import { fill } from './format';
@@ -112,24 +111,26 @@ export const seatLimit = (cfg: Pick<BookingConfig, 'months' | 'onlineMax'>, date
 /**
  * One night: a column of marks (one per open seat, yours drawn longer), the weekday and the day.
  * A full night has no marks; it carries the waitlist label instead and can still be picked.
- * A night already gone (`past`) stays in its place but can't be picked.
  */
-export function nightHtml([label, open, capacity = TABLE]: Night, state: Pick<BookingState, 'date' | 'seats'>, waitlistLabel = 'Waitlist', past = false) {
+export function nightHtml([label, open, capacity = TABLE]: Night, state: Pick<BookingState, 'date' | 'seats'>, copy: Pick<BookingConfig['copy'], 'waitlistMark' | 'nightFull' | 'nightWhole' | 'nightSome'>) {
   const pressed = state.date === label;
   const mine = pressed ? state.seats : 0;
   const [dow, day] = label.split(' ');
   const marks = open === 0
-    ? `<span class="nt-wait">${esc(waitlistLabel)}</span>`
+    ? `<span class="nt-wait">${esc(copy.waitlistMark)}</span>`
     : Array.from({ length: open }, (_, i) => `<span class="mk" data-mine="${i < mine}"></span>`).join('');
-  const aria = `${label}, ${open === 0 ? 'full, join the waitlist' : open === capacity ? 'the whole table open' : `${open} of ${capacity} seats open`}`;
-  return `<button type="button" data-night data-label="${esc(label)}" class="nt" aria-pressed="${pressed}" aria-label="${esc(aria)}"${open === 0 ? ' data-full' : ''}${past ? ' disabled' : ''} draggable="false" style="display:flex;flex-direction:column;justify-content:flex-end;gap:18px;background:none;border:0;padding:16px;cursor:pointer;user-select:none;text-align:left;min-width:0;height:100%">`
+  const aria = fill(open === 0 ? copy.nightFull : open === capacity ? copy.nightWhole : copy.nightSome, { date: label, left: open, capacity });
+  return `<button type="button" data-night data-label="${esc(label)}" class="nt" aria-pressed="${pressed}" aria-label="${esc(aria)}"${open === 0 ? ' data-full' : ''} draggable="false" style="display:flex;flex-direction:column;justify-content:flex-end;gap:18px;background:none;border:0;padding:16px;cursor:pointer;user-select:none;text-align:left;min-width:0;height:100%">`
     + `<span data-marks style="display:flex;flex-direction:column;gap:6px;align-items:flex-start">${marks}</span>`
     + `<span style="display:flex;flex-direction:column;gap:6px"><span class="num" style="font-size:12px;color:inherit;opacity:.6">${esc(dow.slice(0, 3))}</span><span style="font:300 clamp(20px,2vw,32px)/1 var(--font-display);letter-spacing:-.02em;color:inherit;font-variant-numeric:tabular-nums">${esc(day)}</span></span>`
     + `</button>`;
 }
 
-export const monthHtml = (cfg: Pick<BookingConfig, 'months' | 'copy'>, state: BookingState, past: ReadonlySet<string> = new Set()) =>
-  cfg.months[state.month].nights.map((n) => nightHtml(n, state, cfg.copy.waitlistMark, past.has(n[0]))).join('');
+export const monthHtml = (cfg: Pick<BookingConfig, 'months' | 'copy'>, state: BookingState) =>
+  (cfg.months[state.month]?.nights ?? []).map((n) => nightHtml(n, state, cfg.copy)).join('');
+
+/** The seat strip's columns: all in one row, or (`--half`, where the row is narrow) two rows as even as they go once there are more than eight. */
+export const seatGridStyle = (n: number) => `--n:${Math.max(1, n)};--half:${n > 8 ? Math.ceil(n / 2) : Math.max(1, n)}`;
 
 /** One cell per seat that can be asked for (seatLimit), named "1 seat", "2 seats"… for screen readers. */
 export const seatOptionsHtml = (left: number, seats: number, copy: Pick<BookingConfig['copy'], 'seatOne' | 'seatMany'>) =>
@@ -158,7 +159,7 @@ export function view(s: BookingState, cfg: BookingConfig) {
     left,
     waitlist,
     limit: seatLimit(cfg, s.date),
-    monthName: months[s.month].name,
+    monthName: months[s.month]?.name ?? '',
     prevName: s.month > 0 ? months[s.month - 1].name : '',
     nextName: s.month < months.length - 1 ? months[s.month + 1].name : '',
     hasPrev: s.month > 0,
@@ -173,6 +174,8 @@ export function view(s: BookingState, cfg: BookingConfig) {
     // which steps are awake: seats, then your details
     gates: [!!s.date, s.seats > 0],
     canHold: canHold(s) && !s.done,
+    // seats chosen but the details not complete: say what is missing under the dimmed button
+    missing: s.seats > 0 && !s.done && !canHold(s) ? copy.missingDetails : '',
     // back from Stripe in a tab that no longer remembers the night, the heading says only that it is requested
     doneHead: !s.done ? '' : s.seats && s.date ? fill(waitlist ? copy.waitlistDoneHead : copy.doneHead, { seats: seatPhrase(s.seats), date: s.date }) : copy.doneHeadShort,
     doneBody: s.done ? fill(waitlist ? copy.waitlistDoneBody : copy.doneBody, { email: s.email, contact: cfg.contactEmail }) : '',
