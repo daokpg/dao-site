@@ -45,13 +45,16 @@ export function handoff(pickSource: HTMLElement | (() => HTMLElement), me: State
   const ghost = document.createElement('div');
   ghost.setAttribute('aria-hidden', 'true');
   ghost.style.cssText = 'position:fixed;z-index:5;overflow:hidden;pointer-events:none;display:none';
-  const copy = img.cloneNode() as HTMLImageElement;
+  // a <picture> goes with its WebP source, drawn at the evening photograph's width (the size it grows to)
+  const pic = img.closest('picture')?.cloneNode(true) as HTMLPictureElement | undefined;
+  pic?.querySelector('source')?.setAttribute('sizes', '100vw');
+  const copy = (pic?.querySelector('img') ?? img.cloneNode()) as HTMLImageElement;
   copy.removeAttribute('loading');
   copy.alt = '';
   // the picture's box inside the frame is drawn from the source's at lift-off to the evening
   // photograph's at the end (see paint), so neither end jumps
   copy.style.cssText = 'position:absolute;object-fit:cover;display:block';
-  ghost.append(copy);
+  ghost.append(pic ?? copy);
   main.append(ghost);
   target.style.visibility = 'hidden';
   me.cleanups.push(() => {

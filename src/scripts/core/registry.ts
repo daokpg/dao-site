@@ -35,6 +35,7 @@ import * as infoIndex from '../systems/info-index';
 import * as eveningClock from '../systems/evening-clock';
 import * as tastingMenu from '../systems/tasting-menu';
 import * as booking from '../systems/booking';
+import * as hoverImages from '../systems/hover-images';
 
 export interface System {
   /** The page has this system when it contains an element matching this selector. */
@@ -58,6 +59,7 @@ const systems: System[] = [
   eveningClock.system,
   tastingMenu.system,
   booking.system,
+  hoverImages.system,
 ];
 
 let scope: HTMLElement | null = null;

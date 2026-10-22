@@ -1,8 +1,8 @@
 ---
 /**
  * Full-screen video under the headline. Stays pinned while the paper sheet slides over
- * it, receding and dimming (systems/recede.ts). The video upgrades to the HLS stream when
- * one can play (systems/hero-video.ts); the local MP4 and the poster are the fallbacks.
+ * it, receding and dimming (systems/recede.ts). The film is the HLS stream (systems/hero-video.ts);
+ * the local MP4 (data-mp4, fetched only if the stream cannot play) and the poster are the fallbacks.
  */
 import Cta from '../ui/Cta.astro';
 import { getHome, getSite, pageHref } from '../../lib/content';
@@ -12,7 +12,7 @@ const { lines, corner, video } = home.hero;
 ---
 <section data-screen-label="Hero" data-hero data-entrance="film" data-recede-panel="[data-sheet]" data-recede-scale="0.88" data-recede-y="24" style="position:sticky;top:0;z-index:1;height:100vh;min-height:640px;overflow:hidden;color:var(--paper);transform-origin:50% 50%">
   <div data-hero-mask style="position:absolute;inset:0;overflow:hidden">
-    <video data-hero-img data-hls={video.hls} src={video.mp4} poster={video.poster} autoplay muted loop playsinline preload="metadata" aria-label={video.alt} style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 40%;display:block"></video>
+    <video data-hero-img data-hls={video.hls} data-mp4={video.mp4} poster={video.poster} autoplay muted loop playsinline preload="metadata" aria-label={video.alt} style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 40%;display:block"></video>
     <span style="position:absolute;inset:0;background:var(--scrim-floor)"></span>
     <span style="position:absolute;inset:0;background:var(--scrim-band)"></span>
     <span style="position:absolute;left:0;right:0;top:0;height:160px;background:linear-gradient(180deg,rgba(0,0,0,.28),transparent)"></span>

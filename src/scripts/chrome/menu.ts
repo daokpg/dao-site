@@ -10,6 +10,7 @@ import { gsap } from '../core/gsap';
 import { CLOSED, E, OPEN, SHEET } from '../core/env';
 import { startScroll, stopScroll } from '../core/lenis';
 import { setTone } from '../core/tone';
+import { loadDeferred } from '../core/defer';
 
 const $ = <T extends HTMLElement = HTMLElement>(s: string) => document.querySelector<T>(s)!;
 const $$ = (s: string) => Array.from(document.querySelectorAll<HTMLElement>(s));
@@ -69,6 +70,7 @@ function killMenuTweens() {
 
 export function openMenu() {
   const { panel, scrim, masks, labels, contact } = parts();
+  loadDeferred(panel);
   swapWord(true);
   setOpenState(true);
   stopScroll();
@@ -138,6 +140,8 @@ export function initMenu() {
   gsap.set(masks, { clipPath: CLOSED });
   gsap.set(imgs, { scale: 1.18 });
   gsap.set([...labels, contact], { opacity: 0, y: 16 });
+  // the photographs are fetched when the menu is first wanted, not with every page
+  button.addEventListener('pointerenter', () => loadDeferred(panel), { once: true });
   button.addEventListener('click', (e) => {
     e.preventDefault();
     if (swapping) return;

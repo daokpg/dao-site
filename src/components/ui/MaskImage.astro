@@ -4,18 +4,20 @@
  * picture drifting inside the frame (in-frame parallax). The frame's aspect ratio is
  * layout, the image and its crop are content.
  */
+import Picture from './Picture.astro';
 import type { Image } from '../../content/types';
-import { cropStyle } from '../../lib/format';
 
 interface Props {
   image: Image;
   aspect: string;
   /** Extra inline style for the frame (grid placement and the like). */
   style?: string;
+  /** The width the frame is drawn at (<source sizes>); the full screen unless told. */
+  sizes?: string;
 }
 
-const { image, aspect, style = '' } = Astro.props;
+const { image, aspect, style = '', sizes = '100vw' } = Astro.props;
 ---
 <div data-mask data-parallax style={`position:relative;aspect-ratio:${aspect};overflow:hidden;${style}`}>
-  <img class="img" src={image.src} alt={image.alt} style={cropStyle(image.position)} loading="lazy" decoding="async" />
+  <Picture class="img" image={image} sizes={sizes} loading="lazy" />
 </div>

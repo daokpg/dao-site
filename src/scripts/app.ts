@@ -17,6 +17,7 @@ initMenu();
 initPressPulse();
 initSamePageLinks();
 initTransitions();
+document.documentElement.classList.add('ready'); // running: the CSS failsafe stands down (global.css)
 
 // Desktop and phone are two different layouts (the home photographs, smooth scroll); crossing the
 // breakpoint rebuilds the page rather than trying to morph one into the other.

@@ -1,0 +1,37 @@
+---
+/**
+ * A photograph with its WebP copies (`name-800.webp`, `name-1600.webp`, written next to the JPEG by
+ * `npm run photos` and listed in lib/photo-variants.json): a <picture> whose WebP source the
+ * browser picks by `sizes`, the original JPEG as the fallback. A photograph without copies is the
+ * plain <img>. Extra attributes go on the <img>.
+ *
+ * `defer` renders it without its files (data-srcset / data-src): a script fetches them when they
+ * are wanted (loadDeferred in scripts/core/defer.ts), as the menu and the hover rows do.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import type { Image } from '../../content/types';
+import { cropStyle } from '../../lib/format';
+import variants from '../../lib/photo-variants.json';
+
+interface Props extends Omit<HTMLAttributes<'img'>, 'src' | 'srcset' | 'sizes' | 'style'> {
+  image: Image;
+  /** The width the picture is drawn at, as for <source sizes>. */
+  sizes: string;
+  defer?: boolean;
+}
+
+const { image, sizes, defer = false, alt = image.alt, decoding = 'async', ...attrs } = Astro.props;
+
+const widths: number[] = (variants as Record<string, number[]>)[image.src] ?? [];
+const srcset = widths.map((w) => `${image.src.replace(/\.jpe?g$/i, '')}-${w}.webp ${w}w`).join(', ');
+const source = defer ? { 'data-srcset': srcset } : { srcset };
+const file = defer ? { 'data-src': image.src } : { src: image.src };
+---
+{srcset ? (
+  <picture>
+    <source type="image/webp" {...source} sizes={sizes} />
+    <img {...file} alt={alt} style={cropStyle(image.position)} decoding={decoding} {...attrs} />
+  </picture>
+) : (
+  <img {...file} alt={alt} style={cropStyle(image.position)} decoding={decoding} {...attrs} />
+)}

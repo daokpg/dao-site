@@ -31,7 +31,7 @@ export function rows(section: HTMLElement, me: State, scope: HTMLElement) {
   }));
   // the tiles showing the evening section's photograph (both copies), and the row they are in
   const src = scope.querySelector('[data-trail-handoff] img')?.getAttribute('src');
-  const tiles = src ? Array.from(section.querySelectorAll<HTMLImageElement>('[data-rows-track] img')).filter((im) => im.getAttribute('src') === src).map((im) => im.parentElement!) : [];
+  const tiles = src ? Array.from(section.querySelectorAll<HTMLImageElement>('[data-rows-track] img')).filter((im) => im.getAttribute('src') === src).map((im) => im.closest('li')!) : [];
   const home = list.find((l) => tiles[0] && l.row.contains(tiles[0]));
   const wrap = (x: number, w: number) => ((x % w) + w) % w - w; // into (-w, 0]
 

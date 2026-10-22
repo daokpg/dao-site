@@ -96,7 +96,7 @@ function before(scope: HTMLElement) {
 
   if (!still) {
     qa('[data-parallax] img').forEach((img) => {
-      gsap.fromTo(img, { yPercent: -5 }, { yPercent: 5, ease: 'none', scrollTrigger: { trigger: img.parentElement, start: 'top bottom', end: 'bottom top', scrub: true } });
+      gsap.fromTo(img, { yPercent: -5 }, { yPercent: 5, ease: 'none', scrollTrigger: { trigger: (img.closest('picture') ?? img).parentElement, start: 'top bottom', end: 'bottom top', scrub: true } });
     });
   }
 

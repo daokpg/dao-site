@@ -1,17 +1,21 @@
 ---
-/** Where he cooked, in order. Each row opens on hover to show the city. */
+/**
+ * Where he cooked, in order. Each row opens on hover to show the city (fetched when the pointer
+ * first comes into the list, systems/hover-images.ts).
+ */
+import Picture from '../ui/Picture.astro';
 import { getStory } from '../../lib/content';
-import { cropStyle, pad2 } from '../../lib/format';
+import { pad2 } from '../../lib/format';
 
 const { route } = await getStory();
 const last = route.stops.length - 1;
 ---
 <section data-screen-label="Route" data-container class="g12" style="padding:0 64px 200px;align-items:start">
   <h2 data-reveal-soft data-split="softlines" style="grid-column:1 / span 3;position:sticky;top:140px;align-self:start;margin:0;font:300 clamp(36px,3.6vw,56px)/1.05 var(--font-display);letter-spacing:-.02em;color:var(--ink);max-width:none">{route.heading}</h2>
-  <div style="grid-column:4 / span 9;display:flex;flex-direction:column">
+  <div data-hover-images style="grid-column:4 / span 9;display:flex;flex-direction:column">
     {route.stops.map((stop, i) => (
       <div data-block class="hr" style={`border-top:1px solid var(--rule);${i === last ? 'border-bottom:1px solid var(--rule);' : ''}display:grid;grid-template-columns:minmax(max-content,3fr) minmax(0,5fr) minmax(0,1fr);gap:0 24px;align-items:start;padding:28px 0 32px`}>
-        <span class="hv"><img src={stop.image.src} alt="" style={cropStyle(stop.image.position)} loading="lazy" decoding="async" /><span class="sc"></span></span>
+        <span class="hv"><Picture image={stop.image} alt="" sizes="75vw" defer /><span class="sc"></span></span>
         <span class="fig2" style="line-height:1;white-space:nowrap;font-size:clamp(36px,3.4vw,56px)">{stop.city}</span>
         <span class="word" data-measure="l" style="padding-top:.35em;font-size:13px;line-height:1.55">{stop.text}</span>
         <span class="num" style="justify-self:end;padding-top:.4em;line-height:1.55">{pad2(i + 1)}</span>

@@ -14,9 +14,9 @@
  * The visible copy beside the photographs changes as they pass, so it is hidden from screen
  * readers; the list of moments is read instead.
  */
+import Picture from '../../ui/Picture.astro';
 import { getHome } from '../../../lib/content';
 import { scriptJson } from '../../../lib/json';
-import { cropStyle } from '../../../lib/format';
 
 const { moments } = (await getHome()).journey;
 const frames = moments.flatMap((m, i) => m.ribbon.map((r) => ({ ...r, moment: i })));
@@ -38,7 +38,7 @@ const json = scriptJson(moments.map(({ time, label, text }) => ({ time, label, t
       <div class="jr-spine__axis" data-spine-axis aria-hidden="true"></div>
       {frames.map((f) => (
         <figure data-spine-item data-moment={f.moment} class:list={['jr-spine__frame', { 'is-tall': f.tall }]}>
-          <img src={f.src} alt={f.alt} loading="lazy" decoding="async" style={cropStyle(f.position)} />
+          <Picture image={f} sizes="30vw" loading="lazy" />
         </figure>
       ))}
     </div>
@@ -53,7 +53,7 @@ const json = scriptJson(moments.map(({ time, label, text }) => ({ time, label, t
     <ul class="jr-swipe__rail" data-ms-rail tabindex="0" aria-label="Photographs of the day, swipe for more">
       {moments.map((m) => (
         <li class="jr-swipe__card" data-ms-card>
-          <img src={m.image.src} alt={m.image.alt} loading="lazy" decoding="async" style={cropStyle(m.image.position)} />
+          <Picture image={m.image} sizes="135vw" loading="lazy" />
         </li>
       ))}
     </ul>
