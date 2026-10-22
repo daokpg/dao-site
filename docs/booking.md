@@ -1,7 +1,7 @@
 # Reservations & payment
 
 How booking works on the Dao site, how it connects to the restaurant's reservations sheet, and how to set it up.
-Last updated 2026-09-28. Status: **built and tested locally; not yet deployed** (§8).
+Last updated 2026-10-22. Status: **built and tested locally; not yet deployed** (§8).
 
 ---
 
@@ -64,10 +64,12 @@ The only secret, the Stripe key, lives in the script's properties, never in the 
 edit the spreadsheet can read those properties, so use a Stripe **restricted key** (`rk_…`) allowed only
 Customers: write, Checkout Sessions: write and SetupIntents: read, never the full secret key.
 
-**Abuse protection in the script** (the web app's address is public): more than 30 requests in ten
-minutes are refused ("busy"); the same WhatsApp number for the same night is treated as the same request;
+**Abuse protection in the script** (the web app's address is public): more than 30 requests in a ten-minute
+block are refused ("busy"); the same WhatsApp number for the same night and seats is treated as the same request
+(answered before it is counted, and given the same card page while that is still open on Stripe);
 guest text is written into the sheet as text, never as a formula (a note starting with `=` or `+`);
-line breaks are taken out of one-line fields; a failed or over-quota email never fails the guest; and the
+line breaks are taken out of one-line fields; more than 11 seats (the online maximum) are refused; a failed or
+over-quota email never fails the guest; and the
 script may only touch its own spreadsheet (`@OnlyCurrentDoc`). Still recommended before going live: Cloudflare
 Turnstile on `/reserve` (verified in `doPost`) and Stripe Radar rules for setup intents. Keep both
 spreadsheets shared as "Restricted".
@@ -82,14 +84,14 @@ spreadsheets shared as "Restricted".
 3. The page groups them into months and shows them. A night with 0 seats left shows "Waitlist".
 4. **A night appears once its week is laid out on the board.** How far ahead guests can book = how far ahead the team prepares weekly tabs (currently to 31 October).
 
-"Availability" is rebuilt by `refreshAvailability()`: for every weekly tab, each date merged down column A is a night; **booked = the sum of column C (Pax) within the night**. Capacity defaults to 16 (14 on Saturdays) and, like Open, can be edited per night: those edits are kept when it refreshes.
+"Availability" is rebuilt by `refreshAvailability()`: for every weekly tab, each date merged down column A is a night; **booked = the sum of column C (Pax) within the night**. Capacity defaults to 16 (14 on Saturdays, the weekday read in Bangkok time) and, like Open, can be edited per night: those edits are kept when it refreshes, and an edit there refreshes the tab. Seats left are worked out by the script and written with the rest of each row, one refresh at a time (it holds the script's lock), so the website never reads a half-written night.
 
 ### 4.2 A booking request
 1. Guest picks a night and seats, fills in name, WhatsApp (required), email, occasion (+ cake for a birthday) and a note, presses "Request the seats".
 2. The page sends it (`POST`, as plain text so Apps Script accepts it from another site). A hidden field catches bots.
 3. The script, holding a lock:
    - refuses if the night isn't open (`closed`) or has fewer seats left than asked (`not_enough`, with the number left, shown to the guest);
-   - turns a booking for a night that has just filled into a waitlist request;
+   - turns a booking for a night that has just filled into a waitlist request (the page then thanks the guest for joining the waitlist);
    - adds the row to "Website requests" with Status `New` (yellow), and a request ID (`DAO-…`);
    - emails the restaurant.
 4. For a booking, the script creates a Stripe customer and a card page in **setup mode** (saves a card, charges nothing, shows the no-show policy), and the guest goes there.
@@ -120,7 +122,7 @@ Received · Type (Booking / Waitlist) · Status (New / Approved / Declined / Wai
 
 **Availability** (one row per night; rebuilt by the script, Open and Capacity editable)
 
-Night · Open · Capacity · Booked (from the board) · Seats left (formula) · Board tab · Updated
+Night · Open · Capacity · Booked (from the board) · Seats left (worked out by the script) · Board tab · Updated
 
 **How it works**: the team's instructions, in the sheet itself.
 
@@ -158,21 +160,22 @@ Sources: [Stripe Thailand pricing](https://stripe.com/th/pricing) · [Stripe: pl
 
 **Test copy (done so far):** [Reservations board – website test (October)](https://docs.google.com/spreadsheets/d/1j6hgpGMNAZs41UMs9tKcCYcaY_Q7OEcLtreN33FUUQk/edit), a full copy of the live board in Ran's Drive. The live board is untouched.
 
-1. [ ] In the test copy: Extensions → Apps Script, paste `backend/booking.gs`, save.
+1. [ ] In the test copy: Extensions → Apps Script, paste `backend/booking.gs`. Then Project settings → tick "Show appsscript.json manifest file in editor", open `appsscript.json` and paste `backend/appsscript.json` (it sets the script's time zone to Asia/Bangkok). Save.
 2. [ ] Run `setupTestCopy` once (approve Google's permission prompt). It keeps only the weekly tabs with October nights, fixes the Tuesday totals, adds the three tabs and fills "Availability". It refuses to run on the live board.
-3. [ ] Project settings → Script properties: `NOTIFY_EMAIL`, `SITE_URL` (the site's address), `STRIPE_SECRET_KEY` (a **test** key, `sk_test_…`).
+3. [ ] Project settings → Script properties: `NOTIFY_EMAIL`, `SITE_URL` (the site's address), `STRIPE_SECRET_KEY` (a **restricted test** key, `rk_test_…`, with only the permissions in §3; never a full `sk_` key).
 4. [ ] Run `installTriggers` once (refresh every 5 min, card check every 10 min).
 5. [ ] Deploy → New deployment → Web app: execute as **me**, access **anyone**. Copy the web app URL.
+   After any later change to the script: Deploy → **Manage deployments** → edit (pencil) → Version: **New version** → Deploy. This keeps the same URL; a *new deployment* would get a new URL, and the site would still call the old code.
 6. [ ] Set `PUBLIC_BOOKING_API` to that URL in the site's build settings (Cloudflare) and redeploy; or locally, `PUBLIC_BOOKING_API=… npm run build`.
 7. [ ] Try it: request seats, save Stripe's test card `4242 4242 4242 4242`, check the row, approve it, place the guests on the board and watch the night's seats drop.
 
 **Going live, on the real board (with the client, in their accounts):**
 1. [ ] Fix the Tuesday total formula in their weekly template.
-2. [ ] Paste the script into the live board, run **`addWebsiteTabs`** (not `setupTestCopy`), then `refreshAvailability`, `installTriggers`, deploy, set properties with a **live** Stripe key.
+2. [ ] Paste the script and its manifest into the live board, run **`addWebsiteTabs`** (not `setupTestCopy`), then `refreshAvailability`, `installTriggers`, deploy, set properties with a **restricted live** Stripe key (`rk_live_…`).
 3. [ ] Point `PUBLIC_BOOKING_API` at the live deployment.
 4. [ ] Hosting: the site on the client's Cloudflare, code on their GitHub (Ran and Matteo as collaborators), domain in their name.
 
-**Checks:** `node backend/test/harness.mjs test` runs `booking.gs` against the October board's structure with fake Google services (17 checks: setup, availability, booking, waitlist, refusals, spam, cards, seats counting once placed). `serve` runs it as a local backend for the site.
+**Checks:** `node backend/test/harness.mjs test` runs `booking.gs` against the October board's structure with fake Google services, the script in UTC and the sheet in Bangkok (30 checks: setup, availability, time zone, booking, waitlist and a booking turned waitlist, refusals, the online maximum, repeats and their card page, spam and floods, cards, seats counting once placed). `serve` runs it as a local backend for the site.
 
 ---
 
@@ -184,7 +187,7 @@ Sources: [Stripe Thailand pricing](https://stripe.com/th/pricing) · [Stripe: pl
 - [ ] **Occasions:** add "Honeymoon" and "Other"? Both appear on the board.
 - [ ] **Vegetarian / vegan:** the menu dropdown offers both; the FAQ says fully plant-based menus aren't offered. Which is right?
 - [ ] **No-show fee:** THB 1,950 a seat is carried over from the old deposit idea (in `site.ts` and the FAQ text).
-- [ ] **Online maximum:** the seat picker allows up to the seats left (up to 16), but the copy says 12 or more should write in.
+- [x] **Online maximum:** 11 seats per online request (`onlineMax` in `src/content/reserve.ts`, checked again by the script); 12 or more write in, as the copy says.
 - [ ] **Stripe:** confirm their existing account (gift cards were paid via Stripe) and use it.
 - [ ] Approve the new copy: booking page, waitlist, card wording on the home page and FAQ.
 - [x] No deposit; a saved card holds every booking (2026-09-28).

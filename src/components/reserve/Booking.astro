@@ -26,7 +26,7 @@ const config: BookingConfig = {
 };
 const state = initialState();
 const v = view(state, config);
-const { steps, ticket } = reserve;
+const { steps, ticket, monthNav } = reserve;
 type Field = { id: string; type: 'text' | 'email' | 'tel'; label: string; placeholder: string; autocomplete: string };
 // the occasion dropdown and its cake checkbox sit between these and the note
 const contactFields: Field[] = [
@@ -50,18 +50,18 @@ const arrow = 'M0 4h26M22.5 .5 26 4l-3.5 3.5';
       <div data-month style={`display:grid;grid-template-columns:repeat(${reserve.months[0].nights.length},minmax(0,1fr));gap:0 16px;align-items:end;border-bottom:1px solid var(--rule);padding-bottom:0;will-change:transform`} set:html={monthHtml(config, state)} />
     </div>
     <div data-month-nav style="grid-column:1 / span 12;display:flex;justify-content:space-between;align-items:center;gap:24px;margin-top:20px">
-      <button type="button" class="mn" data-month-prev disabled={!v.hasPrev} style="display:inline-flex;align-items:center;gap:14px"><svg data-flip width="28" height="8" viewBox="0 0 28 8" fill="none" aria-hidden="true" style="display:block;transform:scaleX(-1)"><path d={arrow} stroke="currentColor" stroke-width="1" stroke-linecap="square" /></svg><span data-prev-name>{v.prevName}</span></button>
+      <button type="button" class="mn" data-month-prev disabled={!v.hasPrev} style="display:inline-flex;align-items:center;gap:14px"><svg data-flip width="28" height="8" viewBox="0 0 28 8" fill="none" aria-hidden="true" style="display:block;transform:scaleX(-1)"><path d={arrow} stroke="currentColor" stroke-width="1" stroke-linecap="square" /></svg><span class="sr-only">{monthNav.prev}, </span><span data-prev-name>{v.prevName}</span></button>
       <p data-night-line class="word" style="font-size:13px;color:var(--ink-3);margin:0;text-align:center">{v.nightLine}</p>
-      <button type="button" class="mn" data-month-next disabled={!v.hasNext} style="display:inline-flex;align-items:center;gap:14px"><span data-next-name>{v.nextName}</span><svg width="28" height="8" viewBox="0 0 28 8" fill="none" aria-hidden="true" style="display:block;transform:none"><path d={arrow} stroke="currentColor" stroke-width="1" stroke-linecap="square" /></svg></button>
+      <button type="button" class="mn" data-month-next disabled={!v.hasNext} style="display:inline-flex;align-items:center;gap:14px"><span class="sr-only">{monthNav.next}, </span><span data-next-name>{v.nextName}</span><svg width="28" height="8" viewBox="0 0 28 8" fill="none" aria-hidden="true" style="display:block;transform:none"><path d={arrow} stroke="currentColor" stroke-width="1" stroke-linecap="square" /></svg></button>
     </div>
   </section>
 
   <section data-screen-label="Your seats" data-container data-after inert class="g12" style="padding:0 64px 200px;align-items:start;opacity:.35;filter:blur(2px);pointer-events:none;transition:opacity 1s cubic-bezier(.16,1,.3,1),filter 1s cubic-bezier(.16,1,.3,1)">
     <div style="grid-column:1 / span 7;display:flex;flex-direction:column;gap:64px">
       <div data-gate data-live="false" style="display:flex;flex-direction:column;gap:24px">
-        <p class="num" style="font-size:12px">{steps.seats.label}</p>
+        <p class="num" id="rd-seats-label" style="font-size:12px">{steps.seats.label}</p>
         <p data-seats-left class="word" style="font-size:13px;color:var(--ink-2);margin-top:-8px">{v.seatsLeftLine}</p>
-        <div data-seat-options style="display:flex;gap:20px 28px;flex-wrap:wrap;align-items:baseline;max-width:640px" set:html={seatOptionsHtml(v.limit, state.seats)} />
+        <div data-seat-options role="group" aria-labelledby="rd-seats-label" style="display:flex;gap:20px 28px;flex-wrap:wrap;align-items:baseline;max-width:640px" set:html={seatOptionsHtml(v.limit, state.seats, config.copy)} />
         <p class="word" data-measure="m" style="font-size:12px;color:var(--ink-3)">{steps.seats.note}</p>
       </div>
       <div data-gate data-live="false" data-fields style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 24px">
@@ -98,7 +98,7 @@ const arrow = 'M0 4h26M22.5 .5 26 4l-3.5 3.5';
       </div>
     </aside>
     <div data-done aria-live="polite" style="grid-column:1 / span 8;display:none;flex-direction:column;gap:32px">
-      <p data-done-head style="margin:0;font:300 clamp(32px,3.4vw,56px)/1.15 var(--font-display);letter-spacing:-.02em;color:var(--ink);max-width:22ch;text-wrap:pretty"></p>
+      <p data-done-head tabindex="-1" style="margin:0;font:300 clamp(32px,3.4vw,56px)/1.15 var(--font-display);letter-spacing:-.02em;color:var(--ink);max-width:22ch;text-wrap:pretty"></p>
       <p data-done-body class="body" data-measure="m"></p>
     </div>
   </section>

@@ -14,6 +14,9 @@
   .nt .mk{display:block;width:18px;height:1px;background:currentColor;opacity:.55;transition:opacity .75s cubic-bezier(.16,1,.3,1),width .75s cubic-bezier(.16,1,.3,1)}
   .nt:hover .mk,.nt[aria-pressed="true"] .mk{opacity:1}
   .nt .mk[data-mine="true"]{width:28px;opacity:1}
+  /* a placeholder night already gone stays in its place, faded, and can't be picked */
+  .nt:disabled{color:var(--ink-3);cursor:default}
+  .nt:disabled .mk{opacity:.3}
   .mn{background:none;border:0;padding:0;cursor:pointer;font:500 10px/1 var(--font-body);letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3);transition:color .75s cubic-bezier(.16,1,.3,1)}
   .mn:hover{color:var(--ink)}
   .mn:disabled{visibility:hidden;pointer-events:none}
@@ -35,8 +38,10 @@
   [data-confirm].cta .rl{display:none}
   [data-hold-wrap][data-sending="true"]{opacity:.5}
   [data-hold-wrap][data-sending="true"] button{pointer-events:none}
-  /* while the real nights load, the placeholder month waits faded and can't be picked */
-  [data-booking][data-loading="true"] [data-month]{opacity:.2;pointer-events:none}
+  /* while the real nights load, or if they never come, the placeholder month waits faded (and inert, set by the script) */
+  [data-booking][data-nights] [data-month]{opacity:.2}
+  /* the heading takes focus once the request is in, so it is read out; no ring on a heading */
+  [data-done-head]:focus{outline:0}
 
   /* a full night turns the booking into a waitlist request */
   [data-booking][data-waitlist="false"] [data-when="full"],

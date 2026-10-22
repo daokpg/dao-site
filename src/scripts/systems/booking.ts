@@ -15,7 +15,7 @@ import { gsap, ScrollTrigger } from '../core/gsap';
 import { E, isMobile, reducedMotion } from '../core/env';
 import { scrollToY } from '../core/lenis';
 import {
-  initialState, monthHtml, monthsFromNights, seatLimit, seatOptionsHtml, view,
+  initialState, monthHtml, monthsFromNights, pastLabels, seatLimit, seatOptionsHtml, view,
   type ApiNight, type BookingConfig, type BookingState,
 } from '../../lib/booking';
 import { fill } from '../../lib/format';
@@ -23,6 +23,8 @@ import type { System } from '../core/registry';
 
 /** What the page remembers across the trip to Stripe and back. */
 const PENDING_KEY = 'dao-request';
+/** How long a call to the booking backend may take before the page shows its error. */
+const TIMEOUT_MS = 20000;
 
 type State = { ac: AbortController; timers: number[]; els: Element[] };
 let state: State | null = null;
@@ -85,14 +87,27 @@ function before(scope: HTMLElement) {
   let sliding = false;
   let sending = false;
   let isoByLabel: Record<string, string> = {};
+  // with a backend, the placeholder month can't be used until the real nights are in
+  let nightsReady = !cfg.api;
+  // the placeholder nights already gone (the real ones start from today)
+  const past = cfg.api ? new Set<string>() : pastLabels(cfg.months);
+  // the page's own signal, plus a time limit, so a backend that never answers ends in the error message
+  // (by hand: AbortSignal.any over AbortSignal.timeout never fired in WebKit when tried)
+  const timed = () => {
+    const c = new AbortController();
+    later(() => c.abort(), TIMEOUT_MS);
+    ac.signal.addEventListener('abort', () => c.abort(), { once: true });
+    return c.signal;
+  };
 
   /** Bring every dependent piece of the page in line with the state. */
   const render = () => {
     const v = view(s, cfg);
     root.setAttribute('data-waitlist', String(v.waitlist));
     el.monthName.textContent = v.monthName;
-    el.prev.disabled = !v.hasPrev;
-    el.next.disabled = !v.hasNext;
+    el.clip.inert = !nightsReady;
+    el.prev.disabled = !v.hasPrev || !nightsReady;
+    el.next.disabled = !v.hasNext || !nightsReady;
     el.prevName.textContent = v.prevName;
     el.nextName.textContent = v.nextName;
     el.nightLine.textContent = v.nightLine;
@@ -103,7 +118,7 @@ function before(scope: HTMLElement) {
       n.querySelectorAll('.mk').forEach((mk, i) => mk.setAttribute('data-mine', String(mine && i < s.seats)));
     });
     el.seatsLeft.textContent = v.seatsLeftLine;
-    if (v.limit !== shownLeft) { el.seatOptions.innerHTML = seatOptionsHtml(v.limit, s.seats); shownLeft = v.limit; }
+    if (v.limit !== shownLeft) { el.seatOptions.innerHTML = seatOptionsHtml(v.limit, s.seats, cfg.copy); shownLeft = v.limit; }
     qa('[data-seat]').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.seat) === s.seats)));
     // a step that is not open yet is out of reach (keyboard and screen readers too), and so is the button until the request is complete
     el.gates.forEach((g, i) => { g.setAttribute('data-live', String(v.gates[i])); g.inert = !v.gates[i]; });
@@ -162,7 +177,7 @@ function before(scope: HTMLElement) {
 
   /** The month strip has one column per night: sixteen in the placeholder, around twenty-two in a real month. */
   const fillMonth = () => {
-    el.month.innerHTML = monthHtml(cfg, s);
+    el.month.innerHTML = monthHtml(cfg, s, past);
     const n = cfg.months[s.month]?.nights.length ?? 16;
     el.month.style.gridTemplateColumns = `repeat(${n},minmax(0,1fr))`;
     el.month.style.columnGap = n > 16 ? '8px' : '';
@@ -171,25 +186,32 @@ function before(scope: HTMLElement) {
   const showError = (msg: string) => { el.holdError.textContent = msg; el.holdError.hidden = !msg; };
 
   // ---- the real nights, from the booking backend
+  // until they are (and for good if they fail or there are none), the placeholder month stays faded and inert
   async function loadNights() {
-    root.setAttribute('data-loading', 'true');
+    root.setAttribute('data-nights', 'loading');
+    render();
     el.nightLine.textContent = cfg.copy.loadingNights;
     try {
-      const res = await fetch(cfg.api, { signal: ac.signal });
+      const res = await fetch(cfg.api, { signal: timed() });
       const data: { nights: ApiNight[] } = await res.json();
       const built = monthsFromNights(data.nights ?? []);
-      if (!built.months.length) { el.nightLine.textContent = fill(cfg.copy.noNights, { contact: cfg.contactEmail }); return; }
+      if (!built.months.length) {
+        root.setAttribute('data-nights', 'none');
+        el.nightLine.textContent = fill(cfg.copy.noNights, { contact: cfg.contactEmail });
+        return;
+      }
       cfg.months = built.months;
       isoByLabel = built.isoByLabel;
+      nightsReady = true;
+      root.removeAttribute('data-nights');
       s = { ...s, month: 0, date: null, seats: 0 };
       fillMonth();
       render();
       drawMarks(root, 0.1, 0.03, 0.02);
     } catch (err) {
       if (ac.signal.aborted) return;
+      root.setAttribute('data-nights', 'none');
       el.nightLine.textContent = fill(cfg.copy.loadError, { contact: cfg.contactEmail });
-    } finally {
-      if (!ac.signal.aborted) root.removeAttribute('data-loading');
     }
   }
 
@@ -198,26 +220,36 @@ function before(scope: HTMLElement) {
     if (s.done || sending || !view(s, cfg).canHold) return;
     if (!cfg.api) return showDone();
     const v = view(s, cfg);
+    // a night not from the backend (the placeholders) can't be sent
+    const date = isoByLabel[s.date ?? ''];
+    if (!date) return showError(fill(cfg.copy.sendError, { contact: cfg.contactEmail }));
     sending = true;
     el.holdWrap.setAttribute('data-sending', 'true');
+    el.holdWrap.setAttribute('aria-busy', 'true');
     showError('');
     try {
       // text/plain keeps this a simple request, which Apps Script accepts from another site
       const res = await fetch(cfg.api, {
-        method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, signal: ac.signal,
+        method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, signal: timed(),
         body: JSON.stringify({
-          type: v.waitlist ? 'waitlist' : 'booking', date: isoByLabel[s.date ?? ''], seats: s.seats,
+          type: v.waitlist ? 'waitlist' : 'booking', date, seats: s.seats,
           name: s.name, whatsapp: s.whatsapp, email: s.email, occasion: s.occasion, cake: s.cake, note: s.note,
           website: el.honeypot.value,
         }),
       });
-      const out: { ok: boolean; reason?: string; left?: number; cardUrl?: string | null } = await res.json();
+      const out: { ok: boolean; reason?: string; left?: number; type?: 'booking' | 'waitlist'; cardUrl?: string | null } = await res.json();
       // only ever send the guest on to Stripe's own card page (or the local test backend's stand-in)
       const toCard = !!out.cardUrl && (out.cardUrl.startsWith('https://checkout.stripe.com/') || (cfg.api.startsWith('http://localhost') && out.cardUrl.startsWith('http://localhost')));
       if (out.ok && toCard && out.cardUrl) {
         try { sessionStorage.setItem(PENDING_KEY, JSON.stringify({ date: s.date, seats: s.seats })); } catch {}
         window.location.href = out.cardUrl;
         return;
+      }
+      // the night filled while the guest was choosing: the backend took it as a waitlist request, so the
+      // page marks the night full and thanks them for joining the waitlist
+      if (out.ok && out.type === 'waitlist' && !v.waitlist) {
+        const night = cfg.months.flatMap((m) => m.nights).find((n) => n[0] === s.date);
+        if (night) { night[1] = 0; fillMonth(); }
       }
       if (out.ok) return showDone();
       if (out.reason === 'not_enough') showError(fill(cfg.copy.notEnough, { left: out.left ?? 0, date: s.date ?? '' }));
@@ -228,6 +260,7 @@ function before(scope: HTMLElement) {
     } finally {
       sending = false;
       el.holdWrap.removeAttribute('data-sending');
+      el.holdWrap.removeAttribute('aria-busy');
     }
   }
 
@@ -243,6 +276,8 @@ function before(scope: HTMLElement) {
         if (extra) el.doneBody.textContent += ` ${extra}`;
         el.after.querySelector('aside')?.style.setProperty('display', 'none', 'important');
         el.done.style.display = 'flex';
+        // focus moves to the heading so a screen reader reads the confirmation out
+        el.doneHead.focus({ preventScroll: true });
         gsap.fromTo(el.done.children, { opacity: 0, y: 18, filter: 'blur(8px)' }, { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1.25, ease: E, stagger: 0.1 });
       },
     });
@@ -299,6 +334,8 @@ function before(scope: HTMLElement) {
     showDone(back.get('card') === '0' ? cfg.copy.cardSkipped : '');
   } else if (cfg.api) {
     loadNights();
+  } else if (past.size) {
+    fillMonth();
   }
 
   // ---- drag the month sideways (desktop)
