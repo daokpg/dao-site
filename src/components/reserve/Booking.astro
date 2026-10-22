@@ -71,7 +71,7 @@ const up = 'M4 26V0M.5 3.5 4 0l3.5 3.5';
       <div data-gate data-live="false" data-fields style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 24px">
         <h2 class="step" style="grid-column:1 / -1;margin-bottom:12px"><span class="step__n" aria-hidden="true">{pad2(3)}</span>{steps.details.label}</h2>
         {contactFields.map((f) => (
-          <label style="display:flex;flex-direction:column;gap:8px"><span class="num" style="font-size:12px">{f.label}</span><input data-field={f.id} id={`rd-${f.id}`} type={f.type} placeholder={f.placeholder} autocomplete={f.autocomplete} /></label>
+          <label style="display:flex;flex-direction:column;gap:8px"><span class="num" style="font-size:12px">{f.label}</span><input data-field={f.id} id={`rd-${f.id}`} type={f.type} placeholder={f.placeholder} autocomplete={f.autocomplete} aria-required="true" aria-describedby="rd-missing" enterkeyhint="next" /></label>
         ))}
         <div style="display:flex;flex-direction:column;gap:16px">
           <label style="display:flex;flex-direction:column;gap:8px"><span class="num" style="font-size:12px">{steps.fields.occasion}</span>
@@ -83,7 +83,7 @@ const up = 'M4 26V0M.5 3.5 4 0l3.5 3.5';
           <label data-cake hidden class="cake"><input type="checkbox" data-cake-box id="rd-cake" /><span class="word" style="font-size:13px;color:var(--ink-2)">{fill(steps.fields.cake, { amount: money(site.pricing.cake, site.pricing.currency) })}</span></label>
         </div>
         <label aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden">Website<input data-honeypot type="text" tabindex="-1" autocomplete="off" /></label>
-        <label style="display:flex;flex-direction:column;gap:8px;grid-column:1 / -1"><span class="num" style="font-size:12px">{steps.fields.note}</span><input data-field="note" id="rd-note" type="text" placeholder={steps.fields.notePlaceholder} autocomplete="off" /></label>
+        <label style="display:flex;flex-direction:column;gap:8px;grid-column:1 / -1"><span class="num" style="font-size:12px">{steps.fields.note}</span><input data-field="note" id="rd-note" type="text" placeholder={steps.fields.notePlaceholder} enterkeyhint="send" autocomplete="off" /></label>
       </div>
     </div>
     <aside style="grid-column:9 / span 4;position:sticky;top:140px;align-self:start;display:flex;flex-direction:column;gap:40px">
@@ -97,11 +97,11 @@ const up = 'M4 26V0M.5 3.5 4 0l3.5 3.5';
         <span class="word" data-measure="s" style="font-size:12px;color:var(--ink-3)">{ticket.waitlistNote}</span>
       </div>
       <div data-hold-wrap data-can="false" style="transition:opacity .75s cubic-bezier(.16,1,.3,1)">
-        <button type="button" data-confirm data-when="open" disabled class="lt-host cta" aria-label={ticket.hold}><span class="lt"><span class="a" aria-hidden="true"><Letters text={ticket.hold} /></span><span class="b" aria-hidden="true"><Letters text={ticket.hold} /></span></span></button>
-        <button type="button" data-confirm data-when="full" disabled class="lt-host cta" aria-label={ticket.join}><span class="lt"><span class="a" aria-hidden="true"><Letters text={ticket.join} /></span><span class="b" aria-hidden="true"><Letters text={ticket.join} /></span></span></button>
+        <button type="button" data-confirm data-when="open" aria-disabled="true" aria-describedby="rd-missing" class="lt-host cta" aria-label={ticket.hold}><span class="lt"><span class="a" aria-hidden="true"><Letters text={ticket.hold} /></span><span class="b" aria-hidden="true"><Letters text={ticket.hold} /></span></span></button>
+        <button type="button" data-confirm data-when="full" aria-disabled="true" aria-describedby="rd-missing" class="lt-host cta" aria-label={ticket.join}><span class="lt"><span class="a" aria-hidden="true"><Letters text={ticket.join} /></span><span class="b" aria-hidden="true"><Letters text={ticket.join} /></span></span></button>
         <p data-hold-error role="alert" class="word" hidden style="font-size:12px;color:var(--ink-2);margin-top:14px"></p>
       </div>
-      <p data-hold-missing class="word" hidden style="font-size:12px;color:var(--ink-2);margin-top:-26px"></p>
+      <p data-hold-missing id="rd-missing" class="word" hidden style="font-size:12px;color:var(--ink-2);margin-top:-26px"></p>
     </aside>
     <div data-done style="grid-column:1 / span 8;display:none;flex-direction:column;gap:32px">
       <p data-done-head tabindex="-1" style="margin:0;font:300 clamp(32px,3.4vw,56px)/1.15 var(--font-display);letter-spacing:-.02em;color:var(--ink);max-width:22ch;text-wrap:pretty"></p>

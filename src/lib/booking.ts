@@ -137,11 +137,20 @@ export const seatOptionsHtml = (left: number, seats: number, copy: Pick<BookingC
   Array.from({ length: left }, (_, i) => `<button type="button" class="st" data-seat="${i + 1}" aria-pressed="${seats === i + 1}" aria-label="${esc(fill(i ? copy.seatMany : copy.seatOne, { Seats: i + 1 }))}"><span>${i + 1}</span></button>`).join('');
 
 // the team finalises every booking on WhatsApp, so a number is required
-const hasContact = (s: BookingState) =>
-  s.name.trim().length > 1 && /.+@.+\..+/.test(s.email) && s.whatsapp.replace(/\D/g, '').length >= 7;
+export const CONTACT = ['name', 'whatsapp', 'email'] as const;
+export type ContactField = (typeof CONTACT)[number];
+/** Whether one of the required details is filled in well enough to send. */
+export const fieldOk = (s: BookingState, f: ContactField) =>
+  f === 'name' ? s.name.trim().length > 1 : f === 'email' ? /.+@.+\..+/.test(s.email) : s.whatsapp.replace(/\D/g, '').length >= 7;
+/** The required details still missing, in the order they are asked. */
+export const missingFields = (s: BookingState) => CONTACT.filter((f) => !fieldOk(s, f));
+const hasContact = (s: BookingState) => missingFields(s).length === 0;
 
 /** A booking or a waitlist request needs seats and contact details. */
 export const canHold = (s: BookingState) => s.seats > 0 && hasContact(s);
+
+/** "a", "a and b", "a, b and c". */
+const listOf = (items: string[], and: string) => (items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} ${and} ${items[items.length - 1]}`);
 
 /** Every sentence and figure on the page that depends on the booking so far. */
 export function view(s: BookingState, cfg: BookingConfig) {
@@ -175,7 +184,7 @@ export function view(s: BookingState, cfg: BookingConfig) {
     gates: [!!s.date, s.seats > 0],
     canHold: canHold(s) && !s.done,
     // seats chosen but the details not complete: say what is missing under the dimmed button
-    missing: s.seats > 0 && !s.done && !canHold(s) ? copy.missingDetails : '',
+    missing: s.seats > 0 && !s.done && !canHold(s) ? fill(copy.missingDetails, { missing: listOf(missingFields(s).map((f) => copy.missingNames[f]), copy.missingNames.and) }) : '',
     // back from Stripe in a tab that no longer remembers the night, the heading says only that it is requested
     doneHead: !s.done ? '' : s.seats && s.date ? fill(waitlist ? copy.waitlistDoneHead : copy.doneHead, { seats: seatPhrase(s.seats), date: s.date }) : copy.doneHeadShort,
     doneBody: s.done ? fill(waitlist ? copy.waitlistDoneBody : copy.doneBody, { email: s.email, contact: cfg.contactEmail }) : '',

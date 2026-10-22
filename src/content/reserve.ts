@@ -64,8 +64,10 @@ export interface ReserveContent {
     nightFull: string;
     nightWhole: string;
     nightSome: string;
-    /** Under the request button while seats are chosen but the details are not complete. */
+    /** Under the request button while seats are chosen but the details are not complete: {missing}. */
     missingDetails: string;
+    /** The details as the hint names them, and the word joining the last two. */
+    missingNames: { name: string; whatsapp: string; email: string; and: string };
     /** Read out (screen readers) when a choice changes the seats already taken: {seats}. */
     seatsCapped: string;
     /** A full night: the label in place of its marks, and the sentences of a waitlist request. */
@@ -136,7 +138,8 @@ export const reserve: ReserveContent = {
     nightFull: '{date}, full, join the waitlist',
     nightWhole: '{date}, the whole table open',
     nightSome: '{date}, {left} of {capacity} seats open',
-    missingDetails: 'Add your name, WhatsApp number and email to send the request.',
+    missingDetails: 'Add your {missing} to send the request.',
+    missingNames: { name: 'name', whatsapp: 'WhatsApp number', email: 'email', and: 'and' },
     seatsCapped: 'That night has fewer seats open, so your seats are now {seats}.',
     waitlistMark: 'Waitlist',
     nightLineFull: '{date} is full. The waitlist is open.',

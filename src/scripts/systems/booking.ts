@@ -15,7 +15,7 @@ import { gsap, ScrollTrigger } from '../core/gsap';
 import { E, isMobile, reducedMotion } from '../core/env';
 import { scrollToY } from '../core/lenis';
 import {
-  seatGridStyle,
+  CONTACT, fieldOk, missingFields, seatGridStyle, type ContactField,
   initialState, monthHtml, monthsFromNights, pastLabels, seatLimit, seatOptionsHtml, view,
   type ApiNight, type BookingConfig, type BookingState,
 } from '../../lib/booking';
@@ -138,7 +138,8 @@ function before(scope: HTMLElement) {
     qa('[data-seat]').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.seat) === s.seats)));
     // a step that is not open yet is out of reach (keyboard and screen readers too), and so is the button until the request is complete
     el.gates.forEach((g, i) => { g.setAttribute('data-live', String(v.gates[i])); g.inert = !v.gates[i]; });
-    qa<HTMLButtonElement>('[data-confirm]').forEach((b) => { b.disabled = !v.canHold; });
+    // the button stays reachable when it can't send yet: pressing it shows what is missing (guide)
+    qa<HTMLButtonElement>('[data-confirm]').forEach((b) => b.setAttribute('aria-disabled', String(!v.canHold)));
     el.ticketDate.textContent = v.ticketDate;
     el.ticketLine.textContent = v.ticketLine;
     el.holdWrap.setAttribute('data-can', String(v.canHold));
@@ -257,9 +258,27 @@ function before(scope: HTMLElement) {
     }
   }
 
+  // ---- not ready to send: go to what is missing (the seats, or the first detail), marked as such
+  const fieldEl = (f: string) => q<HTMLInputElement>(`[data-field="${f}"]`);
+  const markInvalid = (f: ContactField) => {
+    const input = fieldEl(f);
+    input.setAttribute('aria-invalid', String(!fieldOk(s, f)));
+  };
+  function guide(from?: ContactField | 'note') {
+    if (s.done) return;
+    if (!s.seats) return void root.querySelector<HTMLElement>('[data-seat]')?.focus();
+    const missing = missingFields(s);
+    missing.forEach((f) => { if (fieldEl(f).value) markInvalid(f); });
+    // the next missing detail after the one Enter was pressed in, else the first
+    const order = from ? CONTACT.indexOf(from as ContactField) : -1;
+    const next = missing.find((f) => CONTACT.indexOf(f) > order) ?? missing[0];
+    if (next) fieldEl(next).focus();
+  }
+
   // ---- sending the request
   async function confirm() {
-    if (s.done || sending || !view(s, cfg).canHold) return;
+    if (s.done || sending) return;
+    if (!view(s, cfg).canHold) return guide();
     if (!cfg.api) return showDone();
     const v = view(s, cfg);
     // a night not from the backend (the placeholders) can't be sent
@@ -381,6 +400,20 @@ function before(scope: HTMLElement) {
     if (t.closest('[data-confirm]')) return confirm();
   }, { signal: ac.signal });
 
+  // Enter in a detail: send when everything is in, otherwise on to the next detail still missing
+  root.addEventListener('keydown', (e) => {
+    const t = e.target as HTMLElement;
+    if (e.key !== 'Enter' || e.isComposing || !t.matches('input[data-field]')) return;
+    e.preventDefault();
+    if (view(s, cfg).canHold) return void confirm();
+    guide(t.dataset.field as ContactField | 'note');
+  }, { signal: ac.signal });
+  // a required detail left filled in wrongly is marked as such; set right, the mark goes
+  root.addEventListener('focusout', (e) => {
+    const f = (e.target as HTMLElement).dataset?.field;
+    if (f && (CONTACT as readonly string[]).includes(f) && fieldEl(f).value) markInvalid(f as ContactField);
+  }, { signal: ac.signal });
+
   root.addEventListener('input', (e) => {
     const t = e.target as HTMLInputElement;
     showError('');
@@ -388,6 +421,7 @@ function before(scope: HTMLElement) {
     const f = t.dataset.field as 'name' | 'email' | 'whatsapp' | 'occasion' | 'note' | undefined;
     if (!f) return;
     s = { ...s, [f]: t.value };
+    if ((CONTACT as readonly string[]).includes(f) && t.getAttribute('aria-invalid') === 'true' && fieldOk(s, f as ContactField)) t.setAttribute('aria-invalid', 'false');
     // the cake belongs to a birthday; changing the occasion takes it away
     if (f === 'occasion' && t.value !== 'birthday') s.cake = false;
     render();
