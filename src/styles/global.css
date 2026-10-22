@@ -159,8 +159,16 @@ html.js:not(.ready) :is([data-loader],[data-loader-logo]){animation:dao-failsafe
   [data-hero-corner]{right:24px !important}
 }
 
+/* Phones: no filters inside the page. Text and rows arrive by fading and rising only; a blur on
+   every line, block and moment is the heaviest thing a phone can be asked to animate (Safari above
+   all). !important wins over the inline filters the animations write. */
+@media (max-width: 820px){
+  [data-barba="container"] *{filter:none !important}
+}
+
 @media (prefers-reduced-motion: reduce){
-  .lt [data-c]{transition:none !important}
+  .lt [data-c],.lr::before,.ll::after,.lr::after,.lr .hv,.lr .hv img,.lr__in,.lr__in *,.ic i,.fq .ic,.fq .rule{transition:none !important}
+  .lt-host:hover .rl span,.lt-host:focus-visible .rl span,.lt-host.is-pressed .lt{animation:none !important}
 }
 
 /* Rolling numbers (scripts/core/odometer.ts): each digit a masked strip of 0-9, other characters still. */

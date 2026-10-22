@@ -17,7 +17,7 @@ const { current, tall = false } = Astro.props;
 const site = await getSite();
 const { email, phone, area } = site.contact;
 ---
-<footer role="contentinfo" data-screen-label="Reserve and footer" data-container class:list={['footer', tall && 'footer--tall']}>
+<footer data-screen-label="Reserve and footer" data-container class:list={['footer', tall && 'footer--tall']}>
   <div data-footer-strip class="footer__strip">
     {site.pages.map((p) => (
       <a href={p.href} data-footer-page class="footer__page" aria-current={p.key === current ? 'page' : undefined}>

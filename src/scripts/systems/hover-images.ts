@@ -16,7 +16,8 @@ function destroy() {
 
 function before(scope: HTMLElement) {
   destroy();
-  if (isMobile()) return;
+  // phones and touch tablets (no hover) never show them
+  if (isMobile() || !matchMedia('(hover: hover)').matches) return;
   ac = new AbortController();
   scope.querySelectorAll<HTMLElement>('[data-hover-images]').forEach((list) => {
     list.addEventListener('pointerenter', () => loadDeferred(list), { once: true, signal: ac!.signal });

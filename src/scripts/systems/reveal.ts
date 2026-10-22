@@ -47,10 +47,13 @@ function before(scope: HTMLElement) {
   qa('[data-split="softlines"]').forEach(splitSoftLines);
 
   const [group, step] = (scope.dataset.blockRhythm ?? '4 0.08').split(' ').map(Number);
-  const done = { y: 0, opacity: 1, filter: 'blur(0px)' };
+  // landed, an element lets go of its filter, so it is not kept as a filtered layer for good
+  const done = { y: 0, opacity: 1, filter: 'blur(0px)', clearProps: 'filter' };
 
-  qa('[data-block]').forEach((el, i) => {
+  qa('[data-block]').forEach((el) => {
     if (still) return void gsap.set(el, done);
+    // the stagger counts within its own list, so the first row of every list comes first
+    const i = el.parentElement ? Array.prototype.indexOf.call(el.parentElement.children, el) : 0;
     ScrollTrigger.create({ trigger: el, start: 'top 88%', once: true, onEnter: () => gsap.to(el, { ...done, duration: 1.25, ease: E, delay: (i % group) * step }) });
   });
 
@@ -100,14 +103,20 @@ function before(scope: HTMLElement) {
     });
   }
 
-  // Lines are only right for the width and fonts they were measured at.
+  // Lines are only right for the width and fonts they were measured at. A phone's address bar
+  // showing or hiding resizes the height only: nothing to re-split then.
   let t = 0;
+  let width = window.innerWidth;
   window.addEventListener('resize', () => {
+    if (window.innerWidth === width) return;
+    width = window.innerWidth;
     clearTimeout(t);
     t = window.setTimeout(() => {
       resplit(scope);
       ScrollTrigger.refresh();
     }, 200);
+    // kept with the page's timers, so leaving mid-wait stops it (destroy)
+    state?.timers.push(t);
   }, { signal: ac.signal });
   document.fonts?.ready.then(() => {
     if (ac.signal.aborted) return;

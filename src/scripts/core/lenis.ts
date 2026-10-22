@@ -14,7 +14,8 @@ import { isMobile, reducedMotion } from './env';
 let lenis: Lenis | null = null;
 
 export function initLenis() {
-  if (lenis || isMobile()) return;
+  // phones scroll natively; with reduced motion, so does everything
+  if (lenis || isMobile() || reducedMotion) return;
   lenis = new Lenis({ duration: 1.2, wheelMultiplier: 0.9, smoothWheel: true, allowNestedScroll: true });
   lenis.on('scroll', ScrollTrigger.update);
   gsap.ticker.add((time) => lenis?.raf(time * 1000));
