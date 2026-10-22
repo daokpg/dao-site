@@ -81,12 +81,20 @@ export function nightAfter(section: HTMLElement, scope: HTMLElement) {
 
 /**
  * The section's entrance, in the site's language (systems/reveal.ts): the moment's lines rise and
- * sharpen in small steps, and each frame ([data-spine-reveal]) opens from its bottom centre while its
- * picture settles from a zoom. Frames entering together open one after another. The frames
- * themselves and their <img> are moved by the wave and the drift, so only the frame's clip and the
- * <picture> around the image are touched here. Pre-hidden in global.css under html.js.
+ * sharpen in small steps, and the frames seen as the section arrives (`first`: before the column
+ * is held, or in view in the swiped row) open from their bottom centre while their pictures settle
+ * from a zoom, one after another. The other frames are simply there. The frames themselves and their
+ * <img> are moved by the wave and the drift, so only the frame's clip and the <picture> around the
+ * image are touched here. Pre-hidden in global.css under html.js.
  */
-export function revealIn(copy: HTMLElement | null, frames: HTMLElement[], me: State) {
+export function revealIn(copy: HTMLElement | null, all: HTMLElement[], first: (f: HTMLElement) => boolean, me: State) {
+  const frames = all.filter(first);
+  // the rest are out of sight while this runs: shown as they are
+  all.filter((f) => !frames.includes(f)).forEach((f) => {
+    gsap.set(f, { clipPath: OPEN });
+    const pic = f.querySelector('picture');
+    if (pic) gsap.set(pic, { scale: 1 });
+  });
   const lines = copy ? Array.from(copy.children) : [];
   const pics = frames.map((f) => f.querySelector('picture')).filter((p): p is HTMLPictureElement => !!p);
   me.tweened.push(...lines, ...frames, ...pics);

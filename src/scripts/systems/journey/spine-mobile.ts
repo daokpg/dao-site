@@ -15,7 +15,8 @@ export function spineMobile(el: HTMLElement, list: Moment[], me: State, scope: H
   const imgs = cards.map((c) => c.querySelector('img'));
   const dots = Array.from(el.querySelectorAll<HTMLButtonElement>('[data-ms-dot]'));
   const setMoment = momentCopy(el, 'ms', list, me);
-  revealIn(el.querySelector<HTMLElement>('[data-ms-copy]'), cards, me);
+  // the cards in view; the rest wait off to the side
+  revealIn(el.querySelector<HTMLElement>('[data-ms-copy]'), cards, (c) => c.getBoundingClientRect().left < window.innerWidth, me);
   const stepX = () => (cards.length > 1 ? cards[1].offsetLeft - cards[0].offsetLeft : 1);
 
   let frame = 0;

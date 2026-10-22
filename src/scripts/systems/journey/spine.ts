@@ -25,7 +25,9 @@ export function spine(section: HTMLElement, me: State, scope: HTMLElement) {
   const items = Array.from(section.querySelectorAll<HTMLElement>('[data-spine-item]'));
   const imgs = items.map((el) => el.querySelector('img'));
   const setMoment = momentCopy(section, 'spine', list, me);
-  revealIn(section.querySelector<HTMLElement>('[data-spine-copy]'), items, me);
+  // the frames already on screen as the column reaches the top, before it is held
+  const body = section.querySelector<HTMLElement>('.jr-spine__body') ?? section;
+  revealIn(section.querySelector<HTMLElement>('[data-spine-copy]'), items, (f) => f.getBoundingClientRect().top - body.getBoundingClientRect().top < window.innerHeight, me);
 
   let H = 0, A = 0, L = 1;
   // the wave, measured from the axis's top (the screen's top while the column passes)
