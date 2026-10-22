@@ -23,7 +23,7 @@
  */
 import { ScrollTrigger } from './gsap';
 import { resizeScroll } from './lenis';
-import * as trailVariant from '../systems/trail-variant';
+import * as deviceOnly from '../systems/device-only';
 import * as journey from '../systems/journey/index';
 import * as reveal from '../systems/reveal';
 import * as sheetTone from '../systems/sheet-tone';
@@ -47,7 +47,7 @@ export interface System {
 
 /** Order matters: reveal splits text before anything else measures it. */
 const systems: System[] = [
-  trailVariant.system, // must run first: removes the home day section's unused version
+  deviceOnly.system, // must run first: removes the layout meant for the other kind of device
   reveal.system,
   sheetTone.system,
   heroVideo.system,

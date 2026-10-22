@@ -9,7 +9,7 @@
 import { gsap, ScrollTrigger } from '../../core/gsap';
 import { isMobile, reducedMotion } from '../../core/env';
 import { handoff } from './handoff';
-import { clamp, momentCopy, readMoments, type State } from './shared';
+import { clamp, momentCopy, readMoments, revealIn, type State } from './shared';
 import { spineMobile } from './spine-mobile';
 
 export function spine(section: HTMLElement, me: State, scope: HTMLElement) {
@@ -25,6 +25,7 @@ export function spine(section: HTMLElement, me: State, scope: HTMLElement) {
   const items = Array.from(section.querySelectorAll<HTMLElement>('[data-spine-item]'));
   const imgs = items.map((el) => el.querySelector('img'));
   const setMoment = momentCopy(section, 'spine', list, me);
+  revealIn(section.querySelector<HTMLElement>('[data-spine-copy]'), items, me);
 
   let H = 0, A = 0, L = 1;
   // the wave, measured from the axis's top (the screen's top while the column passes)

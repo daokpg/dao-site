@@ -7,7 +7,7 @@
 import { ScrollTrigger } from '../../core/gsap';
 import { reducedMotion } from '../../core/env';
 import { setNight } from '../../core/tone';
-import { momentCopy, type Moment, type State } from './shared';
+import { momentCopy, revealIn, type Moment, type State } from './shared';
 
 export function spineMobile(el: HTMLElement, list: Moment[], me: State, scope: HTMLElement) {
   const rail = el.querySelector<HTMLElement>('[data-ms-rail]')!;
@@ -15,6 +15,7 @@ export function spineMobile(el: HTMLElement, list: Moment[], me: State, scope: H
   const imgs = cards.map((c) => c.querySelector('img'));
   const dots = Array.from(el.querySelectorAll<HTMLButtonElement>('[data-ms-dot]'));
   const setMoment = momentCopy(el, 'ms', list, me);
+  revealIn(el.querySelector<HTMLElement>('[data-ms-copy]'), cards, me);
   const stepX = () => (cards.length > 1 ? cards[1].offsetLeft - cards[0].offsetLeft : 1);
 
   let frame = 0;
@@ -43,6 +44,6 @@ export function spineMobile(el: HTMLElement, list: Moment[], me: State, scope: H
   });
   paint();
 
-  // the paper turns to charcoal once the row has nearly left the screen, as with the rows
+  // the paper turns to charcoal once the row has nearly left the screen
   ScrollTrigger.create({ trigger: el, start: 'bottom 25%', onEnter: () => setNight(scope, true), onLeaveBack: () => setNight(scope, false) });
 }

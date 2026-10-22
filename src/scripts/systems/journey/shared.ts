@@ -1,6 +1,6 @@
-/** What the home page's day section versions share (see ./index.ts). */
+/** Pieces of the home page's day section (see ./index.ts). */
 import { gsap, ScrollTrigger } from '../../core/gsap';
-import { E, reducedMotion } from '../../core/env';
+import { E, OPEN, reducedMotion } from '../../core/env';
 import { odometer } from '../../core/odometer';
 import { setNight } from '../../core/tone';
 
@@ -77,4 +77,31 @@ export function momentCopy(el: HTMLElement, prefix: string, list: Moment[], me: 
 /** The paper turns to charcoal once the section has passed, as the day section ends. */
 export function nightAfter(section: HTMLElement, scope: HTMLElement) {
   ScrollTrigger.create({ trigger: section, start: 'bottom 60%', onEnter: () => setNight(scope, true), onLeaveBack: () => setNight(scope, false) });
+}
+
+/**
+ * The section's entrance, in the site's language (systems/reveal.ts): the moment's lines rise and
+ * sharpen in small steps, and each frame ([data-spine-reveal]) opens from its bottom centre while its
+ * picture settles from a zoom. Frames entering together open one after another. The frames
+ * themselves and their <img> are moved by the wave and the drift, so only the frame's clip and the
+ * <picture> around the image are touched here. Pre-hidden in global.css under html.js.
+ */
+export function revealIn(copy: HTMLElement | null, frames: HTMLElement[], me: State) {
+  const lines = copy ? Array.from(copy.children) : [];
+  const pics = frames.map((f) => f.querySelector('picture')).filter((p): p is HTMLPictureElement => !!p);
+  me.tweened.push(...lines, ...frames, ...pics);
+  if (copy) {
+    ScrollTrigger.create({
+      trigger: copy.parentElement ?? copy, start: 'top 80%', once: true,
+      onEnter: () => gsap.to(lines, { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1.25, ease: E, stagger: 0.08 }),
+    });
+  }
+  ScrollTrigger.batch(frames, {
+    start: 'top 88%', once: true,
+    onEnter: (batch) => batch.forEach((f, i) => {
+      gsap.to(f, { clipPath: OPEN, duration: 2, ease: E, delay: i * 0.12 });
+      const pic = f.querySelector('picture');
+      if (pic) gsap.to(pic, { scale: 1, duration: 3, ease: E, delay: i * 0.12 });
+    }),
+  });
 }

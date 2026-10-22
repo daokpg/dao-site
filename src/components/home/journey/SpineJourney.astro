@@ -1,6 +1,6 @@
 ---
 /**
- * The day before dinner, "the spine": the alternative to RowsJourney.astro, shown with ?trail=spine.
+ * The day before dinner, "the spine".
  *
  * Desktop: the day's photographs as one tight column that bends along a slow wave as it scrolls
  * past, with the moment it belongs to held beside it (the time rolls, label and sentence
@@ -9,7 +9,8 @@
  *
  * Phones: the moment above a row of photographs swiped sideways, one card per swipe.
  * Driven by systems/journey/spine-mobile.ts. Only the layout for the current device stays in the
- * page (data-only, removed by systems/trail-variant.ts).
+ * page (data-only, removed by systems/device-only.ts). Both open in the site's language as they
+ * scroll in (journey/shared.ts revealIn).
  *
  * The visible copy beside the photographs changes as they pass, so it is hidden from screen
  * readers; the list of moments is read instead.
@@ -29,7 +30,7 @@ const json = scriptJson(moments.map(({ time, label, text }) => ({ time, label, t
   <script type="application/json" data-spine-moments set:html={json} />
 
   <div class="jr-spine__body" data-only="desktop">
-    <div class="jr-spine__copy" data-spine-copy aria-hidden="true">
+    <div class="jr-spine__copy" data-spine-copy data-spine-in aria-hidden="true">
       <p class="jr-big" data-spine-time>{moments[0].time}</p>
       <p class="jr-meta jr-roll" data-spine-label><span>{moments[0].label}</span></p>
       <p class="jr-text jr-swap" data-spine-text><span>{moments[0].text}</span></p>
@@ -37,7 +38,7 @@ const json = scriptJson(moments.map(({ time, label, text }) => ({ time, label, t
     <div class="jr-spine__ribbon">
       <div class="jr-spine__axis" data-spine-axis aria-hidden="true"></div>
       {frames.map((f) => (
-        <figure data-spine-item data-moment={f.moment} class:list={['jr-spine__frame', { 'is-tall': f.tall }]}>
+        <figure data-spine-item data-spine-reveal data-moment={f.moment} class:list={['jr-spine__frame', { 'is-tall': f.tall }]}>
           <Picture image={f} sizes="30vw" loading="lazy" />
         </figure>
       ))}
@@ -45,14 +46,14 @@ const json = scriptJson(moments.map(({ time, label, text }) => ({ time, label, t
   </div>
 
   <div class="jr-swipe" data-spine-swipe data-only="mobile">
-    <div class="jr-swipe__copy" aria-hidden="true">
+    <div class="jr-swipe__copy" data-ms-copy data-spine-in aria-hidden="true">
       <p class="jr-big" data-ms-time>{moments[0].time}</p>
       <p class="jr-meta jr-roll" data-ms-label><span>{moments[0].label}</span></p>
       <p class="jr-text jr-swap" data-ms-text><span>{moments[0].text}</span></p>
     </div>
     <ul class="jr-swipe__rail" data-ms-rail tabindex="0" aria-label="Photographs of the day, swipe for more">
       {moments.map((m) => (
-        <li class="jr-swipe__card" data-ms-card>
+        <li class="jr-swipe__card" data-ms-card data-spine-reveal>
           <Picture image={m.image} sizes="135vw" loading="lazy" />
         </li>
       ))}

@@ -169,12 +169,11 @@ anything JS creates at runtime (scoped rules never reach runtime-created nodes).
 
 ## The home page's day section
 
-Between the intro and the evening facts. In use, chosen by the client: **the spine**
-(`components/home/journey/SpineJourney.astro`, `systems/journey/spine.ts` and `spine-mobile.ts`). Kept for now, shown with `?trail=rows`: **Rows**
-(`components/home/journey/RowsJourney.astro`, `systems/journey/rows.ts`). A dev-only switcher sits
-bottom left; `systems/trail-variant.ts` keeps one version and removes the other. On desktop both
-carry their last photograph into the evening section's (`systems/journey/handoff.ts`). The original
-wave trail is archived in the repo history: tag `archive/wave-trail`.
+Between the intro and the evening facts: **the spine** (`components/home/journey/SpineJourney.astro`,
+`systems/journey/spine.ts`, and `spine-mobile.ts` for the swiped row on phones). The layout for the
+other kind of device is removed first (`systems/device-only.ts`). On desktop it carries its last
+photograph into the evening section's (`systems/journey/handoff.ts`). Earlier versions are archived
+in git: tags `archive/rows-journey` (two rows carried sideways) and `archive/wave-trail`.
 
 ## Known quirks (kept on purpose, ask before "fixing")
 

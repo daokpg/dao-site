@@ -59,6 +59,9 @@ html.js [data-split="softlines"]:not([data-split-ready]){opacity:0}
 html.js [data-mask],html.js [data-menu-mask],html.js [data-hero-mask]{clip-path:polygon(50% 100%,50% 100%,50% 100%,50% 100%)}
 html.js [data-split="lines"]:not([data-split-ready]){opacity:0}
 html.js [data-hero-img]{transform:scale(1.18)}
+html.js [data-spine-reveal]{clip-path:polygon(50% 100%,50% 100%,50% 100%,50% 100%)}
+html.js [data-spine-reveal] picture{transform:scale(1.18)}
+html.js [data-spine-in] > *{opacity:0;transform:translateY(18px);filter:blur(8px)}
 html.js [data-hero-line]{transform:translateY(28px);filter:blur(8px);opacity:0}
 html.js [data-hero-corner]{opacity:0}
 html.js [data-hero-reserve-label]{opacity:0;transform:translateY(8px)}
@@ -70,7 +73,7 @@ html:not(.js) [data-loader],html:not(.js) [data-loader-logo]{display:none}
    animations away while they are still waiting, so a normal load never sees them. */
 @keyframes dao-failsafe-show{to{opacity:1;transform:none;filter:none;clip-path:none}}
 @keyframes dao-failsafe-hide{to{opacity:0;visibility:hidden}}
-html.js:not(.ready) :is([data-nav],[data-block],[data-split],[data-mask],[data-hero-mask],[data-hero-img],[data-hero-line],[data-hero-corner],[data-hero-reserve-label],[data-hero-reserve-rule],[data-clock],[data-month-name],[data-night],.mn,[data-night-line]){animation:dao-failsafe-show .6s 4s forwards}
+html.js:not(.ready) :is([data-nav],[data-block],[data-split],[data-mask],[data-hero-mask],[data-hero-img],[data-hero-line],[data-hero-corner],[data-hero-reserve-label],[data-hero-reserve-rule],[data-clock],[data-month-name],[data-night],.mn,[data-night-line],[data-spine-reveal],[data-spine-reveal] picture,[data-spine-in] > *){animation:dao-failsafe-show .6s 4s forwards}
 html.js:not(.ready) :is([data-loader],[data-loader-logo]){animation:dao-failsafe-hide .6s 4s forwards}
 
 /* ---------- letter hover language ----------

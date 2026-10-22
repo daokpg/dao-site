@@ -19,8 +19,8 @@ const ease = gsap.parseEase('power2.inOut');
 const END_AT = 0.14; // the evening photograph's top, as a share of the screen height, when it takes over
 
 /**
- * `pickSource`: the frame to lift off, or a function choosing it at the moment of lift-off (when
- * several copies of it move about, as in the rows). The frame's first picture is the one carried.
+ * `pickSource`: the frame to lift off, or a function choosing it at the moment of lift-off.
+ * The frame's first picture is the one carried.
  */
 type Options = { trigger?: Element; start?: string; onProgress?: (p: number) => void };
 

@@ -33,13 +33,14 @@ interface Data { current: Page; next: Page }
 // a page load, because Barba fetched the next page while the sheet was rising (and usually on
 // hover, before the click).
 const T = {
-  cover: 1, // sheet up, page settles back
-  lettersAt: 0.7, letterStagger: 0.028, letterDur: 2.2,
-  numAfter: 0.9, push: 1.2,
+  cover: 0.85, // sheet up, page settles back
+  lettersAt: 0.5, letterStagger: 0.022, letterDur: 1.8,
+  numAfter: 0.35, // after the first letter: the number rises and pushes the name up while it is still arriving
+  push: 1.0,
   read: 1.0, // from the number starting to rise until the name unwinds (it has landed by then)
-  hold: 0.1, unwindStagger: 0.018, unwindDur: 0.75,
-  drop: 1.75, dropAfter: -0.12,
-  entranceAfterDrop: 0.35,
+  hold: 0.05, unwindStagger: 0.014, unwindDur: 0.6,
+  drop: 1.45, dropAfter: -0.1,
+  entranceAfterDrop: 0.3,
 };
 
 const panel = () => document.querySelector<HTMLElement>('[data-pt-panel]')!;
@@ -98,7 +99,7 @@ async function leave(data: Data): Promise<void> {
   tl.to(page, { scale: 0.94, y: 16, duration: T.cover, ease: SHEET }, 0);
   tl.to(p, { yPercent: 0, duration: T.cover, ease: SHEET }, 0);
   tl.to(letters, { opacity: 1, y: 0, filter: 'blur(0px)', duration: T.letterDur, ease: E, stagger: T.letterStagger }, T.lettersAt);
-  const numAt = T.lettersAt + letters.length * T.letterStagger + T.numAfter;
+  const numAt = T.lettersAt + T.numAfter;
   tl.to(numE, { opacity: 1, y: 0, filter: 'blur(0px)', duration: T.push, ease: E }, numAt);
   tl.to(nEl, { y: 0, duration: T.push, ease: E }, numAt);
   const go = Math.max(numAt + T.read, T.cover);

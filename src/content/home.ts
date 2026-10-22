@@ -14,20 +14,13 @@ export interface HomeContent {
   };
   intro: string;
   duo: { image: Image; caption: string }[];
-  /** DRAFT: the day before dinner as moments, for the spine (the alternative to the rows, components/home/journey). */
+  /** DRAFT: the day before dinner as moments, for the spine (components/home/journey/SpineJourney.astro). */
   journey: {
     /** The day in moments, morning to night. `ribbon`: the photographs of the spine on desktop,
      *  upright (`tall`) or landscape, best alternating; `image`: the moment's one photograph on phones.
      *  The last ribbon photograph is the evening section's own (`evening.image`): on desktop both
      *  options end by handing it over to that section. */
     moments: { time: string; label: string; text: string; image: Image; ribbon: (Image & { tall?: boolean })[] }[];
-  };
-  /** The day before dinner, as two rows of photographs (components/home/journey/RowsJourney.astro). */
-  rows: {
-    /** The line above the rows. */
-    lead: string;
-    /** In order; they alternate between the two rows. One of them is the evening section's photograph, which the rows hand over to it. */
-    photos: Image[];
   };
   evening: {
     image: Image;
@@ -114,25 +107,6 @@ export const home: HomeContent = {
       },
     ],
   },
-  rows: {
-    lead: 'The day starts long before dinner. Gardens and the market in the morning, the kitchen from noon. What is found decides what is cooked.',
-    photos: [
-      { src: '/assets/photos/basket.jpg', alt: 'Greens from the morning, in the basket', position: '50% 45%' },
-      { src: '/assets/photos/foraging.jpg', alt: 'Nir picking flowers in the garden', position: '50% 40%' },
-      { src: '/assets/photos/market.jpg', alt: 'The market in Thong Sala', position: '50% 45%' },
-      { src: '/assets/photos/prep-trays.jpg', alt: 'Fruit drying on trays', position: '70% 50%' },
-      { src: '/assets/photos/ceramics.jpg', alt: 'Ceramics made on the island', position: '50% 50%' },
-      { src: '/assets/photos/pass-two.jpg', alt: 'Nir and a cook plating in the kitchen', position: '62% 50%' },
-      { src: '/assets/photos/plates-laid.jpg', alt: 'Plates laid out before service', position: '50% 50%' },
-      { src: '/assets/photos/set-table.jpg', alt: 'The long table set, candles lit', position: '55% 50%' },
-      { src: '/assets/photos/facade.jpg', alt: 'The door on the street', position: '55% 50%' },
-      { src: '/assets/photos/dish-stone.jpg', alt: 'A course plated in stone', position: '60% 50%' },
-      { src: '/assets/photos/candle-service.jpg', alt: 'Nir serving at the candlelit table', position: '40% 50%' },
-      { src: '/assets/photos/dish-slate.jpg', alt: 'A course plated on stone', position: '50% 50%' },
-      { src: '/assets/photos/last-garnish.jpg', alt: 'The last garnish', position: '60% 50%' },
-    ],
-  },
-
   evening: {
     image: { src: '/assets/photos/set-table.jpg', alt: '', position: '55% 50%' },
     rows: [

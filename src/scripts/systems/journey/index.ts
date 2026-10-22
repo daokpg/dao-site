@@ -1,17 +1,12 @@
 /**
- * The home page's day section (components/home/journey). Only one version is in the page
- * (systems/trail-variant.ts), so at most one of these starts.
- *
- *   [data-rows]   in use: two full-width rows held on screen, carried sideways by the scroll (phones: two columns)
- *   [data-spine]  the alternative (?trail=spine): a column bending along a wave as it passes (phones: a swiped row)
- *
- * On desktop both end by carrying a photograph into the evening section (./handoff.ts).
+ * The home page's day section, the spine (components/home/journey/SpineJourney.astro): a column
+ * bending along a wave as it passes, ending by carrying its last photograph into the evening section
+ * (./handoff.ts). Phones: a swiped row (./spine-mobile.ts).
  */
 import { gsap } from '../../core/gsap';
 import type { System } from '../../core/registry';
 import type { State } from './shared';
 import { spine } from './spine';
-import { rows } from './rows';
 
 let state: State | null = null;
 
@@ -24,7 +19,6 @@ function destroy() {
 
 const options: [string, (section: HTMLElement, me: State, scope: HTMLElement) => void][] = [
   ['[data-spine]', spine],
-  ['[data-rows]', rows],
 ];
 
 function after(scope: HTMLElement) {

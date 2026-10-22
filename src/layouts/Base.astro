@@ -26,7 +26,6 @@ import Loader from '../components/chrome/Loader.astro';
 import Nav from '../components/chrome/Nav.astro';
 import Menu from '../components/chrome/Menu.astro';
 import TransitionSheet from '../components/chrome/TransitionSheet.astro';
-import TrailSwitcher from '../components/chrome/TrailSwitcher.astro';
 import type { PageKey, Seo } from '../content/types';
 import { getSite } from '../lib/content';
 
@@ -82,8 +81,6 @@ const indexable = import.meta.env.INDEXABLE === 'true' && !notFound;
     <link rel="preload" href="/fonts/SeasonMixTRIAL-Light.otf" as="font" type="font/otf" crossorigin />
     <!-- Before first paint: mark JS as running so pre-hidden states apply (no-JS visitors see the finished page). -->
     <script is:inline>document.documentElement.classList.add('js');</script>
-    <!-- Which version of the home page's day section to show (the spine; ?trail=rows to see the alternative), remembered for the visit. Remove with Rows. -->
-    <script is:inline>try{var t=new URLSearchParams(location.search).get('trail');if(t)sessionStorage.setItem('dao-trail',t);document.documentElement.dataset.trail=sessionStorage.getItem('dao-trail')||'spine';}catch(e){document.documentElement.dataset.trail='spine';}</script>
     <slot name="head" />
   </head>
   <body data-barba="wrapper" data-page={page}>
@@ -95,7 +92,6 @@ const indexable = import.meta.env.INDEXABLE === 'true' && !notFound;
       <slot />
     </main>
     <TransitionSheet />
-    {import.meta.env.DEV && <TrailSwitcher />}
     <script>
       import '../scripts/app';
     </script>
