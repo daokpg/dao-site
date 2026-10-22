@@ -11,7 +11,7 @@ import { getStory } from '../lib/content';
 const story = await getStory();
 ---
 <Base page="story" seo={story.seo} tone="cream">
-  <div style="position:relative;background:#000;min-height:100vh">
+  <div style="position:relative;background:var(--void);min-height:100vh">
     <Hero />
     <div data-sheet data-tone-flip class="dao-paper" data-theme="light" style="position:relative;z-index:2;overflow-x:clip;color:var(--ink)">
       <section data-screen-label="Family" data-container class="g12" style="padding:180px 64px 160px">

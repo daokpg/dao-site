@@ -47,8 +47,9 @@ function before(scope: HTMLElement) {
   qa('[data-split="softlines"]').forEach(splitSoftLines);
 
   const [group, step] = (scope.dataset.blockRhythm ?? '4 0.08').split(' ').map(Number);
-  // landed, an element lets go of its filter, so it is not kept as a filtered layer for good
-  const done = { y: 0, opacity: 1, filter: 'blur(0px)', clearProps: 'filter' };
+  // landed, an element ends on no filter at all, so it is not kept as a filtered layer for good. ('none',
+  // not cleared: clearing would hand it back to the pre-hidden blur in global.css)
+  const done = { y: 0, opacity: 1, filter: 'blur(0px)', onComplete(this: gsap.core.Tween) { gsap.set(this.targets(), { filter: 'none' }); } };
 
   qa('[data-block]').forEach((el) => {
     if (still) return void gsap.set(el, done);
