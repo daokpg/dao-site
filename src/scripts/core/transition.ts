@@ -35,7 +35,7 @@ interface Data { current: Page; next: Page }
 const T = {
   cover: 0.85, // sheet up, page settles back
   lettersAt: 0.5, letterStagger: 0.022, letterDur: 1.8,
-  numAfter: 0.35, // after the first letter: the number rises and pushes the name up while it is still arriving
+  numAfter: 0.5, // after the first letter: the number rises and pushes the name up while it is still arriving
   push: 1.0,
   read: 1.0, // from the number starting to rise until the name unwinds (it has landed by then)
   hold: 0.05, unwindStagger: 0.014, unwindDur: 0.6,
