@@ -181,7 +181,7 @@ Sources: [Stripe Thailand pricing](https://stripe.com/th/pricing) · [Stripe: pl
 
 ## 9. Open questions
 
-- [ ] **Start time:** the board says 20:30; the site says arrival at 19:30.
+- [ ] **Start time:** the site uses 19:30 everywhere for now; the board says 20:30. Ran to confirm.
 - [ ] **Same-day bookings:** today's night is bookable online. Should online booking close earlier (e.g. the day before)?
 - [ ] **Email:** the board almost never has one and no email is sent. The site still requires it; the script already treats it as optional. Make it optional?
 - [ ] **Occasions:** add "Honeymoon" and "Other"? Both appear on the board.

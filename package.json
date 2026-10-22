@@ -6,7 +6,8 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "check": "astro check"
+    "check": "astro check",
+    "photos": "node scripts/photo-variants.mjs"
   },
   "dependencies": {
     "@barba/core": "^2.10.3",

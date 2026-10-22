@@ -1,8 +1,9 @@
 /**
- * The hero film. The page ships a local 720p MP4 and a poster, so something always plays;
- * this upgrades it to the adaptive HLS stream: native HLS on Safari, hls.js where Media
- * Source Extensions exist (loaded only on the page that needs it), and back to the MP4 if
- * the stream fails. With reduced motion the film does not play and the poster stands.
+ * The hero film: the adaptive HLS stream, native on Safari, hls.js (its light build) where Media
+ * Source Extensions exist (loaded only on the page that needs it), at no more than the player's
+ * size in CSS pixels. The page ships the poster and, in data-mp4, a local 720p MP4 that is
+ * fetched only if the stream cannot play. With reduced motion the film does not play and the
+ * poster stands.
  */
 import { reducedMotion } from '../core/env';
 import type { System } from '../core/registry';
@@ -32,7 +33,7 @@ async function before(scope: HTMLElement) {
   }
 
   const src = video.dataset.hls!;
-  const local = video.getAttribute('src');
+  const local = video.dataset.mp4;
   video.muted = true;
   video.loop = true;
   video.playsInline = true;
@@ -43,7 +44,6 @@ async function before(scope: HTMLElement) {
     play();
   };
   const native = !!video.canPlayType('application/vnd.apple.mpegurl');
-  play();
 
   // Safari with ManagedMediaSource plays HLS natively and better than through MSE.
   if (native && 'ManagedMediaSource' in window) {
@@ -52,10 +52,11 @@ async function before(scope: HTMLElement) {
     return;
   }
 
-  const { default: HlsCtor } = await import('hls.js');
+  const { default: HlsCtor } = await import('hls.js/light');
   if (state !== me) return; // the page changed while hls.js loaded
   if (HlsCtor.isSupported()) {
-    const hls = new HlsCtor({ maxBufferLength: 10, capLevelToPlayerSize: true, startLevel: -1 });
+    // never a level larger than the player at 1x (the film sits under a scrim)
+    const hls = new HlsCtor({ maxBufferLength: 10, capLevelToPlayerSize: true, maxDevicePixelRatio: 1, startLevel: -1 });
     me.hls = hls;
     hls.on(HlsCtor.Events.MEDIA_ATTACHED, () => hls.loadSource(src));
     hls.on(HlsCtor.Events.MANIFEST_PARSED, play);

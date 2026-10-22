@@ -82,7 +82,7 @@ export const reserve: ReserveContent = {
   onlineMax: 11,
   seatWords: ['One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen'],
   steps: {
-    seats: { label: 'Seats', note: 'Singles, pairs and groups sit together at the one table. Twelve or more take the whole table, write to us and we will hold the night for you.' },
+    seats: { label: 'Seats', note: 'Singles, pairs and groups sit together at the one table. Twelve or more take the whole table, so write to us and we will hold the night for you.' },
     fields: {
       name: 'Name', namePlaceholder: 'e.g. Maya Cohen',
       whatsapp: 'WhatsApp number, so we can reach you', whatsappPlaceholder: 'e.g. +66 81 234 5678',
