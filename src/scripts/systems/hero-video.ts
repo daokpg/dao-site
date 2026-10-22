@@ -4,18 +4,30 @@
  * size in CSS pixels. The page ships the poster and, in data-mp4, a local 720p MP4 that is
  * fetched only if the stream cannot play. With reduced motion the film does not play and the
  * poster stands.
+ *
+ * It rests while the paper sheet covers the hero and goes on when the hero shows again. Its control
+ * ([data-film-toggle], labelled from content in data-pause / data-play) appears once it plays; a
+ * film paused there stays paused until played there.
  */
-import { reducedMotion } from '../core/env';
+import { gsap, ScrollTrigger } from '../core/gsap';
+import { E, reducedMotion } from '../core/env';
 import type { System } from '../core/registry';
 
 type Hls = import('hls.js').default;
-type State = { video: HTMLVideoElement; hls: Hls | null; ac: AbortController };
+type State = {
+  video: HTMLVideoElement; hls: Hls | null; ac: AbortController; toggle: HTMLButtonElement | null;
+  /** under the sheet; paused from the control */
+  covered: boolean; held: boolean;
+  /** plays or rests the film as the two say */
+  sync: () => void;
+};
 let state: State | null = null;
 
 function destroy() {
   if (!state) return;
   state.ac.abort();
   state.hls?.destroy();
+  if (state.toggle) gsap.killTweensOf(state.toggle);
   state = null;
 }
 
@@ -24,10 +36,12 @@ async function before(scope: HTMLElement) {
   const video = scope.querySelector<HTMLVideoElement>('[data-hls]');
   if (!video) return;
   const ac = new AbortController();
-  const me: State = (state = { video, hls: null, ac });
+  const toggle = scope.querySelector<HTMLButtonElement>('[data-film-toggle]');
+  const me: State = (state = { video, hls: null, ac, toggle, covered: false, held: false, sync: () => {} });
 
+  // from here the script starts the film (the attribute is for a page without it)
+  video.autoplay = false;
   if (reducedMotion) {
-    video.autoplay = false;
     video.pause();
     return;
   }
@@ -37,8 +51,19 @@ async function before(scope: HTMLElement) {
   video.muted = true;
   video.loop = true;
   video.playsInline = true;
-  const play = () => void video.play().catch(() => {});
-  video.addEventListener('ended', () => { video.currentTime = 0; play(); }, { signal: ac.signal });
+  const play = () => { if (!me.covered && !me.held) void video.play().catch(() => {}); };
+  me.sync = () => (me.covered || me.held ? video.pause() : play());
+  if (toggle) {
+    video.addEventListener('playing', () => {
+      toggle.hidden = false;
+      gsap.fromTo(toggle, { opacity: 0 }, { opacity: 1, duration: 1, ease: E });
+    }, { once: true, signal: ac.signal });
+    toggle.addEventListener('click', () => {
+      me.held = !me.held;
+      toggle.textContent = (me.held ? toggle.dataset.play : toggle.dataset.pause) ?? '';
+      me.sync();
+    }, { signal: ac.signal });
+  }
   const mp4 = () => {
     if (local && (video.getAttribute('src') !== local || !video.currentSrc)) video.src = local;
     play();
@@ -75,8 +100,23 @@ async function before(scope: HTMLElement) {
   }
 }
 
+/** The sheet that slides over the hero (the hero's data-recede-panel) rests the film while it covers it. */
+function after(scope: HTMLElement) {
+  const me = state;
+  if (!me || reducedMotion) return;
+  const hero = me.video.closest<HTMLElement>('[data-recede-panel]');
+  const sheet = hero && scope.querySelector(hero.dataset.recedePanel || '');
+  if (!sheet) return;
+  const st = ScrollTrigger.create({
+    trigger: sheet, start: 'top top',
+    onToggle: (t) => { me.covered = t.isActive; me.sync(); },
+  });
+  if (st.isActive !== me.covered) { me.covered = st.isActive; me.sync(); }
+}
+
 export const system: System = {
   selector: '[data-hls]',
   before: (scope) => void before(scope),
+  after,
   destroy,
 };

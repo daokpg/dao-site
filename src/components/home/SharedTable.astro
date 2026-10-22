@@ -4,16 +4,17 @@
  * after it slides over (systems/recede.ts). Everything after it goes in the slot, which
  * is that dark sheet.
  */
+import Picture from '../ui/Picture.astro';
 import { getHome } from '../../lib/content';
 
 const { sharedTable, sectionHeadings } = await getHome();
 const { image } = sharedTable;
 ---
-<div data-void style="position:relative;background:#000">
+<div data-void style="position:relative;background:var(--void)">
   <section data-screen-label="The shared table" data-recede data-recede-panel="[data-over]" data-recede-scale="0.86" data-recede-y="16" class="dao-paper" data-theme="dark" style="position:sticky;top:0;z-index:1;height:100vh;min-height:640px;overflow:hidden;color:var(--ink-on-image);transform-origin:50% 50%;background:var(--night)" aria-labelledby="shared-table-h">
     <h2 id="shared-table-h" class="sr-only">{sectionHeadings.sharedTable}</h2>
     <div data-mask data-parallax style="position:absolute;inset:0;overflow:hidden">
-      <img src={image.src} alt={image.alt} loading="lazy" decoding="async" style={`position:absolute;inset:-8% 0;width:100%;height:116%;object-fit:cover;object-position:${image.position ?? '50% 50%'};display:block`} />
+      <Picture class="img" image={image} sizes="100vw" loading="lazy" />
       <span class="scrim scrim--floor"></span>
       <span class="scrim scrim--band"></span>
     </div>
@@ -21,10 +22,10 @@ const { image } = sharedTable;
       <p data-reveal-soft data-split="softlines" data-measure="m" style="width:min(760px,80vw);margin:0;text-align:center;font:300 clamp(26px,2.6vw,38px)/1.3 var(--font-display);letter-spacing:-.01em;color:var(--ink-on-image);max-width:none;text-wrap:pretty">{sharedTable.text}</p>
     </div>
     <span data-corner style="position:absolute;right:64px;bottom:40px;font:500 10px/1 var(--font-body);letter-spacing:.22em;text-transform:uppercase;color:var(--meta-on-image)">{sharedTable.corner}</span>
-    <span data-recede-dim class="scrim" style="background:#000;opacity:0"></span>
+    <span data-recede-dim class="scrim" style="background:var(--void);opacity:0"></span>
   </section>
 
-  <div data-over class="dao-paper" data-theme="dark" style="position:relative;z-index:2;background:var(--night)">
+  <div data-over class="dao-paper" data-theme="dark" style="position:relative;z-index:2;background:var(--night);color:var(--ink)">
     <slot />
   </div>
 </div>

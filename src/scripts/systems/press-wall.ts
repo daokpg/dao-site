@@ -1,7 +1,8 @@
 /**
  * Press wall (home): three marks visible, the rest in rotation, one swap per beat, never
  * the same slot twice in a row. It only runs while on screen and while the tab is visible.
- * With reduced motion the first three simply stand.
+ * With reduced motion the first three simply stand. The marks are centred in their slots by CSS
+ * (home.css); only their rise is animated.
  */
 import { gsap, ScrollTrigger } from '../core/gsap';
 import { reducedMotion } from '../core/env';
@@ -27,7 +28,6 @@ function before(scope: HTMLElement) {
   const pool = Array.from(poolEl?.querySelectorAll('[data-press-logo]') ?? []);
   pool.forEach((n) => n.remove());
   const logos = [...slots.map((s) => s.querySelector('[data-press-logo]')!), ...pool];
-  slots.forEach((s) => gsap.set(s.querySelector('[data-press-logo]'), { xPercent: -50, yPercent: -50 }));
 
   const ac = new AbortController();
   const tl = gsap.timeline({ repeat: -1, repeatDelay: 1.8, paused: true });
@@ -40,15 +40,15 @@ function before(scope: HTMLElement) {
     do i = Math.floor(Math.random() * slots.length); while (i === last && slots.length > 1);
     last = i;
     const slot = slots[i], cur = slot.querySelector('[data-press-logo]'), next = pool.shift()!;
-    gsap.set(next, { xPercent: -50, yPercent: 10, autoAlpha: 0, filter: 'blur(4px)' });
+    gsap.set(next, { yPercent: 60, autoAlpha: 0, filter: 'blur(4px)' });
     slot.appendChild(next);
     if (cur) {
       gsap.to(cur, {
-        xPercent: -50, yPercent: -110, autoAlpha: 0, filter: 'blur(4px)', duration: 1.1, ease: 'expo.inOut',
+        yPercent: -60, autoAlpha: 0, filter: 'blur(4px)', duration: 1.1, ease: 'expo.inOut',
         onComplete: () => { cur.remove(); gsap.set(cur, { clearProps: 'transform,opacity,visibility,filter' }); pool.push(cur); },
       });
     }
-    gsap.to(next, { xPercent: -50, yPercent: -50, autoAlpha: 1, filter: 'blur(0px)', duration: 1.1, ease: 'expo.inOut', delay: 0.1 });
+    gsap.to(next, { yPercent: 0, autoAlpha: 1, filter: 'blur(0px)', duration: 1.1, ease: 'expo.inOut', delay: 0.1 });
   };
   tl.call(swap);
 

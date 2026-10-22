@@ -1,5 +1,5 @@
 /**
- * A, the spine: a column of photographs strung on a wave held to the screen. Each frame eases
+ * The spine: a column of photographs strung on a wave held to the screen. Each frame eases
  * toward the sideways offset the wave gives its height on screen, so the column bends as it passes
  * and settles a beat after the scroll stops; inside its frame each picture drifts a little against
  * the scroll. The moment beside it follows the frames as they rise past the lower middle of the
@@ -38,27 +38,35 @@ export function spine(section: HTMLElement, me: State, scope: HTMLElement) {
     L = H * 1.8;
   };
 
-  // where each frame is, and where the wave wants it: frames ease toward their place
+  // where each frame is, and where the wave wants it: frames ease toward their place. Every frame
+  // is read before any is written, so a step costs one layout. True once all have arrived.
   const x = items.map(() => NaN);
+  const tops = items.map(() => 0), mids = items.map(() => 0);
   const step = (follow: number) => {
     const top = axis.getBoundingClientRect().top;
-    let active = 0;
     items.forEach((el, i) => {
       const r = el.getBoundingClientRect();
-      const mid = r.top + r.height / 2;
-      const want = offset(mid - top);
+      tops[i] = r.top;
+      mids[i] = r.top + r.height / 2;
+    });
+    let active = 0, settled = true;
+    items.forEach((el, i) => {
+      const want = offset(mids[i] - top);
       x[i] = Number.isNaN(x[i]) ? want : x[i] + (want - x[i]) * follow;
+      if (Math.abs(want - x[i]) < 0.1) x[i] = want; else settled = false;
       el.style.transform = `translate3d(${x[i].toFixed(2)}px,0,0)`;
       const img = imgs[i];
-      if (img && !reducedMotion) img.style.transform = `translate3d(0,${((0.5 - mid / H) * 6).toFixed(2)}%,0)`;
-      if (r.top < H * 0.62) active = Number(el.dataset.moment);
+      if (img && !reducedMotion) img.style.transform = `translate3d(0,${((0.5 - mids[i] / H) * 6).toFixed(2)}%,0)`;
+      if (tops[i] < H * 0.62) active = Number(el.dataset.moment);
     });
     setMoment(active);
+    return settled;
   };
 
-  // run on the ticker only while the column is on screen
-  const tick = () => step(reducedMotion ? 1 : 0.09);
-  let running = false;
+  // run on the ticker while the column is on screen and moving: it stops once the frames have
+  // arrived and starts again with the next scroll
+  const tick = () => { if (step(reducedMotion ? 1 : 0.09)) run(false); };
+  let running = false, inView = false;
   const run = (on: boolean) => {
     if (on === running) return;
     running = on;
@@ -70,8 +78,9 @@ export function spine(section: HTMLElement, me: State, scope: HTMLElement) {
   step(1);
   ScrollTrigger.create({
     trigger: section, start: 'top bottom', end: 'bottom top',
-    onToggle: (st) => run(st.isActive),
-    onRefresh: (st) => { measure(); step(1); run(st.isActive); },
+    onToggle: (st) => { inView = st.isActive; run(inView); },
+    onUpdate: () => { if (inView) run(true); },
+    onRefresh: (st) => { measure(); step(1); inView = st.isActive; run(inView); },
   });
 
   // the moment beside the column bows out as the last photograph is lifted off, before its column ends
