@@ -173,6 +173,8 @@ html.js:not(.ready) :is([data-loader],[data-loader-logo]){animation:dao-failsafe
 
 /* Rolling numbers (scripts/core/odometer.ts): each digit a masked strip of 0-9, other characters still. */
 [data-odometer-part="mask"],[data-odometer-part="static"]{display:inline-block;vertical-align:top;overflow:clip;padding:0 .02em;margin:0 -.02em}
+/* a space held in its own box would collapse to nothing ("THB3,900") */
+[data-odometer-part="static"]{white-space:pre}
 [data-odometer-part="strip"]{display:block;white-space:pre;text-align:center;will-change:transform}
 
 /* Questions (home and info, components/ui/FaqList.astro): the answer writes itself in, word by word (systems/faq.ts) */

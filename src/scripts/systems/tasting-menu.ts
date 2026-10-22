@@ -2,24 +2,27 @@
  * The past menu on the evening page. "Read it as" swaps the two cooked courses between
  * meat & fish and fish: the text fades through blur while the row's height eases to the
  * new wording, so nothing under it jumps. The pairing choice marks which courses carry a
- * glass (each course says which pairing first pours with it, content/evening.ts) and counts the
- * evening's total to its new figure, read out once it lands. A choice made while the last one is
+ * glass (each course says which pairing first pours with it, content/evening.ts) and rolls the
+ * evening's total to its new figure, digit by digit like the times on the home page (core/odometer.ts),
+ * read out once it lands. A choice made while the last one is
  * still moving takes over from it.
  */
 import { gsap } from '../core/gsap';
 import { E } from '../core/env';
 import { money } from '../../lib/format';
+import { odometer } from '../core/odometer';
 import type { System } from '../core/registry';
 
 type Pairing = 0 | 4 | 5;
 
-type State = { ac: AbortController; els: object[] };
+type State = { ac: AbortController; els: object[]; stop?: () => void };
 let state: State | null = null;
 
 function destroy() {
   if (!state) return;
   state.ac.abort();
   gsap.killTweensOf(state.els);
+  state.stop?.();
   state = null;
 }
 
@@ -31,8 +34,10 @@ function before(scope: HTMLElement) {
   const total = scope.querySelector<HTMLElement>('[data-total]')!;
   const say = scope.querySelector<HTMLElement>('[data-total-say]');
   const label = glasses[0]?.textContent ?? '';
-  const tot = { v: Number(total.dataset.menuPrice) };
-  state = { ac, els: [...descs, ...descs.map((d) => d.closest('.course')!), tot] };
+  const odo = odometer(total);
+  let totalNow = Number(total.dataset.menuPrice);
+  const landed = { at: 0 };
+  state = { ac, els: [...descs, ...descs.map((d) => d.closest('.course')!), landed], stop: () => odo.stop() };
   let turn = 0;
   let menu: 'meat' | 'fish' = 'meat';
   let pairing: Pairing = 0;
@@ -80,11 +85,10 @@ function before(scope: HTMLElement) {
     });
     const to = Number(total.dataset.menuPrice) + (p === 4 ? Number(total.dataset.four) : p === 5 ? Number(total.dataset.five) : 0);
     const choice = scope.querySelector(`[data-pick-pairing="${p}"]`)?.textContent ?? '';
-    gsap.to(tot, {
-      v: to, duration: 1.4, ease: E, overwrite: true,
-      onUpdate: () => { total.textContent = money(tot.v, total.dataset.currency); },
-      onComplete: () => { if (say) say.textContent = `${money(to, total.dataset.currency)}. ${choice}.`; },
-    });
+    odo.set(money(to, total.dataset.currency), to >= totalNow ? 1 : -1);
+    totalNow = to;
+    // read out once the digits have landed (a choice made before then takes over)
+    gsap.to(landed, { at: 1, duration: 1.1, overwrite: true, onComplete: () => { if (say) say.textContent = `${money(to, total.dataset.currency)}. ${choice}.`; } });
   };
 
   scope.addEventListener('click', (e) => {
