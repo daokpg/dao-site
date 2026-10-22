@@ -12,12 +12,12 @@ const { route } = await getStory();
 ---
 <section data-screen-label="Route" data-container class="g12" style="padding:0 64px 200px;align-items:start">
   <h2 data-reveal-soft data-split="softlines" style="grid-column:1 / span 3;position:sticky;top:140px;align-self:start;margin:0;font:300 clamp(36px,3.6vw,56px)/1.05 var(--font-display);letter-spacing:-.02em;color:var(--ink);max-width:none">{route.heading}</h2>
-  <HairList data-hover-images style="grid-column:4 / span 9;display:flex;flex-direction:column">
+  <HairList as="ol" data-hover-images style="grid-column:4 / span 9;display:flex;flex-direction:column">
     {route.stops.map((stop, i) => (
-      <HairRow image={stop.image} sizes="75vw" rowClass="hr" style="display:grid;grid-template-columns:minmax(max-content,3fr) minmax(0,5fr) minmax(0,1fr);gap:0 24px;align-items:start;padding:28px 0 32px">
-        <span class="fig2" style="line-height:1;white-space:nowrap;font-size:clamp(36px,3.4vw,56px)">{stop.city}</span>
+      <HairRow as="li" image={stop.image} sizes="75vw" rowClass="hr" style="display:grid;grid-template-columns:minmax(0,3fr) minmax(0,5fr) minmax(0,1fr);gap:0 24px;align-items:start;padding:28px 0 32px">
+        <span class="fig2" style="line-height:1;font-size:clamp(36px,3.4vw,56px)">{stop.city}</span>
         <span class="word" data-measure="l" style="padding-top:.35em;font-size:13px;line-height:1.55">{stop.text}</span>
-        <span class="num" style="justify-self:end;padding-top:.4em;line-height:1.55">{pad2(i + 1)}</span>
+        <span class="num" aria-hidden="true" style="justify-self:end;padding-top:.4em;line-height:1.55">{pad2(i + 1)}</span>
       </HairRow>
     ))}
   </HairList>

@@ -2,10 +2,18 @@
 /**
  * A hairline list: rows (ui/HairRow.astro) with a line over each and one under the list.
  * The look and the hover live in global.css ("hairline lists"). Extra attributes go on the list.
+ * `as` makes it a real list (`ol` or `ul`, its rows then `as="li"`) without the list's bullets
+ * and indent; a plain `div` unless told.
  */
 import type { HTMLAttributes } from 'astro/types';
 
-type Props = HTMLAttributes<'div'>;
-const { class: cls, ...attrs } = Astro.props;
+interface Props extends Omit<HTMLAttributes<'div'>, 'style'> {
+  as?: 'div' | 'ol' | 'ul';
+  style?: string;
+}
+
+const { as: Tag = 'div', class: cls, style, ...attrs } = Astro.props;
+const reset = Tag === 'div' ? '' : 'list-style:none;margin:0;padding:0;';
+const css = `${reset}${style ?? ''}` || undefined;
 ---
-<div class:list={['ll', cls]} {...attrs}><slot /></div>
+<Tag class:list={['ll', cls]} style={css} {...attrs}><slot /></Tag>

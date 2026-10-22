@@ -11,6 +11,8 @@ import type { Image } from '../../content/types';
 import Picture from './Picture.astro';
 
 interface Props extends HTMLAttributes<'div'> {
+  /** `li` inside a HairList that is an `ol` or `ul`. */
+  as?: 'div' | 'li';
   image?: Image;
   /** As for Picture: the width the photograph is drawn at. */
   sizes?: string;
@@ -18,9 +20,9 @@ interface Props extends HTMLAttributes<'div'> {
   rowClass?: string;
 }
 
-const { image, sizes = '100vw', rowClass, class: cls, style, ...attrs } = Astro.props;
+const { as: Tag = 'div', image, sizes = '100vw', rowClass, class: cls, style, ...attrs } = Astro.props;
 ---
-<div class:list={['lr', rowClass]} data-block {...attrs}>
+<Tag class:list={['lr', rowClass]} data-block {...attrs}>
   {image && <span class="hv" aria-hidden="true"><Picture image={image} alt="" sizes={sizes} defer /><span class="scrim sc"></span></span>}
   <div class:list={['lr__in', cls]} style={style}><slot /></div>
-</div>
+</Tag>

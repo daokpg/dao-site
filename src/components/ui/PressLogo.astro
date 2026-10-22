@@ -1,17 +1,22 @@
 ---
-/** A publication's mark, drawn in currentColor through an SVG mask at its intrinsic size. */
+/**
+ * A publication's mark, drawn in currentColor through an SVG mask at its intrinsic size.
+ * `decorative` hides it from screen readers, for when the publication's name is already written
+ * next to it (the story's press list); otherwise it is an image named after the publication.
+ */
 import type { PressOutlet } from '../../content/types';
 
 interface Props {
   outlet: PressOutlet;
   label?: string;
+  decorative?: boolean;
   class?: string;
   style?: string;
   /** Attributes the caller needs on the mark (the press wall keys on data-press-logo). */
   [key: string]: unknown;
 }
 
-const { outlet, label, class: cls, style = '', ...rest } = Astro.props;
+const { outlet, label, decorative = false, class: cls, style = '', ...rest } = Astro.props;
 const { name, logo, width, height } = outlet;
 ---
-<span class={cls} role="img" aria-label={label ?? name} style={`--w:${width}px;--h:${height}px;display:block;width:${width}px;height:${height}px;background:currentColor;-webkit-mask:url(${logo}) center/contain no-repeat;mask:url(${logo}) center/contain no-repeat;${style}`} {...rest}></span>
+<span class={cls} role={decorative ? undefined : 'img'} aria-label={decorative ? undefined : (label ?? name)} aria-hidden={decorative ? 'true' : undefined} style={`--w:${width}px;--h:${height}px;display:block;width:${width}px;height:${height}px;background:currentColor;-webkit-mask:url(${logo}) center/contain no-repeat;mask:url(${logo}) center/contain no-repeat;${style}`} {...rest}></span>
