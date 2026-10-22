@@ -1,0 +1,26 @@
+---
+/**
+ * One row of a hairline list (ui/HairList.astro). Its content sits in one block (.lr__in, the
+ * row's grid: `class` and `style` go there) that moves as a whole on hover, and its texts take
+ * their colour from the ink ladder, which the hover swaps, so everything changes together.
+ * With `image`, the row opens on that photograph (fetched when wanted: Picture `defer`,
+ * systems/hover-images.ts); without, it turns to the opposite ground. global.css, "hairline lists".
+ */
+import type { HTMLAttributes } from 'astro/types';
+import type { Image } from '../../content/types';
+import Picture from './Picture.astro';
+
+interface Props extends HTMLAttributes<'div'> {
+  image?: Image;
+  /** As for Picture: the width the photograph is drawn at. */
+  sizes?: string;
+  /** Classes for the row itself (the content's go in `class`). */
+  rowClass?: string;
+}
+
+const { image, sizes = '100vw', rowClass, class: cls, style, ...attrs } = Astro.props;
+---
+<div class:list={['lr', rowClass]} data-block {...attrs}>
+  {image && <span class="hv" aria-hidden="true"><Picture image={image} alt="" sizes={sizes} defer /><span class="sc"></span></span>}
+  <div class:list={['lr__in', cls]} style={style}><slot /></div>
+</div>

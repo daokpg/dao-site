@@ -1,11 +1,12 @@
 ---
 /**
- * The evening in four facts, a hairline list (.ll, global.css). Each row opens from its centre line on hover to show the moment
+ * The evening in four facts, a hairline list (ui/HairList.astro). Each row opens from its centre line on hover to show the moment
  * (fetched when the pointer first comes into the list, systems/hover-images.ts).
  * data-trail-handoff marks the photograph the day section above carries its last one into (systems/journey/handoff.ts).
  */
 import MaskImage from '../ui/MaskImage.astro';
-import Picture from '../ui/Picture.astro';
+import HairList from '../ui/HairList.astro';
+import HairRow from '../ui/HairRow.astro';
 import { getHome } from '../../lib/content';
 
 const { evening, sectionHeadings } = await getHome();
@@ -13,14 +14,13 @@ const { evening, sectionHeadings } = await getHome();
 <section data-screen-label="The evening" data-container class="g12" style="padding:200px 64px 180px;box-sizing:border-box;align-items:start" aria-labelledby="evening-facts-h">
   <h2 id="evening-facts-h" class="sr-only">{sectionHeadings.evening}</h2>
   <div data-trail-handoff style="grid-column:1 / span 12;margin-bottom:96px"><MaskImage image={evening.image} aspect="21 / 9" /></div>
-  <div data-hover-images class="ll" style="grid-column:1 / span 12;display:flex;flex-direction:column">
+  <HairList data-hover-images style="grid-column:1 / span 12;display:flex;flex-direction:column">
     {evening.rows.map((row) => (
-      <div data-block class="hr lr" style="display:grid;grid-template-columns:160px minmax(0,1fr) auto;gap:0 24px;align-items:baseline;padding:28px 0">
-        <span class="hv"><Picture image={row.image} alt="" sizes="100vw" defer /><span class="sc"></span></span>
+      <HairRow image={row.image} sizes="100vw" rowClass="hr" style="display:grid;grid-template-columns:160px minmax(0,1fr) auto;gap:0 24px;align-items:baseline;padding:28px 0">
         <span class="meta">{row.label}</span>
         <span class="word" data-measure="l">{row.text}</span>
         <span class="fig2" style="font-size:clamp(48px,5vw,80px);line-height:1.1">{row.figure}</span>
-      </div>
+      </HairRow>
     ))}
-  </div>
+  </HairList>
 </section>

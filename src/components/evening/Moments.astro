@@ -9,6 +9,8 @@
  * is in the HTML as data attributes; the script only swaps it.
  */
 import Cta from '../ui/Cta.astro';
+import HairList from '../ui/HairList.astro';
+import HairRow from '../ui/HairRow.astro';
 import MaskImage from '../ui/MaskImage.astro';
 import { getEvening, getSite } from '../../lib/content';
 import { money } from '../../lib/format';
@@ -56,15 +58,15 @@ const moment = (min: string, bottom = 160) => `min-height:${min};padding:0 0 ${b
         <button type="button" class="ch" aria-pressed="true" data-pick-menu="meat">{menu.choices.meat}</button>
         <button type="button" class="ch" aria-pressed="false" data-pick-menu="fish">{menu.choices.fish}</button>
       </div>
-      <div data-courses class="ll" style="display:flex;flex-direction:column">
+      <HairList data-courses style="display:flex;flex-direction:column">
         {menu.courses.map((c) => (
-          <div class="course lr" data-block>
+          <HairRow class="course">
             <p class="cn">{c.name}</p>
             <p class="word cd" data-measure="l" style="font-size:13px" data-course-desc data-meat={c.meat} data-fish={c.fish}>{c.description ?? c.meat}</p>
             <p class="num cg" data-course-glass data-on="false">{menu.glassLabel}</p>
-          </div>
+          </HairRow>
         ))}
-      </div>
+      </HairList>
       <p data-reveal-soft data-split="softlines" class="body" data-measure="m" style="font-size:13px">{menu.after}</p>
     </article>
 

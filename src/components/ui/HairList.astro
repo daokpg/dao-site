@@ -1,0 +1,11 @@
+---
+/**
+ * A hairline list: rows (ui/HairRow.astro) with a line over each and one under the list.
+ * The look and the hover live in global.css ("hairline lists"). Extra attributes go on the list.
+ */
+import type { HTMLAttributes } from 'astro/types';
+
+type Props = HTMLAttributes<'div'>;
+const { class: cls, ...attrs } = Astro.props;
+---
+<div class:list={['ll', cls]} {...attrs}><slot /></div>
