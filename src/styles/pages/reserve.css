@@ -19,8 +19,19 @@
   .nt .mk{display:block;width:18px;height:1px;background:currentColor;opacity:.6;transition:width .75s cubic-bezier(.16,1,.3,1)}
   .nt:is([aria-pressed="true"],:hover) .mk{opacity:1}
   .nt .mk[data-mine="true"]{width:28px;opacity:1}
+  /* a full month (twenty-odd nights) has narrow columns: less padding, a smaller date */
+  @media (min-width:821px){
+    [data-month][data-dense] .nt{padding:12px clamp(4px,.55vw,8px) !important;gap:14px !important}
+    [data-month][data-dense] .nt > span:last-child > span:last-child{font-size:clamp(15px,1.45vw,22px) !important}
+    [data-month][data-dense] .nt > span:last-child > .num{font-size:11px !important}
+    [data-month][data-dense] .nt .mk{width:14px}
+    [data-month][data-dense] .nt .mk[data-mine="true"]{width:22px}
+  }
   .nt:disabled{color:var(--ink-3);cursor:default}
   .nt:disabled::before{content:none}
+
+  /* while the month slides, its nights can't be hovered or picked (systems/booking.ts) */
+  [data-booking][data-sliding] [data-month]{pointer-events:none}
 
   /* the steps: a small number, then the step's name */
   .step{display:flex;align-items:baseline;gap:16px;margin:0;font:300 clamp(24px,2.2vw,32px)/1.1 var(--font-display);letter-spacing:-.015em;color:var(--ink);max-width:none}
@@ -29,7 +40,7 @@
   /* seats: a strip of equal cells between hairlines; like a night, a cell turns to the opposite
      ground when hovered (desktop) or chosen, and the others step back while one is hovered */
   .seats{display:flex;flex-wrap:wrap;border-left:1px solid var(--rule);border-top:1px solid var(--rule);width:max-content;max-width:100%}
-  .st{position:relative;flex:none;width:64px;height:72px;display:flex;align-items:flex-end;justify-content:flex-start;padding:12px 14px;margin:0;background:none;border:0;border-right:1px solid var(--rule);border-bottom:1px solid var(--rule);cursor:pointer;color:var(--ink-2);font:300 28px/1 var(--font-display);letter-spacing:-.02em;font-variant-numeric:tabular-nums;transition:color .6s cubic-bezier(.16,1,.3,1)}
+  .st{position:relative;flex:none;width:64px;height:72px;display:flex;align-items:center;justify-content:center;padding:0;margin:0;background:none;border:0;border-right:1px solid var(--rule);border-bottom:1px solid var(--rule);cursor:pointer;color:var(--ink-2);font:300 28px/1 var(--font-display);letter-spacing:-.02em;font-variant-numeric:tabular-nums;transition:color .6s cubic-bezier(.16,1,.3,1)}
   .st::before{content:"";position:absolute;inset:0;z-index:0;background:var(--ink);clip-path:inset(50% 0% 50% 0%);transition:clip-path .9s cubic-bezier(.16,1,.3,1);pointer-events:none}
   .st > span{position:relative;z-index:1;transition:opacity .6s cubic-bezier(.16,1,.3,1)}
   .st[aria-pressed="true"]{color:var(--ground)}
@@ -144,4 +155,4 @@
 /* the month arrives on entry; until the entrance has taken them, these wait hidden */
 /* scoped to the container: <body> carries data-page too but never gets data-entered, so
    nights re-drawn later (switching months) would stay hidden */
-html.js [data-barba="container"][data-page="reserve"]:not([data-entered]) :is([data-month-name],[data-night],.mn,[data-night-line]){opacity:0}
+html.js [data-barba="container"][data-page="reserve"]:not([data-entered]) :is([data-month-name],[data-month-intro],[data-month-step],[data-night],.mn,[data-night-line]){opacity:0}

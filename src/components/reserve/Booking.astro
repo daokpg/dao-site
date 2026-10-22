@@ -43,13 +43,13 @@ const up = 'M4 26V0M.5 3.5 4 0l3.5 3.5';
 
   <section data-screen-label="Month" data-container class="g12" style="padding:180px 64px 96px;align-items:end">
     <h1 style="grid-column:1 / span 6;margin:0;font:300 clamp(48px,6vw,96px)/.95 var(--font-display);letter-spacing:-.03em;color:var(--ink);max-width:none"><span class="sr-only">{site.labels.reserve}, </span><span data-month-name style="display:block">{v.monthName}</span></h1>
-    <p data-reveal-soft data-split="softlines" class="lead" data-measure="lead" style="grid-column:8 / span 5;font-size:clamp(18px,1.6vw,22px);color:var(--ink-2)">{reserve.intro}</p>
+    <p data-month-intro class="lead" data-measure="lead" style="grid-column:8 / span 5;font-size:clamp(18px,1.6vw,22px);color:var(--ink-2)">{reserve.intro}</p>
   </section>
 
   <section data-screen-label="Nights" data-container class="g12" style="padding:0 64px 120px;align-items:start">
-    <h2 class="step" style="grid-column:1 / span 12;margin-bottom:40px"><span class="step__n" aria-hidden="true">{pad2(1)}</span>{steps.night.label}</h2>
+    <h2 data-month-step class="step" style="grid-column:1 / span 12;margin-bottom:40px"><span class="step__n" aria-hidden="true">{pad2(1)}</span>{steps.night.label}</h2>
     <div data-month-clip style="grid-column:1 / span 12;overflow:hidden">
-      <div data-month style={`display:grid;grid-template-columns:repeat(${reserve.months[0].nights.length},minmax(0,1fr));gap:0 16px;align-items:end;border-bottom:1px solid var(--rule);padding-bottom:0;will-change:transform`} set:html={monthHtml(config, state)} />
+      <div data-month data-dense={reserve.months[0].nights.length > 12 ? '' : undefined} style={`display:grid;grid-template-columns:repeat(${reserve.months[0].nights.length},minmax(0,1fr));gap:0 16px;align-items:end;border-bottom:1px solid var(--rule);padding-bottom:0;will-change:transform`} set:html={monthHtml(config, state)} />
     </div>
     <div data-month-nav style="grid-column:1 / span 12;display:flex;justify-content:space-between;align-items:center;gap:24px;margin-top:20px">
       <button type="button" class="mn" data-month-prev disabled={!v.hasPrev} style="display:inline-flex;align-items:center;gap:14px"><svg data-flip width="28" height="8" viewBox="0 0 28 8" fill="none" aria-hidden="true" style="display:block;transform:scaleX(-1)"><path d={arrow} stroke="currentColor" stroke-width="1" stroke-linecap="square" /></svg><span class="sr-only">{monthNav.prev}, </span><span data-prev-name>{v.prevName}</span></button>

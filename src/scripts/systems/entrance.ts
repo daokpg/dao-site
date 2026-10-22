@@ -120,10 +120,16 @@ export function playEntrance(scope: HTMLElement, { delay = 0, firstLoad = false 
     t.to($('[data-hero-corner]', scope), { opacity: 1, duration: 1, ease: E }, 1.4);
   } else if ($('[data-month]', scope)) {
     t.to('[data-nav]', { opacity: 1, duration: 1, ease: E }, 0.4);
-    t.fromTo($('[data-month-name]', scope), { opacity: 0, y: 18, filter: 'blur(8px)' }, { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1.25, ease: E }, 0.3);
-    t.fromTo(scope.querySelectorAll('[data-night]'), { opacity: 0, y: 14, filter: 'blur(8px)' }, { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1.25, ease: E, stagger: 0.05 }, 0.5);
-    t.fromTo(scope.querySelectorAll('.mn, [data-night-line]'), { opacity: 0, y: 10, filter: 'blur(6px)' }, { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1.1, ease: E, stagger: 0.08 }, 1.3);
-    drawMarks(scope, delay + 0.7);
+    // one sequence: the month, the sentence, the step, then the nights one by one (each night's
+    // seats rise just after it lands, without a second rise of the night itself), the arrows last
+    const rise = { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1.25, ease: E };
+    t.fromTo($('[data-month-name]', scope), { opacity: 0, y: 18, filter: 'blur(8px)' }, rise, 0.3);
+    t.fromTo($('[data-month-intro]', scope), { opacity: 0, y: 14, filter: 'blur(8px)' }, rise, 0.45);
+    t.fromTo($('[data-month-step]', scope), { opacity: 0, y: 14, filter: 'blur(8px)' }, rise, 0.6);
+    const nights = scope.querySelectorAll('[data-night]');
+    t.fromTo(nights, { opacity: 0, filter: 'blur(8px)' }, { opacity: 1, filter: 'blur(0px)', duration: 1.1, ease: E, stagger: 0.06 }, 0.8);
+    t.fromTo(scope.querySelectorAll('.mn, [data-night-line]'), { opacity: 0, y: 10, filter: 'blur(6px)' }, { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1.1, ease: E, stagger: 0.08 }, 0.9 + nights.length * 0.06);
+    drawMarks(scope, delay + 1, 0.06);
     // the from-states are now inline, so the CSS that held these hidden can let go
     scope.setAttribute('data-entered', '');
   } else {

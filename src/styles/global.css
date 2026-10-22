@@ -73,7 +73,7 @@ html:not(.js) [data-loader],html:not(.js) [data-loader-logo]{display:none}
    animations away while they are still waiting, so a normal load never sees them. */
 @keyframes dao-failsafe-show{to{opacity:1;transform:none;filter:none;clip-path:none}}
 @keyframes dao-failsafe-hide{to{opacity:0;visibility:hidden}}
-html.js:not(.ready) :is([data-nav],[data-block],[data-split],[data-mask],[data-hero-mask],[data-hero-img],[data-hero-line],[data-hero-corner],[data-hero-reserve-label],[data-hero-reserve-rule],[data-clock],[data-month-name],[data-night],.mn,[data-night-line],[data-spine-reveal],[data-spine-reveal] picture,[data-spine-in] > *){animation:dao-failsafe-show .6s 4s forwards}
+html.js:not(.ready) :is([data-nav],[data-block],[data-split],[data-mask],[data-hero-mask],[data-hero-img],[data-hero-line],[data-hero-corner],[data-hero-reserve-label],[data-hero-reserve-rule],[data-clock],[data-month-name],[data-month-intro],[data-month-step],[data-night],.mn,[data-night-line],[data-spine-reveal],[data-spine-reveal] picture,[data-spine-in] > *){animation:dao-failsafe-show .6s 4s forwards}
 html.js:not(.ready) :is([data-loader],[data-loader-logo]){animation:dao-failsafe-hide .6s 4s forwards}
 
 /* ---------- overlays on photographs and film ----------

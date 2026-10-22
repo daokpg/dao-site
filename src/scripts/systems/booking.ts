@@ -170,6 +170,9 @@ function before(scope: HTMLElement) {
     const nextMonth = s.month + dir;
     if (nextMonth < 0 || nextMonth >= cfg.months.length || sliding) return;
     sliding = true;
+    // the nights can't be hovered or picked until the new month has nearly landed
+    root.setAttribute('data-sliding', '');
+    later(() => root.removeAttribute('data-sliding'), 1550);
     gsap.to(el.monthName, { opacity: 0, filter: 'blur(6px)', y: -8, duration: 0.4, ease: 'power2.in' });
     gsap.to(el.month, {
       xPercent: -12 * dir, opacity: 0, filter: 'blur(4px)', duration: 0.7, ease: 'expo.inOut',
@@ -190,6 +193,7 @@ function before(scope: HTMLElement) {
     const n = cfg.months[s.month]?.nights.length ?? 16;
     el.month.style.gridTemplateColumns = `repeat(${n},minmax(0,1fr))`;
     el.month.style.columnGap = n > 16 ? '8px' : '';
+    el.month.toggleAttribute('data-dense', n > 12);
   };
 
   const showError = (msg: string) => { el.holdError.textContent = msg; el.holdError.hidden = !msg; };
