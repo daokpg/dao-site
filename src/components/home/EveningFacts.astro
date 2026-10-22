@@ -7,9 +7,10 @@ import MaskImage from '../ui/MaskImage.astro';
 import { getHome } from '../../lib/content';
 import { cropStyle } from '../../lib/format';
 
-const { evening } = await getHome();
+const { evening, sectionHeadings } = await getHome();
 ---
-<section data-screen-label="The evening" data-container class="g12" style="padding:200px 64px 180px;box-sizing:border-box;align-items:start">
+<section data-screen-label="The evening" data-container class="g12" style="padding:200px 64px 180px;box-sizing:border-box;align-items:start" aria-labelledby="evening-facts-h">
+  <h2 id="evening-facts-h" class="sr-only">{sectionHeadings.evening}</h2>
   <div data-trail-handoff style="grid-column:1 / span 12;margin-bottom:96px"><MaskImage image={evening.image} aspect="21 / 9" /></div>
   <div style="grid-column:1 / span 12;display:flex;flex-direction:column">
     {evening.rows.map((row) => (

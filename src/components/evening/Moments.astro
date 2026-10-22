@@ -26,7 +26,8 @@ const moment = (min: string, bottom = 160) => `min-height:${min};padding:0 0 ${b
   </div>
 
   <div style="grid-column:5 / span 8;display:flex;flex-direction:column">
-    <article data-moment data-time={arrival.time} data-name={arrival.name} style={`${moment('90vh')};gap:40px`}>
+    <article data-moment data-time={arrival.time} data-name={arrival.name} aria-labelledby="moment-arrival" style={`${moment('90vh')};gap:40px`}>
+      <h2 id="moment-arrival" class="sr-only">{arrival.name}</h2>
       <p data-reveal-soft data-split="softlines" class="lead" data-measure="lead">{arrival.lead}</p>
       <div data-moment-split style="display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:0 24px;align-items:start">
         <figure style="grid-column:1 / span 4;margin:0;display:flex;flex-direction:column;gap:16px">
@@ -37,12 +38,14 @@ const moment = (min: string, bottom = 160) => `min-height:${min};padding:0 0 ${b
       </div>
     </article>
 
-    <article data-moment data-time={nir.time} data-name={nir.name} style={`${moment('80vh')};gap:40px`}>
+    <article data-moment data-time={nir.time} data-name={nir.name} aria-labelledby="moment-nir" style={`${moment('80vh')};gap:40px`}>
+      <h2 id="moment-nir" class="sr-only">{nir.name}</h2>
       <p data-reveal-soft data-split="softlines" data-measure="big" style="margin:0;font:300 clamp(32px,3.4vw,56px)/1.15 var(--font-display);letter-spacing:-.02em;color:var(--ink);max-width:none;text-wrap:pretty">{nir.statement}</p>
       <p data-reveal-soft data-split="softlines" class="body" data-measure="s">{nir.body}</p>
     </article>
 
-    <article data-moment data-time={menu.time} data-name={menu.name} style={`${moment('90vh')};gap:48px`}>
+    <article data-moment data-time={menu.time} data-name={menu.name} aria-labelledby="moment-menu" style={`${moment('90vh')};gap:48px`}>
+      <h2 id="moment-menu" class="sr-only">{menu.name}</h2>
       <p data-reveal-soft data-split="softlines" class="lead" data-measure="lead">{menu.lead}</p>
       <div data-block style="display:flex;flex-direction:column;gap:6px">
         <p class="num" style="font-size:12px;color:var(--ink)">{menu.servedOn}</p>
@@ -66,7 +69,8 @@ const moment = (min: string, bottom = 160) => `min-height:${min};padding:0 0 ${b
       <p data-reveal-soft data-split="softlines" class="body" data-measure="m" style="font-size:13px">{menu.after}</p>
     </article>
 
-    <article data-moment data-time={wine.time} data-name={wine.name} style={`${moment('80vh')};gap:48px`}>
+    <article data-moment data-time={wine.time} data-name={wine.name} aria-labelledby="moment-wine" style={`${moment('80vh')};gap:48px`}>
+      <h2 id="moment-wine" class="sr-only">{wine.name}</h2>
       <p data-reveal-soft data-split="softlines" class="lead" data-measure="lead">{wine.lead}</p>
       <div data-block data-pairing-choice style="display:flex;gap:32px;align-items:baseline;flex-wrap:wrap">
         <span class="num" style="font-size:12px">{wine.label}</span>
@@ -80,7 +84,8 @@ const moment = (min: string, bottom = 160) => `min-height:${min};padding:0 0 ${b
       </div>
     </article>
 
-    <article data-moment data-time={music.time} data-name={music.name} style={`${moment('70vh')};gap:40px`}>
+    <article data-moment data-time={music.time} data-name={music.name} aria-labelledby="moment-music" style={`${moment('70vh')};gap:40px`}>
+      <h2 id="moment-music" class="sr-only">{music.name}</h2>
       <p data-reveal-soft data-split="softlines" class="lead" data-measure="lead">{music.lead}</p>
       <figure style="margin:0;width:62%;display:flex;flex-direction:column;gap:16px">
         <MaskImage image={music.image} aspect="3 / 2" />
@@ -88,7 +93,8 @@ const moment = (min: string, bottom = 160) => `min-height:${min};padding:0 0 ${b
       </figure>
     </article>
 
-    <article data-moment data-time={lastGlass.time} data-name={lastGlass.name} style={`${moment('80vh', 200)};gap:48px`}>
+    <article data-moment data-time={lastGlass.time} data-name={lastGlass.name} aria-labelledby="moment-lastGlass" style={`${moment('80vh', 200)};gap:48px`}>
+      <h2 id="moment-lastGlass" class="sr-only">{lastGlass.name}</h2>
       <p data-reveal-soft data-split="softlines" data-measure="big" style="margin:0;font:300 clamp(32px,3.4vw,56px)/1.15 var(--font-display);letter-spacing:-.02em;color:var(--ink);max-width:none;text-wrap:pretty">{lastGlass.statement}</p>
       <div data-reveal-soft data-split="none"><Cta label={lastGlass.cta.label} href={lastGlass.cta.href} /></div>
     </article>

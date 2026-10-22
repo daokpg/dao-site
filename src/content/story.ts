@@ -36,8 +36,8 @@ export const story: StoryContent = {
     stops: [
       { city: 'Tel Aviv', text: 'Culinary school, then the first kitchens in the city he grew up next to. The Moroccan flavours from home never left the plate.', image: { src: '/assets/photos/cities/israel.jpg', alt: '', position: '50% 45%' } },
       { city: 'Milan', text: 'A city that taught restraint. Fewer things on the plate, each one done properly.', image: { src: '/assets/photos/cities/milan.jpg', alt: '', position: '50% 50%' } },
-      { city: 'New York', text: 'Zizi Limona in Williamsburg, then Timna in the East Village. Reviewed twice by the New York Times, listed in the Michelin Guide.', image: { src: '/assets/photos/cities/new-york.jpg', alt: '', position: '50% 40%' } },
-      { city: 'Koh Phangan', text: 'He chose the island over the city. One table, sixteen seats, and he comes out to it every evening.', image: { src: '/assets/photos/cities/koh-phangan.jpg', alt: '', position: '50% 55%' } },
+      { city: 'New York', text: 'Zizi Limona in Williamsburg, then Timna in the East Village. Reviewed twice by The New York Times, listed in the Michelin Guide.', image: { src: '/assets/photos/cities/new-york.jpg', alt: '', position: '50% 40%' } },
+      { city: 'Koh Phangan', text: 'He chose the island over the city. One table, sixteen seats, and he comes out to it every night it is open.', image: { src: '/assets/photos/cities/koh-phangan.jpg', alt: '', position: '50% 55%' } },
     ],
   },
   morning: {
@@ -55,7 +55,7 @@ export const story: StoryContent = {
   },
   press: {
     heading: 'In print',
-    lead: 'Timna was reviewed by the New York Times and The New Yorker in the same month, and listed in the Michelin Guide. Nir left it for an island with one road.',
+    lead: 'Timna was reviewed by The New York Times and The New Yorker in the same month, and listed in the Michelin Guide. Nir left it for an island with one road.',
   },
   room: {
     heading: 'Made on the island',

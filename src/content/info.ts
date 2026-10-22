@@ -17,11 +17,10 @@ export interface InfoContent {
 
 // DRAFT. Where they differ, the answers follow Ran's review of the restaurant's own reservations
 // sheet and his booking rework (docs/booking.md) over the design-phase copy. Still to confirm with
-// the client: the start time (site.service.arrival; the restaurant's board says 20:30),
-// the no-show fee, and the travel time from Thong Sala.
+// the client: the no-show fee, and the travel time from Thong Sala.
 export const info: InfoContent = {
   seo: {
-    title: 'FAQ, Dao Koh Phangan',
+    title: 'FAQ, Dao',
     description: 'Everything about an evening at Dao: how the table works, food and wine, booking and paying, and getting to Sri Thanu on Koh Phangan.',
   },
   title: 'FAQ',
@@ -49,7 +48,7 @@ export const info: InfoContent = {
       id: 'booking-and-paying',
       title: 'Booking and paying',
       items: [
-        { id: 'cost', question: 'How much does it cost?', answer: '{menu} per guest for the menu. The wine pairing is {pairingFour} for four glasses or {pairingFive} for five. Water and tea are included. Everything is paid on the night. A card holds your seats when you book, and is only charged if you do not come.' },
+        { id: 'cost', question: 'How much does it cost?', answer: '{menu} per guest for the menu. The wine pairing is {pairingFour} for four glasses or {pairingFive} for five. Water and tea are included. Everything is paid on the night. A card holds your seats when you book, and is only charged if you do not come or cancel within 48 hours.' },
         { id: 'how-to-book', question: 'How does booking work?', answer: 'Choose a night and the number of seats on the Reserve page and send the request. We confirm it with you on WhatsApp, where we also go over menus, dietary needs and any occasion. A card is saved to hold the seats; nothing is charged.' },
         { id: 'nights', question: 'Which nights are you open?', answer: 'Monday to Thursday, and Saturday. Closed on Friday and Sunday.' },
         { id: 'full', question: 'What if the night I want is full?', answer: 'Join the waitlist for that night on the Reserve page. If seats open up, we message the waitlist on WhatsApp, in order.' },
@@ -63,7 +62,7 @@ export const info: InfoContent = {
       title: 'Getting there',
       items: [
         { id: 'where', question: 'Where is Dao and how do I get there?', answer: 'In Sri Thanu, on the west coast of Koh Phangan, about ten minutes by scooter from Thong Sala. We send the exact pin on WhatsApp when your seats are confirmed.' },
-        { id: 'late', question: 'What happens if I am late?', answer: `The table is served together, so the first course leaves the kitchen at ${arrival} whether every seat is filled or not. If you are running late, message or call us and we will hold your plate for as long as we can.` },
+        { id: 'late', question: 'What happens if I am late?', answer: `The whole table is served at once, so the courses start together whether every seat is filled or not. If you are running late, message or call us and we will hold your plate for as long as we can.` },
       ],
     },
   ],

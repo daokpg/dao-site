@@ -10,6 +10,7 @@ import { gsap } from '../core/gsap';
 import { CLOSED, E, OPEN, SHEET } from '../core/env';
 import { startScroll, stopScroll } from '../core/lenis';
 import { setTone } from '../core/tone';
+import { showNav } from './nav';
 
 const $ = <T extends HTMLElement = HTMLElement>(s: string) => document.querySelector<T>(s)!;
 const $$ = (s: string) => Array.from(document.querySelectorAll<HTMLElement>(s));
@@ -69,6 +70,7 @@ function killMenuTweens() {
 
 export function openMenu() {
   const { panel, scrim, masks, labels, contact } = parts();
+  showNav();
   swapWord(true);
   setOpenState(true);
   stopScroll();

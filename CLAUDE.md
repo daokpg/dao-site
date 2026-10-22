@@ -96,7 +96,8 @@ only the page container, so the document lives for the whole visit.
 
 **Two zones.** Persistent chrome (nav, menu, loader, transition sheet) sits outside
 `<main data-barba="container">` and is bound once in `src/scripts/app.ts`. Everything inside
-`<main>` is swapped on navigation.
+`<main>` is swapped on navigation. The nav has no ground, so it slides away while the page is
+scrolled down and returns on any scroll up, at the top and while the menu is open (`chrome/nav.ts`).
 
 **The registry (`src/scripts/core/registry.ts`) is the one rule that matters.** A `<script>` in a
 page or component runs once on a real load and is dead after the first transition. So every piece
@@ -160,11 +161,12 @@ anything JS creates at runtime (scoped rules never reach runtime-created nodes).
 
 ## The home page's day section
 
-Between the intro and the evening facts. In use: **Rows** (`components/home/journey/RowsJourney.astro`,
-`systems/journey/rows.ts`). Kept as an alternative while it is decided: **the spine**, shown with
-`?trail=spine` (a dev-only switcher sits bottom left; `systems/trail-variant.ts` keeps one version
-and removes the other). On desktop both carry their last photograph into the evening section's
-(`systems/journey/handoff.ts`). The original wave trail is archived in git: tag `archive/wave-trail`.
+Between the intro and the evening facts. In use, chosen by the client: **the spine**
+(`components/home/journey/SpineJourney.astro`, `systems/journey/spine.ts` and `spine-mobile.ts`). Kept for now, shown with `?trail=rows`: **Rows**
+(`components/home/journey/RowsJourney.astro`, `systems/journey/rows.ts`). A dev-only switcher sits
+bottom left; `systems/trail-variant.ts` keeps one version and removes the other. On desktop both
+carry their last photograph into the evening section's (`systems/journey/handoff.ts`). The original
+wave trail is archived in the repo history: tag `archive/wave-trail`.
 
 ## Known quirks (kept on purpose, ask before "fixing")
 

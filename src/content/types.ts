@@ -109,5 +109,7 @@ export interface SiteSettings {
     menu: string;
     close: string;
     reserve: string;
+    /** The first thing the keyboard reaches: jumps past the nav to the page. */
+    skip: string;
   };
 }

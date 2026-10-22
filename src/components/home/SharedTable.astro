@@ -6,11 +6,12 @@
  */
 import { getHome } from '../../lib/content';
 
-const { sharedTable } = await getHome();
+const { sharedTable, sectionHeadings } = await getHome();
 const { image } = sharedTable;
 ---
 <div data-void style="position:relative;background:#000">
-  <section data-screen-label="The shared table" data-recede data-recede-panel="[data-over]" data-recede-scale="0.86" data-recede-y="16" class="dao-paper" data-theme="dark" style="position:sticky;top:0;z-index:1;height:100vh;min-height:640px;overflow:hidden;color:var(--ink-on-image);transform-origin:50% 50%;background:var(--night)">
+  <section data-screen-label="The shared table" data-recede data-recede-panel="[data-over]" data-recede-scale="0.86" data-recede-y="16" class="dao-paper" data-theme="dark" style="position:sticky;top:0;z-index:1;height:100vh;min-height:640px;overflow:hidden;color:var(--ink-on-image);transform-origin:50% 50%;background:var(--night)" aria-labelledby="shared-table-h">
+    <h2 id="shared-table-h" class="sr-only">{sectionHeadings.sharedTable}</h2>
     <div data-mask data-parallax style="position:absolute;inset:0;overflow:hidden">
       <img src={image.src} alt={image.alt} loading="lazy" decoding="async" style={`position:absolute;inset:-8% 0;width:100%;height:116%;object-fit:cover;object-position:${image.position ?? '50% 50%'};display:block`} />
       <span style="position:absolute;inset:0;background:var(--scrim-floor)"></span>

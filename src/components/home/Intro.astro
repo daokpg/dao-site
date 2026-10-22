@@ -5,7 +5,8 @@ import { getHome } from '../../lib/content';
 const home = await getHome();
 const [left, right] = home.duo;
 ---
-<section data-screen-label="Paragraph" data-container class="g12" style="padding:180px 64px 160px">
+<section data-screen-label="Paragraph" data-container class="g12" style="padding:180px 64px 160px" aria-labelledby="intro-h">
+  <h2 id="intro-h" class="sr-only">{home.sectionHeadings.intro}</h2>
   <p data-reveal-soft data-split="softlines" data-measure="m" style="grid-column:4 / span 6;justify-self:center;max-width:none;text-align:center;font:300 clamp(24px,2.25vw,32px)/1.4 var(--font-display);letter-spacing:-.01em;color:var(--ink);text-wrap:pretty">{home.intro}</p>
 </section>
 

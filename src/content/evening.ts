@@ -52,7 +52,7 @@ export interface EveningContent {
 export const evening: EveningContent = {
   seo: {
     title: 'The evening, Dao',
-    description: 'One evening at Dao, from the door opening at a quarter past seven to the last glass. Six courses, one wine pairing, one table.',
+    description: 'One evening at Dao, from the door opening at half past seven to the last glass. Six courses, one wine pairing, one table.',
   },
   hero: {
     time: service.arrival,
@@ -70,9 +70,9 @@ export const evening: EveningContent = {
   arrival: {
     time: service.arrival,
     name: 'Arrival',
-    lead: 'The door on the soi opens at a quarter past seven. Sixteen names on sixteen cards, and the seat next to yours belongs to someone you have not met.',
+    lead: 'The door on the soi opens at half past seven. Sixteen names on sixteen cards, and the seat next to yours belongs to someone you have not met.',
     image: { src: '/assets/photos/door-dao.jpg', alt: 'The door on the soi', position: '50% 50%' },
-    caption: 'The door, a quarter past seven.',
+    caption: 'The door, half past seven.',
     body: 'Nothing to order and nothing to decide. Water is poured, the first glass if you have chosen the pairing, and the room fills in around you.',
   },
   nir: {
@@ -85,7 +85,7 @@ export const evening: EveningContent = {
     time: '20:00',
     name: 'The menu',
     lead: 'Six courses, walked to the table one at a time. The menu is never announced; it is decided by the morning. Below is one that was served, so you know the shape of it. Yours will be different.',
-    servedOn: 'Served on Thursday 11 September 2026',
+    servedOn: 'Served on Thursday 10 September 2026',
     servedNote: 'Sixteen guests, meat and fish, five glasses. Kept here as an example only.',
     readAs: 'Read it as',
     choices: { meat: 'Meat & fish', fish: 'Fish' },
@@ -95,7 +95,7 @@ export const evening: EveningContent = {
       { name: 'Bread', description: 'Frena, the Moroccan bread he grew up on, with tahini and burnt tomato.' },
       { name: 'From the fire', meat: 'Lamb over coals, Moroccan spice, greens from the morning.', fish: 'A whole fish over coals, Moroccan spice, greens from the morning.' },
       { name: 'The main', meat: 'Beef cooked slowly with dates, in a broth made from the morning’s bones.', fish: 'Prawns from Chaloklum in a broth made from their own shells.' },
-      { name: 'Sweet', description: 'A Moroccan pastry made the way his grandfather made them, and fruit from the drying trays.' },
+      { name: 'Sweet', description: 'A Moroccan pastry made the way his grandfather made it, and fruit from the drying trays.' },
     ],
     glassLabel: 'Glass',
     after: 'This menu is gone. Yours is cooked from what the morning finds, adapted per seat from the note you leave when you book. Dietary needs are taken then, not at the table.',
@@ -118,7 +118,7 @@ export const evening: EveningContent = {
   lastGlass: {
     time: '22:00',
     name: 'The last glass',
-    statement: 'The last course is sweet, a pastry the way his grandfather made them. Coffee, tea. Nobody is hurried out.',
+    statement: 'The last course is sweet, a pastry the way his grandfather made it. Coffee, tea. Nobody is hurried out.',
     cta: { label: site.labels.reserve, href: '/reserve' },
   },
 };

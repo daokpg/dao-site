@@ -10,10 +10,12 @@ import { initLenis } from './core/lenis';
 import { initTransitions } from './core/transition';
 import { initSamePageLinks } from './core/links';
 import { initMenu } from './chrome/menu';
+import { initNav } from './chrome/nav';
 import { initPressPulse } from './chrome/pulse';
 
 initLenis();
 initMenu();
+initNav();
 initPressPulse();
 initSamePageLinks();
 initTransitions();

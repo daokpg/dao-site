@@ -17,12 +17,12 @@ const { current, tall = false } = Astro.props;
 const site = await getSite();
 const { email, phone, area } = site.contact;
 ---
-<footer data-screen-label="Reserve and footer" data-container class:list={['footer', tall && 'footer--tall']}>
+<footer role="contentinfo" data-screen-label="Reserve and footer" data-container class:list={['footer', tall && 'footer--tall']}>
   <div data-footer-strip class="footer__strip">
     {site.pages.map((p) => (
       <a href={p.href} data-footer-page class="footer__page" aria-current={p.key === current ? 'page' : undefined}>
         <span data-mask data-parallax class="footer__mask"><span data-zoom class="footer__zoom"><img src={p.image.src} alt="" style={cropStyle(p.image.position)} loading="lazy" decoding="async" /></span></span>
-        <span class="footer__meta"><span class="footer__name">{p.label}</span><span class="footer__num dao-num">{p.num}</span></span>
+        <span class="footer__meta"><span class="footer__name">{p.label}</span><span class="footer__num dao-num" aria-hidden="true">{p.num}</span></span>
       </a>
     ))}
   </div>
