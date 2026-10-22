@@ -342,7 +342,7 @@ function before(scope: HTMLElement) {
   // ---- the steps and the ticket rise into place as they are scrolled to
   // (phones bring each step in as it appears, in pick())
   if (!reducedMotion && !isMobile()) {
-    qa('[data-after] [data-gate], [data-after] aside > *').forEach((step) => {
+    qa('[data-after] [data-gate], [data-after] aside > *').filter((step) => step.children.length).forEach((step) => {
       ScrollTrigger.create({
         trigger: step, start: 'top 88%', once: true,
         onEnter: () => gsap.fromTo(step.children, { opacity: 0, y: 14, filter: 'blur(8px)' }, { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1.25, ease: E, stagger: 0.06 }),
