@@ -17,8 +17,11 @@ export interface ReserveContent {
   onlineMax: number;
   /** Seat counts are written as words in sentences. Index 0 = one seat. */
   seatWords: string[];
+  /** The booking's three steps, numbered on the page in this order: the night, the seats, the details. */
   steps: {
+    night: { label: string; /** Shown under the month when someone scrolls on without picking a night. */ pickAbove: string };
     seats: { label: string; note: string };
+    details: { label: string };
     fields: {
       name: string; namePlaceholder: string; email: string; emailPlaceholder: string; whatsapp: string; whatsappPlaceholder: string;
       occasion: string; occasionNone: string; occasions: Record<Occasion, string>; cake: string;
@@ -82,7 +85,9 @@ export const reserve: ReserveContent = {
   onlineMax: 11,
   seatWords: ['One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen'],
   steps: {
-    seats: { label: 'Seats', note: 'Singles, pairs and groups sit together at the one table. Twelve or more take the whole table, so write to us and we will hold the night for you.' },
+    night: { label: 'Choose a night', pickAbove: 'Choose a night above first' },
+    details: { label: 'Your details' },
+    seats: { label: 'How many seats', note: 'Singles, pairs and groups sit together at the one table. Twelve or more take the whole table, so write to us and we will hold the night for you.' },
     fields: {
       name: 'Name', namePlaceholder: 'e.g. Maya Cohen',
       whatsapp: 'WhatsApp number, so we can reach you', whatsappPlaceholder: 'e.g. +66 81 234 5678',

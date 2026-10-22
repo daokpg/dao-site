@@ -1,14 +1,14 @@
 ---
 /**
- * The booking: a month of nights as columns of marks, then seats and your details, each
- * step waking once the one before is answered, with a ticket that fills in beside them. Rendered here in its empty state; systems/booking.ts runs it from there,
+ * The booking, in three numbered steps: a month of nights as columns of marks, then seats, then
+ * your details, each step waking once the one before is answered (on phones it only appears then), with a ticket that fills in beside them. Rendered here in its empty state; systems/booking.ts runs it from there,
  * using the same markup builders (src/lib/booking.ts).
  *
  * Picking a full night turns the page into a waitlist request: a waitlist note appears, and the button asks to join. `data-waitlist` on the root
  * switches the parts marked `data-when="open"` / `data-when="full"` (styles/pages/reserve.css).
  */
 import Letters from '../ui/Letters.astro';
-import { fill, money } from '../../lib/format';
+import { fill, money, pad2 } from '../../lib/format';
 import { getReserve, getSite } from '../../lib/content';
 import { scriptJson } from '../../lib/json';
 import { initialState, monthHtml, seatOptionsHtml, view, type BookingConfig } from '../../lib/booking';
@@ -36,6 +36,7 @@ const contactFields: Field[] = [
 ];
 
 const arrow = 'M0 4h26M22.5 .5 26 4l-3.5 3.5';
+const up = 'M4 26V0M.5 3.5 4 0l3.5 3.5';
 ---
 <div data-booking data-waitlist="false">
   <script type="application/json" data-booking-config set:html={scriptJson(config)} />
@@ -46,6 +47,7 @@ const arrow = 'M0 4h26M22.5 .5 26 4l-3.5 3.5';
   </section>
 
   <section data-screen-label="Nights" data-container class="g12" style="padding:0 64px 120px;align-items:start">
+    <h2 class="step" style="grid-column:1 / span 12;margin-bottom:40px"><span class="step__n" aria-hidden="true">{pad2(1)}</span>{steps.night.label}</h2>
     <div data-month-clip style="grid-column:1 / span 12;overflow:hidden">
       <div data-month style={`display:grid;grid-template-columns:repeat(${reserve.months[0].nights.length},minmax(0,1fr));gap:0 16px;align-items:end;border-bottom:1px solid var(--rule);padding-bottom:0;will-change:transform`} set:html={monthHtml(config, state)} />
     </div>
@@ -54,17 +56,19 @@ const arrow = 'M0 4h26M22.5 .5 26 4l-3.5 3.5';
       <p data-night-line class="word" style="font-size:13px;color:var(--ink-3);margin:0;text-align:center">{v.nightLine}</p>
       <button type="button" class="mn" data-month-next disabled={!v.hasNext} style="display:inline-flex;align-items:center;gap:14px"><span class="sr-only">{monthNav.next}, </span><span data-next-name>{v.nextName}</span><svg width="28" height="8" viewBox="0 0 28 8" fill="none" aria-hidden="true" style="display:block;transform:none"><path d={arrow} stroke="currentColor" stroke-width="1" stroke-linecap="square" /></svg></button>
     </div>
+    <button type="button" data-pick-first class="pick-first"><svg width="8" height="28" viewBox="0 0 8 28" fill="none" aria-hidden="true"><path d={up} stroke="currentColor" stroke-width="1" stroke-linecap="square" transform="translate(0 1)" /></svg><span>{steps.night.pickAbove}</span></button>
   </section>
 
   <section data-screen-label="Your seats" data-container data-after inert class="g12" style="padding:0 64px 200px;align-items:start;opacity:.35;filter:blur(2px);pointer-events:none;transition:opacity 1s cubic-bezier(.16,1,.3,1),filter 1s cubic-bezier(.16,1,.3,1)">
     <div style="grid-column:1 / span 7;display:flex;flex-direction:column;gap:64px">
       <div data-gate data-live="false" style="display:flex;flex-direction:column;gap:24px">
-        <p class="num" id="rd-seats-label" style="font-size:12px">{steps.seats.label}</p>
+        <h2 class="step" id="rd-seats-label"><span class="step__n" aria-hidden="true">{pad2(2)}</span>{steps.seats.label}</h2>
         <p data-seats-left class="word" style="font-size:13px;color:var(--ink-2);margin-top:-8px">{v.seatsLeftLine}</p>
         <div data-seat-options role="group" aria-labelledby="rd-seats-label" style="display:flex;gap:20px 28px;flex-wrap:wrap;align-items:baseline;max-width:640px" set:html={seatOptionsHtml(v.limit, state.seats, config.copy)} />
         <p class="word" data-measure="m" style="font-size:12px;color:var(--ink-3)">{steps.seats.note}</p>
       </div>
       <div data-gate data-live="false" data-fields style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 24px">
+        <h2 class="step" style="grid-column:1 / -1;margin-bottom:12px"><span class="step__n" aria-hidden="true">{pad2(3)}</span>{steps.details.label}</h2>
         {contactFields.map((f) => (
           <label style="display:flex;flex-direction:column;gap:8px"><span class="num" style="font-size:12px">{f.label}</span><input data-field={f.id} id={`rd-${f.id}`} type={f.type} placeholder={f.placeholder} autocomplete={f.autocomplete} /></label>
         ))}

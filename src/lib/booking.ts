@@ -122,7 +122,7 @@ export function nightHtml([label, open, capacity = TABLE]: Night, state: Pick<Bo
     ? `<span class="nt-wait">${esc(waitlistLabel)}</span>`
     : Array.from({ length: open }, (_, i) => `<span class="mk" data-mine="${i < mine}"></span>`).join('');
   const aria = `${label}, ${open === 0 ? 'full, join the waitlist' : open === capacity ? 'the whole table open' : `${open} of ${capacity} seats open`}`;
-  return `<button type="button" data-night data-label="${esc(label)}" class="nt" aria-pressed="${pressed}" aria-label="${esc(aria)}"${open === 0 ? ' data-full' : ''}${past ? ' disabled' : ''} draggable="false" style="display:flex;flex-direction:column;justify-content:flex-end;gap:18px;background:none;border:0;padding:0 0 20px;cursor:pointer;user-select:none;text-align:left;color:inherit;min-width:0;height:100%">`
+  return `<button type="button" data-night data-label="${esc(label)}" class="nt" aria-pressed="${pressed}" aria-label="${esc(aria)}"${open === 0 ? ' data-full' : ''}${past ? ' disabled' : ''} draggable="false" style="display:flex;flex-direction:column;justify-content:flex-end;gap:18px;background:none;border:0;padding:16px;cursor:pointer;user-select:none;text-align:left;min-width:0;height:100%">`
     + `<span data-marks style="display:flex;flex-direction:column;gap:6px;align-items:flex-start">${marks}</span>`
     + `<span style="display:flex;flex-direction:column;gap:6px"><span class="num" style="font-size:12px;color:inherit;opacity:.6">${esc(dow.slice(0, 3))}</span><span style="font:300 clamp(20px,2vw,32px)/1 var(--font-display);letter-spacing:-.02em;color:inherit;font-variant-numeric:tabular-nums">${esc(day)}</span></span>`
     + `</button>`;

@@ -37,12 +37,12 @@ function destroy() {
   state = null;
 }
 
-/** Ticks fill in from the end of each night, night by night. */
-export function drawMarks(scope: ParentNode, delay = 0, nightStep = 0.05, each = 0.03) {
+/** Seats rise into each night from its foot, night after night across the month, so the eye goes to them. */
+export function drawMarks(scope: ParentNode, delay = 0, nightStep = 0.07, each = 0.03) {
   scope.querySelectorAll('[data-night] [data-marks]').forEach((m, i) => {
     const marks = m.querySelectorAll('.mk'); // a full night's waitlist label is not a mark
     if (!marks.length) return;
-    gsap.fromTo(marks, { scaleX: 0, transformOrigin: '0 50%' }, { scaleX: 1, duration: reducedMotion ? 0 : 1.2, ease: E, stagger: { each, from: 'end' }, delay: delay + i * nightStep });
+    gsap.fromTo(marks, { scaleX: 0, y: 10, transformOrigin: '0 50%' }, { scaleX: 1, y: 0, duration: reducedMotion ? 0 : 1.2, ease: E, stagger: { each, from: 'end' }, delay: delay + i * nightStep });
   });
 }
 
@@ -89,8 +89,10 @@ function before(scope: HTMLElement) {
   let isoByLabel: Record<string, string> = {};
   // with a backend, the placeholder month can't be used until the real nights are in
   let nightsReady = !cfg.api;
-  // the placeholder nights already gone (the real ones start from today)
+  // the placeholder nights already gone leave the calendar, and a month with none left goes too
+  // (the real ones start from today)
   const past = cfg.api ? new Set<string>() : pastLabels(cfg.months);
+  if (past.size) cfg.months = cfg.months.map((m) => ({ ...m, nights: m.nights.filter((n) => !past.has(n[0])) })).filter((m) => m.nights.length);
   // the page's own signal, plus a time limit, so a backend that never answers ends in the error message
   // (by hand: AbortSignal.any over AbortSignal.timeout never fired in WebKit when tried)
   const timed = () => {
@@ -130,6 +132,7 @@ function before(scope: HTMLElement) {
     el.doneBody.textContent = v.doneBody;
     el.cake.hidden = !v.showCake;
     el.cakeBox.checked = s.cake;
+    if (s.date) root.setAttribute('data-ask', 'false');
   };
 
   const resolve = (target: HTMLElement) => gsap.fromTo(target, { opacity: 0, filter: 'blur(6px)' }, { opacity: 1, filter: 'blur(0px)', duration: 1.1, ease: E });
@@ -143,8 +146,14 @@ function before(scope: HTMLElement) {
     const patch: Partial<BookingState> = { [key]: val };
     if (key === 'date' && s.seats > seatLimit(cfg, val as string)) patch.seats = 0;
     const firstTime = prev === null || prev === 0;
+    const wasLive = el.gates.map((g) => g.dataset.live === 'true');
     s = { ...s, ...patch };
     render();
+    // on phones a step only appears once it is open: bring it in, and let the page re-measure
+    if (isMobile()) {
+      el.gates.forEach((g, i) => { if (!wasLive[i] && g.dataset.live === 'true') gsap.fromTo(g.children, { opacity: 0, y: 14, filter: 'blur(8px)' }, { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1.25, ease: E, stagger: 0.06 }); });
+      ScrollTrigger.refresh();
+    }
     if (key === 'date') {
       el.after.setAttribute('data-live', 'true');
       el.after.inert = false;
@@ -293,6 +302,14 @@ function before(scope: HTMLElement) {
     });
   }
 
+  // ---- scrolled on without a night: a note under the month points back up to it
+  const pickFirst = q('[data-pick-first]');
+  ScrollTrigger.create({
+    trigger: isMobile() ? pickFirst : el.after, start: isMobile() ? 'top 80%' : 'top 70%',
+    onEnter: () => { if (!s.date && !s.done) root.setAttribute('data-ask', 'true'); },
+  });
+  pickFirst.addEventListener('click', () => scrollToY(el.clip.getBoundingClientRect().top + window.scrollY - (isMobile() ? 200 : 260)), { signal: ac.signal });
+
   // ---- input
   let swallow = false;
   root.addEventListener('click', (e) => {
@@ -336,6 +353,7 @@ function before(scope: HTMLElement) {
     loadNights();
   } else if (past.size) {
     fillMonth();
+    render();
   }
 
   // ---- drag the month sideways (desktop)
