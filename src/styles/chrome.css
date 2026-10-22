@@ -27,7 +27,7 @@ html[data-nav-tone="cream"] .nav{color:var(--paper)}
 .menu__contact a{color:inherit}
 /* hover zoom on the `scale` property, which multiplies with the transform GSAP animates on open/close instead of fighting it */
 [data-menu-item] img{transition:scale 1.25s cubic-bezier(.16,1,.3,1)}
-[data-menu-item]:hover img{scale:1.08}
+[data-menu-item]:hover img,[data-menu-item]:focus-visible img{scale:1.08}
 
 /* ---------- intro loader (home, first load only) ---------- */
 .loader{position:fixed;inset:0;z-index:100;background:var(--charcoal);display:flex;align-items:center;justify-content:center;transform-origin:50% 50%}
@@ -54,13 +54,13 @@ html[data-nav-tone="cream"] .nav{color:var(--paper)}
 .footer__meta{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:16px}
 .footer__name{font:300 24px/1.1 var(--font-display);letter-spacing:-.01em;color:var(--ink-2);transition:color .75s cubic-bezier(.16,1,.3,1)}
 .footer__num{font:400 12px/1 var(--font-body);color:var(--ink-3)}
-.footer__page:hover .footer__zoom{transform:scale(1.08)}
-.footer__page:hover .footer__name{color:var(--ink)}
+.footer__page:hover .footer__zoom,.footer__page:focus-visible .footer__zoom{transform:scale(1.08)}
+.footer__page:hover .footer__name,.footer__page:focus-visible .footer__name{color:var(--ink)}
 .footer__bar{grid-column:1 / span 12;margin-top:0;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:0 24px;align-items:end;padding-top:24px;border-top:1px solid var(--rule)}
 .footer__cta{grid-column:1 / span 4}
 .footer__contact{grid-column:6 / span 4;display:flex;flex-direction:column;gap:6px}
 .footer__contact a{font:400 13px/1.6 var(--font-body);color:var(--ink-2);text-decoration:none;border:0;transition:color .75s cubic-bezier(.16,1,.3,1)}
-.footer__contact a:hover{color:var(--ink)}
+.footer__contact a:hover,.footer__contact a:focus-visible{color:var(--ink)}
 .footer__place{grid-column:10 / span 3;display:flex;flex-direction:column;gap:6px;text-align:right}
 .footer__place span{font:400 13px/1.6 var(--font-body);color:var(--ink-2)}
 .footer__place span + span{color:var(--ink-3)}

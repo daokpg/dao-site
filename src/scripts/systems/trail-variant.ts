@@ -1,9 +1,9 @@
 /**
  * The home page's day section: keep the version chosen with ?trail=… (remembered for the visit,
- * read into <html data-trail> by an inline script in Base.astro; Rows unless the spine is asked
+ * read into <html data-trail> by an inline script in Base.astro; the spine unless Rows is asked
  * for) and remove the other before any other system sees it. Inside it, a layout for one kind of
  * device only (data-only="desktop" | "mobile") is removed on the other, so nothing sets up
- * animations for it. Runs first in the registry. Delete with the spine once it is decided.
+ * animations for it. Runs first in the registry. Delete with Rows once it is no longer needed.
  */
 import { isMobile } from '../core/env';
 import type { System } from '../core/registry';
@@ -12,7 +12,7 @@ const TRAIL_OPTIONS = ['rows', 'spine'] as const;
 
 function before(scope: HTMLElement) {
   const want = document.documentElement.dataset.trail;
-  const chosen = TRAIL_OPTIONS.includes(want as (typeof TRAIL_OPTIONS)[number]) ? want : 'rows';
+  const chosen = TRAIL_OPTIONS.includes(want as (typeof TRAIL_OPTIONS)[number]) ? want : 'spine';
   scope.querySelectorAll<HTMLElement>('[data-trail-variant]').forEach((el) => {
     if (el.dataset.trailVariant !== chosen) el.remove();
   });

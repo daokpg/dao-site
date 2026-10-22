@@ -13,7 +13,6 @@ export const site: SiteSettings = {
     area: 'Sri Thanu, Koh Phangan',
   },
   copyright: '© Dao, 2026',
-  // To confirm with the client: the restaurant's own booking sheet says 20:30 (docs/booking.md).
   service: {
     arrival: '19:30',
     seats: 16,
@@ -55,5 +54,6 @@ export const site: SiteSettings = {
     menu: 'Menu',
     close: 'Close',
     reserve: 'Reserve a seat',
+    skip: 'Skip to content',
   },
 };

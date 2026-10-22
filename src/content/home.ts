@@ -40,11 +40,19 @@ export interface HomeContent {
     details: string;
   };
   nir: { name: string; image: Image; text: string; cta: Cta };
+  /** Names for the sections that show no heading, read only by screen readers (an sr-only h2). */
+  sectionHeadings: { intro: string; evening: string; sharedTable: string; price: string };
   /** A few of the info page's questions (picked by id, written once in info.ts), and the way to all of them. */
   faq: { heading: string; items: FaqItem[]; more: Cta };
 }
 
 export const home: HomeContent = {
+  sectionHeadings: {
+    intro: 'An evening at Dao',
+    evening: 'The evening in four facts',
+    sharedTable: 'The shared table',
+    price: 'Price and wine pairing',
+  },
   seo: {
     title: 'Dao, a sixteen-seat chef’s table on Koh Phangan',
     description: 'One communal table, one arrival time, one fixed menu of Thai produce and Israeli and Moroccan cooking, led by Chef Nir Mesika in Sri Thanu, Koh Phangan.',
@@ -59,7 +67,7 @@ export const home: HomeContent = {
       alt: 'Nir plating in the kitchen during service',
     },
   },
-  intro: 'Everyone arrives at the same hour. The table is already set, the music already playing, the first course already in the making. For the next few hours you’re Nir’s guest.',
+  intro: 'Everyone arrives at the same hour. The table is already set, the music already playing, the first course already in the making. For the next few hours you are Nir’s guest.',
   duo: [
     { image: { src: '/assets/photos/hands-plating.jpg', alt: 'Hands plating a first course', position: '62% 50%' }, caption: 'Hands plating, the first course going out.' },
     { image: { src: '/assets/photos/kitchen-service.jpg', alt: 'Nir in the kitchen, open to the room', position: '72% 50%' }, caption: 'Nir in the kitchen. It is open to the table.' },
@@ -128,7 +136,7 @@ export const home: HomeContent = {
   evening: {
     image: { src: '/assets/photos/set-table.jpg', alt: '', position: '55% 50%' },
     rows: [
-      { label: 'Arrival', text: 'Everyone arrives together. The door opens at a quarter past seven.', figure: service.arrival, image: { src: '/assets/photos/facade.jpg', alt: '', position: '55% 50%' } },
+      { label: 'Arrival', text: 'Everyone arrives together. The door opens at half past seven.', figure: service.arrival, image: { src: '/assets/photos/facade.jpg', alt: '', position: '55% 50%' } },
       { label: 'Duration', text: 'Nobody is hurried out.', figure: '~3 h', image: { src: '/assets/photos/last-garnish.jpg', alt: '', position: '60% 50%' } },
       { label: 'Seats', text: 'One table. Singles, pairs and groups sit together.', figure: '16', image: { src: '/assets/photos/table-guests.jpg', alt: '', position: '40% 50%' } },
       { label: 'Menu', text: 'Tell us in the note when you book.', figure: 'Meat, fish or plant-based', image: { src: '/assets/photos/dish-slate.jpg', alt: '', position: '50% 50%' } },

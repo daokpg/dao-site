@@ -82,15 +82,16 @@ const indexable = import.meta.env.INDEXABLE === 'true' && !notFound;
     <link rel="preload" href="/fonts/SeasonMixTRIAL-Light.otf" as="font" type="font/otf" crossorigin />
     <!-- Before first paint: mark JS as running so pre-hidden states apply (no-JS visitors see the finished page). -->
     <script is:inline>document.documentElement.classList.add('js');</script>
-    <!-- Which version of the home page's day section to show (?trail=spine to see the alternative), remembered for the visit. Remove with the spine. -->
-    <script is:inline>try{var t=new URLSearchParams(location.search).get('trail');if(t)sessionStorage.setItem('dao-trail',t);document.documentElement.dataset.trail=sessionStorage.getItem('dao-trail')||'rows';}catch(e){document.documentElement.dataset.trail='rows';}</script>
+    <!-- Which version of the home page's day section to show (the spine; ?trail=rows to see the alternative), remembered for the visit. Remove with Rows. -->
+    <script is:inline>try{var t=new URLSearchParams(location.search).get('trail');if(t)sessionStorage.setItem('dao-trail',t);document.documentElement.dataset.trail=sessionStorage.getItem('dao-trail')||'spine';}catch(e){document.documentElement.dataset.trail='spine';}</script>
     <slot name="head" />
   </head>
   <body data-barba="wrapper" data-page={page}>
+    <a href="#content" class="skip-link">{site.labels.skip}</a>
     {intro && <Loader />}
     <Nav />
     <Menu />
-    <main data-barba="container" data-barba-namespace={page} data-page={page} data-tone={tone} data-block-rhythm={blockRhythm}>
+    <main id="content" tabindex="-1" data-barba="container" data-barba-namespace={page} data-page={page} data-tone={tone} data-block-rhythm={blockRhythm}>
       <slot />
     </main>
     <TransitionSheet />
