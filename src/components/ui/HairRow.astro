@@ -21,6 +21,6 @@ interface Props extends HTMLAttributes<'div'> {
 const { image, sizes = '100vw', rowClass, class: cls, style, ...attrs } = Astro.props;
 ---
 <div class:list={['lr', rowClass]} data-block {...attrs}>
-  {image && <span class="hv" aria-hidden="true"><Picture image={image} alt="" sizes={sizes} defer /><span class="sc"></span></span>}
+  {image && <span class="hv" aria-hidden="true"><Picture image={image} alt="" sizes={sizes} defer /><span class="scrim sc"></span></span>}
   <div class:list={['lr__in', cls]} style={style}><slot /></div>
 </div>
