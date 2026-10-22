@@ -26,6 +26,8 @@ export interface ReserveContent {
     };
   };
   ticket: { label: string; hold: string; join: string; waitlistLabel: string; waitlistNote: string };
+  /** Spoken names of the month arrows (screen readers); the month's name follows. */
+  monthNav: { prev: string; next: string };
   /**
    * Sentences that change as the booking fills in. Tokens in braces are filled by the page:
    * {date} {left} {seats} {Seats} {email} {contact}.
@@ -52,6 +54,8 @@ export interface ReserveContent {
     /** After Stripe, if the guest left without saving a card. */
     cardSkipped: string;
     doneHead: string;
+    /** The heading when the page no longer knows the night and seats (back from Stripe in a fresh tab). */
+    doneHeadShort: string;
     doneBody: string;
     /** A full night: the label in place of its marks, and the sentences of a waitlist request. */
     waitlistMark: string;
@@ -94,6 +98,7 @@ export const reserve: ReserveContent = {
     join: 'Join the waitlist', waitlistLabel: 'Nothing to pay now',
     waitlistNote: 'Seats open up when plans change. If they do on your night, we write to the waitlist in the order it was joined.',
   },
+  monthNav: { prev: 'Previous month', next: 'Next month' },
   copy: {
     pickFirst: 'Pick a night first.',
     wholeTableOpen: 'The whole table is open on {date}.',
@@ -113,6 +118,7 @@ export const reserve: ReserveContent = {
     nightClosed: '{date} is no longer open for booking. Pick another night.',
     cardSkipped: 'You left before adding a card. No problem: we will sort it out with you on WhatsApp.',
     doneHead: 'Requested. {seats} on {date}.',
+    doneHeadShort: 'Requested.',
     doneBody: 'We will be in touch with you on WhatsApp soon to finalise the booking and talk through any dietary needs. Anything else, {contact}.',
     waitlistMark: 'Waitlist',
     nightLineFull: '{date} is full. The waitlist is open.',

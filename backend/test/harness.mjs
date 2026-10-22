@@ -4,6 +4,9 @@
 //   node backend/test/harness.mjs serve   → serves doGet/doPost on :4323 (CORS like Apps Script);
 //     build the site with PUBLIC_BOOKING_API=http://localhost:4323 to try it end to end
 // The checks expect the October 2026 nights to be in the future; refresh the fixture after that.
+// The script runs in UTC while the sheet is in Bangkok, as when a project's own time zone was never
+// set: a night read with getDay() instead of through the sheet's time zone lands on the day before.
+process.env.TZ = 'UTC';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import http from 'node:http';
@@ -19,20 +22,11 @@ function makeSheet(name, rows = []) {
   const sh = { name, data: rows, merges: [], formulas: {} };
   const cell = (r, c) => { while (sh.data.length < r) sh.data.push([]); return sh.data[r - 1][c - 1]; };
   const set = (r, c, v) => { while (sh.data.length < r) sh.data.push([]); sh.data[r - 1][c - 1] = v; };
-  const evalCell = (r, c) => {
-    const f = sh.formulas[`${r},${c}`];
-    if (f && f.startsWith('=IF(LOWER(R[0]C[-3])')) {
-      const open = String(cell(r, c - 3)).toLowerCase() === 'yes';
-      return open ? Math.max(0, Number(cell(r, c - 2)) - Number(cell(r, c - 1))) : 0;
-    }
-    return cell(r, c);
-  };
   const range = (r, c, nr = 1, nc = 1) => { const rg = new Proxy({
-    getValues: () => Array.from({ length: nr }, (_, i) => Array.from({ length: nc }, (_, j) => evalCell(r + i, c + j) ?? '')),
+    getValues: () => Array.from({ length: nr }, (_, i) => Array.from({ length: nc }, (_, j) => cell(r + i, c + j) ?? '')),
     setValues: (v) => v.forEach((row, i) => row.forEach((x, j) => set(r + i, c + j, x))),
     setValue: (v) => set(r, c, v),
     clearContent: () => { for (let i = 0; i < nr; i++) for (let j = 0; j < nc; j++) { set(r + i, c + j, ''); delete sh.formulas[`${r + i},${c + j}`]; } return chain; },
-    setFormulaR1C1: (f) => { for (let i = 0; i < nr; i++) sh.formulas[`${r + i},${c}`] = f; return chain; },
     getFormula: () => sh.formulas[`${r},${c}`] || '',
     setFormula: (f) => { sh.formulas[`${r},${c}`] = f; },
     getMergedRanges: () => sh.merges.filter(([a, b]) => a <= r + nr - 1 && b >= r).map(([a, b]) => ({ getRow: () => a, getLastRow: () => b })),
@@ -50,7 +44,8 @@ let SDate = Date; // replaced by the sandbox's Date below, so instanceof Date ho
 function loadFixture() {
 for (const [name, t] of Object.entries(fixture)) {
   const sh = makeSheet(name);
-  t.A.forEach((a, i) => { if (a) { const [y, m, d] = a.split('-').map(Number); sh.data[i] = sh.data[i] || []; sh.data[i][0] = new SDate(y, m - 1, d); } });
+  // a date cell holds midnight in the sheet's time zone (Bangkok, UTC+7)
+  t.A.forEach((a, i) => { if (a) { const [y, m, d] = a.split('-').map(Number); sh.data[i] = sh.data[i] || []; sh.data[i][0] = new SDate(SDate.UTC(y, m - 1, d) - 7 * 36e5); } });
   t.C.forEach((c, i) => { sh.data[i] = sh.data[i] || []; if (typeof c === 'number') sh.data[i][2] = c; else if (c) sh.formulas[`${i + 1},3`] = c; });
   sh.merges = t.merges;
   sh.lastRow = t.rows; // the board has names and notes further right, so its last row is the sheet's
@@ -67,15 +62,21 @@ const ss = {
 // ---------- fake services
 const props = { NOTIFY_EMAIL: 'team@example.com', SITE_URL: 'http://localhost:4321', STRIPE_SECRET_KEY: 'sk_test_fake' };
 const cache = new Map();
-const pad = (n) => String(n).padStart(2, '0');
+let locks = 0;
+let sessionStatus = 'complete'; // what Stripe says of a card page when asked
+const ISO_DAYS = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const ctx = {
   SpreadsheetApp: { getActive: () => ss, newDataValidation: () => chain, newConditionalFormatRule: () => chain },
   Utilities: {
-    formatDate: (d, tz, f) => f.replace('yyyy', d.getFullYear()).replace('MM', pad(d.getMonth() + 1)).replace('dd', pad(d.getDate())),
+    // in the time zone asked for, like Apps Script: yyyy, MM, dd, and u (1 = Monday … 7 = Sunday)
+    formatDate: (d, tz, f) => {
+      const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' }).formatToParts(d).map((x) => [x.type, x.value]));
+      return f === 'u' ? String(ISO_DAYS.indexOf(p.weekday)) : f.replace('yyyy', p.year).replace('MM', p.month).replace('dd', p.day);
+    },
     getUuid: () => crypto.randomUUID(),
   },
   CacheService: { getScriptCache: () => ({ get: (k) => cache.get(k) ?? null, put: (k, v) => cache.set(k, v), remove: (k) => cache.delete(k) }) },
-  LockService: { getScriptLock: () => ({ waitLock: () => {}, tryLock: () => true, releaseLock: () => {} }) },
+  LockService: { getScriptLock: () => ({ waitLock: () => { locks++; }, tryLock: () => true, releaseLock: () => {} }) },
   PropertiesService: { getScriptProperties: () => ({ getProperty: (k) => props[k] ?? null }) },
   ContentService: { createTextOutput: (s) => ({ body: s, setMimeType() { return this; } }), MimeType: { JSON: 'json' } },
   MailApp: { sendEmail: (o) => log.push(['mail', o.subject]), getRemainingDailyQuota: () => 100 },
@@ -85,7 +86,7 @@ const ctx = {
       log.push(['stripe', o.method, url.replace('https://api.stripe.com/v1/', '')]);
       const body = url.endsWith('/customers') ? { id: 'cus_test' }
         : url.endsWith('/checkout/sessions') ? { id: 'cs_test_1', url: `http://localhost:4323/fake-stripe?back=${encodeURIComponent(o.payload.success_url)}` }
-        : { id: 'cs_test_1', status: 'complete' };
+        : { id: 'cs_test_1', status: sessionStatus };
       return { getResponseCode: () => 200, getContentText: () => JSON.stringify(body) };
     },
   },
@@ -119,7 +120,10 @@ if (process.argv[2] === 'test') {
   assert(nights.length > 15 && nights.every((x) => x.date >= '2026-09-28'), `${nights.length} nights from today on`);
   assert(n('2026-10-05').left === 6, '5 Oct: 16 seats, 10 booked → 6 left (' + n('2026-10-05').left + ')');
   assert(n('2026-10-06').left === 2, '6 Oct: 16 seats, 14 booked → 2 left (' + n('2026-10-06').left + ')');
-  assert(n('2026-10-17').left === 14, 'Sat 17 Oct: capacity 14 (' + n('2026-10-17').left + ')');
+  assert(n('2026-10-17').left === 14, 'Sat 17 Oct: capacity 14, its weekday read in the sheet\'s time zone (' + n('2026-10-17').left + ')');
+  assert(JSON.parse(fs.readFileSync(new URL('../appsscript.json', import.meta.url), 'utf8')).timeZone === 'Asia/Bangkok', 'the script\'s manifest sets Asia/Bangkok');
+  const av = ss.getSheetByName('Availability');
+  assert(locks === 1 && typeof av.data[1][4] === 'number' && !Object.keys(av.formulas).length, 'refresh holds the lock and writes seats left as numbers with the row');
   assert(!n('2026-10-09') && !n('2026-10-11'), 'no Friday or Sunday nights');
 
   let r = post({ type: 'booking', date: '2026-10-06', seats: 3, name: 'Test Guest', whatsapp: '+66 81 234 5678' });
@@ -132,18 +136,34 @@ if (process.argv[2] === 'test') {
   assert(get().nights.find((x) => x.date === '2026-10-06').left === 2, 'a New request does not take seats');
   r = post({ type: 'booking', date: '2026-10-05', seats: 1, name: 'X', whatsapp: '123' });
   assert(!r.ok && r.reason === 'bad_name', 'validation: ' + r.reason);
+  r = post({ type: 'waitlist', date: '2026-10-21', seats: 12, name: 'Big Party', whatsapp: '+66 81 000 0012' });
+  assert(!r.ok && r.reason === 'bad_seats', 'more than the online maximum (11) refused: ' + r.reason);
+  // Back from Stripe and press again: the same card page while it is open, none once it is done
+  sessionStatus = 'open';
+  const card = post({ type: 'booking', date: '2026-10-06', seats: 2, name: 'Test Guest', whatsapp: '+66812345678' });
+  assert(card.ok && card.id === rq.data[1][12] && card.cardUrl && card.cardUrl.includes(card.id) && rq.getLastRow() === 2, 'a repeat while the card page is open gets the same page: ' + JSON.stringify(card));
+  sessionStatus = 'complete';
+  assert(post({ type: 'booking', date: '2026-10-06', seats: 2, name: 'Test Guest', whatsapp: '+66812345678' }).cardUrl === null, 'a repeat after the card is saved gets no card page');
+  r = post({ type: 'booking', date: '2026-10-06', seats: 1, name: 'Test Guest', whatsapp: '+66 81 234 5678' });
+  assert(r.ok && r.id !== card.id && rq.getLastRow() === 3, 'other seats on the same night are a new request');
   r = post({ type: 'waitlist', date: '2026-10-17', seats: 4, name: 'Wait Lister', whatsapp: '+972 50 000 0000' });
   assert(r.ok && r.type === 'waitlist' && !r.cardUrl, 'waitlist accepted without a card');
   r = post({ type: 'booking', date: '2026-10-09', seats: 2, name: 'Test Guest', whatsapp: '+66 81 234 5678' });
   assert(!r.ok && r.reason === 'closed', 'closed night refused');
   r = post({ website: 'spam', date: '2026-10-05' });
-  assert(r.ok && rq.getLastRow() === 3, 'honeypot: fake OK, nothing written');
+  assert(r.ok && rq.getLastRow() === 4, 'honeypot: fake OK, nothing written');
   ctx.checkCards();
   assert(rq.data[1][11] === 'saved', 'checkCards marks the card saved');
+  const rows0 = rq.getLastRow();
   // the team places the guests on the board → seats count
   ss.getSheetByName('5-10/10').data[21][2] = 2; // a table on 6 Oct gets 2 guests
   ctx.onEdit({ range: { getSheet: () => ({ getName: () => '5-10/10' }) } });
   assert(get().nights.find((x) => x.date === '2026-10-06').left === 0, 'placed on the board → 6 Oct now full');
+  // a booking for a night that has just filled becomes a waitlist request, without a card
+  r = post({ type: 'booking', date: '2026-10-06', seats: 2, name: 'Late Guest', whatsapp: '+66 81 999 0000' });
+  assert(r.ok && r.type === 'waitlist' && /^WL-/.test(r.id) && !r.cardUrl && rq.getLastRow() === rows0 + 1, 'a booking for a full night comes back as a waitlist request: ' + JSON.stringify(r));
+  const late = post({ type: 'booking', date: '2026-10-06', seats: 2, name: 'Late Guest', whatsapp: '+66 81 999 0000' });
+  assert(late.id === r.id && late.type === 'waitlist', 'its repeat says waitlist too');
   // abuse: guest text never becomes a formula, a repeat is the same request, a flood is refused
   r = post({ type: 'waitlist', date: '2026-10-05', seats: 1, name: '=HYPERLINK("https://evil.example","x")', whatsapp: '+1 555 0100', note: '-no nuts\n=IMAGE("x")' });
   const inj = rq.data[rq.getLastRow() - 1];
@@ -154,10 +174,14 @@ if (process.argv[2] === 'test') {
   r = post({ type: 'waitlist', date: '2026-10-05', seats: 1, name: 'Bad\r\nBcc: x@y.z', whatsapp: '+1 555 0199' });
   const hdr = rq.data[rq.getLastRow() - 1][5];
   assert(r.ok && !/[\r\n]/.test(hdr), 'line breaks taken out of one-line fields: ' + JSON.stringify(hdr));
-  cache.set('posts', '30');
+  // ten minutes counted in fixed blocks; a repeat is answered before it is counted
+  const bucket = vm.runInContext("'posts:' + Math.floor(Date.now() / 6e5)", ctx);
+  cache.set(bucket, '30');
   r = post({ type: 'waitlist', date: '2026-10-05', seats: 1, name: 'Flood', whatsapp: '+1 555 0142' });
   assert(!r.ok && r.reason === 'busy' && rq.getLastRow() === rows + 1, 'a flood is refused: ' + JSON.stringify(r));
-  cache.delete('posts');
+  r = post({ type: 'waitlist', date: '2026-10-05', seats: 1, name: 'Again', whatsapp: '+1 555 0100' });
+  assert(r.ok && r.id === again.id && cache.get(bucket) === '30', 'a repeat still gets its answer during a flood, and is not counted');
+  cache.delete(bucket);
   console.log(log.map((l) => l.join(' ')).join('\n'));
 }
 

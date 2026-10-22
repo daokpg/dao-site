@@ -24,15 +24,18 @@
  *                      can read script properties, so never a full sk_ key. Optional; without it no
  *                      card is asked for.
  *
+ * Time zone: appsscript.json (paste it in with this file) sets the script to Asia/Bangkok, and every
+ * date is read through the sheet's time zone, so a night is never taken for the day before.
+ *
  * Abuse: the web app address is public, so doPost refuses more than POSTS_PER_10_MIN requests in
- * ten minutes, treats a repeat of the same WhatsApp number for the same night as the same request,
+ * ten minutes, treats a repeat of the same WhatsApp number for the same night and seats as the same request,
  * writes guest text into the sheet as text (never as a formula), and keeps working when the daily
  * email quota runs out.
  */
 
 const TABS = { requests: 'Website requests', availability: 'Availability', help: 'How it works' };
 const OWN_TABS = Object.values(TABS);
-/** Default seats per night by weekday (0 = Sunday). Editable per night in the Availability tab. */
+/** Default seats per night by weekday (1 = Monday … 7 = Sunday). Editable per night in the Availability tab. */
 const CAPACITY = { 1: 16, 2: 16, 3: 16, 4: 16, 6: 14 };
 /** The live board. setupTestCopy() refuses to run on it. */
 const ORIGINAL_BOARD_ID = '1Z97_kIS8euN2z_sv9QK84RePBss-0SVWqI5Wf4NPYvk';
@@ -40,6 +43,8 @@ const ORIGINAL_BOARD_ID = '1Z97_kIS8euN2z_sv9QK84RePBss-0SVWqI5Wf4NPYvk';
 const NO_SHOW_POLICY = 'Nothing is charged now. Your card holds your seats and is only charged THB 1,950 per seat if you do not come or cancel within 48 hours of the dinner.';
 /** Requests accepted per ten minutes, all guests together, before the endpoint says it is busy. */
 const POSTS_PER_10_MIN = 30;
+/** The most seats one online request can take. Keep in step with the website (src/content/reserve.ts, onlineMax). */
+const ONLINE_MAX = 11;
 
 const REQUEST_COLS = ['Received', 'Type', 'Status', 'Night', 'Seats', 'Name', 'WhatsApp', 'Email', 'Special occasion', 'Cake', 'Note', 'Card', 'Request ID', 'Stripe customer', 'Stripe session', 'Team notes'];
 const COL = REQUEST_COLS.reduce((o, c, i) => ((o[c] = i + 1), o), {});
@@ -64,15 +69,18 @@ function doPost(e) {
   const r = clean_(body);
   if (r.error) return json_({ ok: false, reason: r.error });
 
-  // a flood (someone posting to this address directly) is refused before it costs anything
   const cache = CacheService.getScriptCache();
-  const recent = Number(cache.get('posts') || 0);
-  if (recent >= POSTS_PER_10_MIN) return json_({ ok: false, reason: 'busy' });
-  cache.put('posts', String(recent + 1), 600);
-  // the same number for the same night again (a double press, a retry) is the same request
-  const dupKey = 'req:' + r.whatsapp.replace(/\D/g, '') + ':' + r.date + ':' + r.type;
+  // the same number for the same night and seats again (a double press, a retry, Back from Stripe) is
+  // the same request: it gets the same answer, and the same card page while that is still open
+  const dupKey = 'dup:' + r.whatsapp.replace(/\D/g, '') + ':' + r.date + ':' + r.seats + ':' + r.type;
   const dup = cache.get(dupKey);
-  if (dup) return json_({ ok: true, id: dup, type: r.type, cardUrl: null });
+  if (dup) return json_(repeat_(JSON.parse(dup)));
+  // a flood (someone posting to this address directly) is refused before it costs anything;
+  // counted per fixed ten minutes, so a steady trickle can't keep the count from ever running out
+  const bucket = 'posts:' + Math.floor(Date.now() / 6e5);
+  const recent = Number(cache.get(bucket) || 0);
+  if (recent >= POSTS_PER_10_MIN) return json_({ ok: false, reason: 'busy' });
+  cache.put(bucket, String(recent + 1), 600);
 
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(20000)) return json_({ ok: false, reason: 'busy' });
@@ -91,7 +99,7 @@ function doPost(e) {
       text_(r.email), r.occasion, r.cake ? 'yes' : '', text_(r.note), '', id, '', '', '',
     ]);
     row = sh.getLastRow();
-    cache.put(dupKey, id, 6 * 60 * 60);
+    cache.put(dupKey, JSON.stringify({ id, type: r.type }), 6 * 60 * 60);
   } finally {
     lock.releaseLock();
   }
@@ -100,7 +108,17 @@ function doPost(e) {
 
   if (r.type !== 'booking') return json_({ ok: true, id, type: 'waitlist' });
   const card = startCard_(r, id, row);
-  return json_({ ok: true, id, type: 'booking', cardUrl: card });
+  if (card) cache.put(dupKey, JSON.stringify({ id, type: r.type, cardUrl: card.url, session: card.session }), 6 * 60 * 60);
+  return json_({ ok: true, id, type: 'booking', cardUrl: card && card.url });
+}
+
+/** The answer to a repeat: the first request's, with its card page only while Stripe still has it open. */
+function repeat_(d) {
+  let cardUrl = null;
+  if (d.cardUrl) {
+    try { if (stripe_('get', 'checkout/sessions/' + d.session).status === 'open') cardUrl = d.cardUrl; } catch (err) { /* no link; the team sorts the card out on WhatsApp */ }
+  }
+  return { ok: true, id: d.id, type: d.type, cardUrl };
 }
 
 // ---------------------------------------------------------------- availability
@@ -125,6 +143,13 @@ function readNights_() {
  * on the board can't mislead the website. Keeps the team's Open/Capacity edits.
  */
 function refreshAvailability() {
+  // one refresh at a time (the 5-minute trigger and an edit can overlap), and never mid-request
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try { refresh_(); } finally { lock.releaseLock(); }
+}
+
+function refresh_() {
   const ss = SpreadsheetApp.getActive();
   const tz = ss.getSpreadsheetTimeZone();
   const found = {};
@@ -152,12 +177,16 @@ function refreshAvailability() {
   const now = new Date();
   const rows = Object.keys(found).filter((k) => k >= today).sort().map((k) => {
     const n = found[k], prev = keep[k] || {};
-    return [n.date, prev.open || 'yes', prev.cap || CAPACITY[n.date.getDay()] || 16, n.booked, '', n.tab, now];
+    const open = prev.open || 'yes', cap = prev.cap || CAPACITY[Utilities.formatDate(n.date, tz, 'u')] || 16;
+    // seats left are written with the rest of the row, so a reader never meets a half-written night
+    const left = String(open).toLowerCase() === 'yes' ? Math.max(0, cap - n.booked) : 0;
+    return [n.date, open, cap, n.booked, left, n.tab, now];
   });
-  if (av.getLastRow() > 1) av.getRange(2, 1, av.getLastRow() - 1, AVAIL_COLS.length).clearContent();
+  // rows are overwritten in place; only rows left over from nights now gone are cleared
+  const stale = av.getLastRow() - 1 - rows.length;
+  if (stale > 0) av.getRange(2 + rows.length, 1, stale, AVAIL_COLS.length).clearContent();
   if (rows.length) {
     av.getRange(2, 1, rows.length, AVAIL_COLS.length).setValues(rows);
-    av.getRange(2, 5, rows.length, 1).setFormulaR1C1('=IF(LOWER(R[0]C[-3])="yes",MAX(0,R[0]C[-2]-R[0]C[-1]),0)');
     av.getRange(2, 1, rows.length, 1).setNumberFormat('ddd d mmm yyyy');
     av.getRange(2, 7, rows.length, 1).setNumberFormat('d mmm hh:mm');
   }
@@ -171,11 +200,10 @@ function nightBlocks_(sh, dates) {
     .filter((b) => b[2] instanceof Date);
 }
 
-/** Simple trigger: keep Availability fresh while the team edits the board. */
+/** Simple trigger: keep Availability fresh while the team edits the board, or Open and Capacity. */
 function onEdit(e) {
   const name = e && e.range && e.range.getSheet().getName();
-  if (name === TABS.availability) { CacheService.getScriptCache().remove('nights'); return; }
-  if (name && !OWN_TABS.includes(name)) refreshAvailability();
+  if (name && (name === TABS.availability || !OWN_TABS.includes(name))) refreshAvailability();
 }
 
 // ---------------------------------------------------------------- Stripe: save a card, charge nothing
@@ -199,7 +227,7 @@ function startCard_(r, id, row) {
     sh.getRange(row, COL['Card']).setValue('pending');
     sh.getRange(row, COL['Stripe customer']).setValue(customer.id);
     sh.getRange(row, COL['Stripe session']).setValue(session.id);
-    return session.url;
+    return { url: session.url, session: session.id };
   } catch (err) {
     sh.getRange(row, COL['Card']).setValue('missing');
     sh.getRange(row, COL['Team notes']).setValue('Card link failed: ' + err.message);
@@ -250,7 +278,7 @@ function clean_(b) {
     cake: b.occasion === 'birthday' && !!b.cake, note,
   };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(r.date)) return { error: 'bad_date' };
-  if (!(r.seats >= 1 && r.seats <= 16)) return { error: 'bad_seats' };
+  if (!(r.seats >= 1 && r.seats <= ONLINE_MAX)) return { error: 'bad_seats' };
   if (r.name.length < 2) return { error: 'bad_name' };
   if (r.whatsapp.replace(/\D/g, '').length < 7) return { error: 'bad_whatsapp' };
   if (r.email && !/.+@.+\..+/.test(r.email)) return { error: 'bad_email' };
@@ -321,7 +349,7 @@ function addWebsiteTabs() {
     '4. Seats only count once the guests are on the weekly board. A New request never takes a seat by itself.',
     '',
     '"Availability" is what the website shows. It updates itself from the weekly board (the Pax column of each night).',
-    '   Open = no hides a night. Capacity is 16 (14 on Saturdays) and can be changed per night.',
+    '   Open = no hides a night. Capacity is 16 (14 on Saturdays) and can be changed per night; Seats left follows.',
     '   A night appears on the website once its week is laid out on the board.',
     '',
     'Card: every booking saves a card with Stripe (Card = saved). It is only charged for a no-show or a cancellation inside',
