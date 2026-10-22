@@ -56,15 +56,14 @@ const moment = (min: string, bottom = 160) => `min-height:${min};padding:0 0 ${b
         <button type="button" class="ch" aria-pressed="true" data-pick-menu="meat">{menu.choices.meat}</button>
         <button type="button" class="ch" aria-pressed="false" data-pick-menu="fish">{menu.choices.fish}</button>
       </div>
-      <div data-courses style="display:flex;flex-direction:column">
+      <div data-courses class="ll" style="display:flex;flex-direction:column">
         {menu.courses.map((c) => (
-          <div class="course" data-block>
+          <div class="course lr" data-block>
             <p class="cn">{c.name}</p>
             <p class="word cd" data-measure="l" style="font-size:13px" data-course-desc data-meat={c.meat} data-fish={c.fish}>{c.description ?? c.meat}</p>
             <p class="num cg" data-course-glass data-on="false">{menu.glassLabel}</p>
           </div>
         ))}
-        <div style="border-top:1px solid var(--rule)"></div>
       </div>
       <p data-reveal-soft data-split="softlines" class="body" data-measure="m" style="font-size:13px">{menu.after}</p>
     </article>

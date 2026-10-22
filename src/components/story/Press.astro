@@ -3,15 +3,14 @@ import PressLogo from '../ui/PressLogo.astro';
 import { getSite, getStory } from '../../lib/content';
 
 const [story, site] = await Promise.all([getStory(), getSite()]);
-const last = site.press.length - 1;
 ---
 <section data-screen-label="Press" data-container class="g12" style="padding:0 64px 200px;align-items:start">
   <h2 data-reveal-soft data-split="softlines" style="grid-column:1 / span 3;position:sticky;top:140px;align-self:start;margin:0;font:300 clamp(36px,3.6vw,56px)/1.05 var(--font-display);letter-spacing:-.02em;color:var(--ink);max-width:none">{story.press.heading}</h2>
   <div style="grid-column:4 / span 9;display:flex;flex-direction:column;gap:64px">
     <p data-reveal-soft data-split="softlines" data-measure="l" style="margin:0;font:300 clamp(28px,2.8vw,44px)/1.2 var(--font-display);letter-spacing:-.015em;color:var(--ink);max-width:none;text-wrap:pretty">{story.press.lead}</p>
-    <div style="display:flex;flex-direction:column">
+    <div class="ll" style="display:flex;flex-direction:column">
       {site.press.map((outlet, i) => (
-        <div data-block class="pr" style={`${i === last ? 'border-bottom:1px solid var(--rule);' : ''}display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 24px;align-items:baseline;padding:22px 0`}>
+        <div data-block class="pr lr" style={`display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 24px;align-items:baseline;padding:22px 0`}>
           <span style="display:flex;align-items:center;gap:32px;min-width:0">
             <span class="fig2" style="font-size:clamp(24px,2.2vw,32px)">{outlet.name}</span>
             <PressLogo outlet={outlet} class="pl" label={`${outlet.name} logo`} style="flex:0 0 auto" />
