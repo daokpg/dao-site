@@ -94,10 +94,12 @@ export interface SiteSettings {
     arrival: string;
     /** Seats at the one table (Saturdays have fewer; the booking backend sends each night's). */
     seats: number;
+    /** The nights the restaurant opens, as English weekday names ("Monday"); read by the structured data. */
+    days: string[];
   };
   pricing: Pricing;
-  /** The picture shown when a page is shared (link previews). */
-  shareImage: Image;
+  /** The picture shown when a page is shared (link previews): 1200x630, made by tools/share-images.mjs. */
+  shareImage: Image & { width: number; height: number };
   /** The page for an address that does not exist. */
   notFound: { seo: Seo; heading: string; text: string };
   /** The menu and footer list these, in this order. */

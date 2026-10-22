@@ -3,7 +3,8 @@
  * what was built:
  *   - script-src allows our own files plus the exact inline scripts the pages carry (their
  *     sha256 hashes, read from the built HTML), and nothing else;
- *   - connect-src allows the booking backend's origin (PUBLIC_BOOKING_API) when one is set.
+ *   - connect-src allows the booking backend's origin (PUBLIC_BOOKING_API) when one is set,
+ *     read like Vite reads it (the environment, then .env files for the build's mode).
  * public/_headers holds the rest of the headers and the policy with two placeholders:
  * {{INLINE_SCRIPT_HASHES}} and {{BOOKING_API_ORIGINS}}.
  */
@@ -11,6 +12,7 @@ import { createHash } from 'node:crypto';
 import { readFile, readdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
+import { loadEnv } from 'vite';
 
 const INLINE_SCRIPT = /<script(?![^>]*\bsrc=)(?![^>]*type="application\/(?:ld\+)?json")[^>]*>([\s\S]*?)<\/script>/g;
 
@@ -25,9 +27,14 @@ async function htmlFiles(dir) {
 }
 
 export default function securityHeaders() {
+  let env = {};
   return {
     name: 'dao-security-headers',
     hooks: {
+      // the build's mode and env directory are known once Vite has resolved its config
+      'astro:config:setup': ({ updateConfig }) => {
+        updateConfig({ vite: { plugins: [{ name: 'dao-security-headers-env', configResolved: (c) => { env = loadEnv(c.mode, c.envDir, ''); } }] } });
+      },
       'astro:build:done': async ({ dir, logger }) => {
         const root = fileURLToPath(dir);
         const hashes = new Set();
@@ -37,7 +44,7 @@ export default function securityHeaders() {
           }
         }
         // the Apps Script web app answers from script.google.com, then redirects to googleusercontent
-        const api = process.env.PUBLIC_BOOKING_API;
+        const api = env.PUBLIC_BOOKING_API;
         const origins = new Set();
         if (api) {
           origins.add(new URL(api).origin);

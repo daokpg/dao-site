@@ -66,12 +66,19 @@ const indexable = import.meta.env.INDEXABLE === 'true' && !notFound;
     <meta property="og:title" content={seo.title} />
     <meta property="og:description" content={seo.description} />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content={canonical} />
+    <meta property="og:locale" content="en_US" />
+    {!notFound && <meta property="og:url" content={canonical} />}
     <meta property="og:image" content={shareImage} />
+    <meta property="og:image:width" content={String(site.shareImage.width)} />
+    <meta property="og:image:height" content={String(site.shareImage.height)} />
     <meta property="og:image:alt" content={site.shareImage.alt} />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="theme-color" content="#15130F" />
+    <!-- icons and the manifest: made from the mark by tools/share-images.mjs -->
     <link rel="icon" href="/assets/dao-mark.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
     <link rel="preload" href="/fonts/SeasonMixTRIAL-Light.otf" as="font" type="font/otf" crossorigin />
     <!-- Before first paint: mark JS as running so pre-hidden states apply (no-JS visitors see the finished page). -->
     <script is:inline>document.documentElement.classList.add('js');</script>

@@ -33,6 +33,14 @@ setting two build variables in Cloudflare: `SITE_URL` (the domain, for canonical
 previews and the sitemap) and `INDEXABLE=true` (until then every page is `noindex` and robots.txt
 closes the site, so staging with placeholder prices never reaches search engines).
 `PUBLIC_BOOKING_API` points `/reserve` at the booking backend (docs/booking.md).
+Build variables are read from the environment or from `.env` (Vite's `loadEnv`, the build's mode).
+**An `INDEXABLE=true` build fails** unless `SITE_URL` and `PUBLIC_BOOKING_API` are both set
+(`astro.config.mjs`), so the public site can never show a booking confirmation that went nowhere.
+
+Icons (`public/favicon-32.png`, `apple-touch-icon.png`, `icon-512.png`, `site.webmanifest`) and the
+1200x630 share image (`public/og.jpg`, `site.shareImage`) are made from the mark and the table
+photograph by `node tools/share-images.mjs`; run it again when either changes. The sitemap's
+`lastmod` is the build date.
 
 **Security headers** are in `public/_headers`; the Content-Security-Policy is finished at build by
 `integrations/security-headers.mjs` (hashes of the inline scripts, the booking API's origin). Adding

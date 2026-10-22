@@ -17,6 +17,7 @@ export const site: SiteSettings = {
   service: {
     arrival: '19:30',
     seats: 16,
+    days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Saturday'],
   },
   pricing: {
     currency: 'THB',
@@ -26,7 +27,7 @@ export const site: SiteSettings = {
     noShowFee: 1950,
     cake: 400,
   },
-  shareImage: { src: '/assets/photos/table-guests.jpg', alt: 'Guests at the one table, the kitchen open behind' },
+  shareImage: { src: '/og.jpg', width: 1200, height: 630, alt: 'Guests at the one table, the kitchen open behind' },
   notFound: {
     seo: { title: 'Not found, Dao', description: 'This page is not here.' },
     heading: 'This page is not here',
