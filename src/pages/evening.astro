@@ -6,10 +6,12 @@ import { getEvening } from '../lib/content';
 
 const evening = await getEvening();
 const { hero } = evening;
+// the flying clock's hour rolls when it changes and its minutes tick (systems/evening-clock.ts)
+const [hour, minute] = hero.time.split(':');
 ---
 <Base page="evening" seo={evening.seo} tone="ink">
   <!-- The flying clock. It sits outside the sheet so its ink is the page default, and the dusk system recolours it. -->
-  <p data-clock aria-hidden="true">{hero.time}</p>
+  <p data-clock aria-hidden="true"><span data-clock-h>{hour}</span>:<span data-clock-m>{minute}</span></p>
 
   <div data-sheet class="dao-paper" data-theme="light" style="position:relative;min-height:100vh;background:var(--paper);color:var(--ink);--ink:var(--ink-warm);--ink-2:rgba(26,24,21,.7);--ink-3:rgba(26,24,21,.45);--rule:rgba(26,24,21,.16)">
     <section data-screen-label="Hero" data-hero data-container class="g12" style="position:relative;height:100vh;min-height:640px;padding:0 64px;box-sizing:border-box;align-content:center">

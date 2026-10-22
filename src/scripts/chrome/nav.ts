@@ -4,14 +4,15 @@
  * The nav has no ground of its own, so text scrolling under it would run through the mark and
  * the menu word. It slides up out of view while the page is scrolled down and comes back as soon
  * as the visitor scrolls up. It is always there at the very top, while the menu is open, and
- * whenever something in it has keyboard focus.
+ * whenever something in it has keyboard focus. On the evening page on phones it stays: the clock's band
+ * under it is its ground there.
  *
  * One window scroll listener covers both cases: Lenis (desktop) moves the native scroll position,
  * and phones scroll natively. Reduced motion: the nav still hides and returns, without moving
  * (core/gsap.ts lands every tween at once).
  */
 import { gsap } from '../core/gsap';
-import { E } from '../core/env';
+import { E, isMobile } from '../core/env';
 import { isMenuOpen } from './menu';
 
 /** Within this distance of the top the nav always shows. */
@@ -36,9 +37,12 @@ export function showNav() {
   anchorY = lastY = window.scrollY;
 }
 
+/** A page whose top band gives the nav a ground (the evening page's clock bar on phones): the nav stays. */
+const hasGround = () => isMobile() && !!document.querySelector('[data-barba="container"] [data-rail]');
+
 function onScroll() {
   const y = window.scrollY;
-  if (y <= TOP || isMenuOpen() || nav?.contains(document.activeElement)) {
+  if (y <= TOP || isMenuOpen() || nav?.contains(document.activeElement) || hasGround()) {
     set(false);
     anchorY = lastY = y;
     return;

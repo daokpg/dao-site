@@ -37,13 +37,15 @@ export function splitSoftLines(el: HTMLElement) {
   if (!el.dataset.text) el.dataset.text = (el.textContent ?? '').trim();
   const shown = el.dataset.revealed === '1';
   const lines = measureLines(el, el.dataset.text.split(/\s+/));
-  for (const ws of lines) {
+  lines.forEach((ws, i) => {
     const l = document.createElement('span');
     l.setAttribute('data-line-soft', '');
-    l.textContent = ws.join(' ');
+    // a space at the end of every line but the last (it does not render), so the text reads as words
+    // when it is copied or read as plain text, not "openingto"
+    l.textContent = ws.join(' ') + (i < lines.length - 1 ? ' ' : '');
     if (shown) l.style.cssText = 'opacity:1;transform:none;filter:none';
     el.appendChild(l);
-  }
+  });
   // a single word wider than the box would overflow on one nowrap line; let it wrap
   const box = el.clientWidth + 1;
   el.querySelectorAll<HTMLElement>('[data-line-soft]').forEach((l) => {
@@ -56,15 +58,15 @@ export function splitSoftLines(el: HTMLElement) {
 export function splitLines(el: HTMLElement) {
   if (!el.dataset.text) el.dataset.text = (el.textContent ?? '').trim();
   const lines = measureLines(el, el.dataset.text.split(/\s+/));
-  for (const ws of lines) {
+  lines.forEach((ws, i) => {
     const outer = document.createElement('span');
     outer.setAttribute('data-line', '');
     const inner = document.createElement('span');
     inner.setAttribute('data-line-inner', '');
-    inner.textContent = ws.join(' ');
+    inner.textContent = ws.join(' ') + (i < lines.length - 1 ? ' ' : '');
     outer.appendChild(inner);
     el.appendChild(outer);
-  }
+  });
   el.setAttribute('data-split-ready', '');
   return el.querySelectorAll<HTMLElement>('[data-line-inner]');
 }

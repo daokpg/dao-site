@@ -16,8 +16,9 @@ import { E, reducedMotion } from '../core/env';
 import { setTone } from '../core/tone';
 import type { System } from '../core/registry';
 import { pad2 } from '../../lib/format';
+import { odometer } from '../core/odometer';
 
-type State = { timers: number[]; els: Element[] };
+type State = { timers: number[]; els: Element[]; stops: (() => void)[] };
 let state: State | null = null;
 
 const toMin = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
@@ -39,6 +40,7 @@ function swapText(el: HTMLElement & { _txt?: string }, txt: string) {
 function destroy() {
   if (!state) return;
   state.timers.forEach(clearTimeout);
+  state.stops.forEach((stop) => stop());
   gsap.killTweensOf(state.els);
   document.body.style.backgroundColor = '';
   state = null;
@@ -60,7 +62,7 @@ const docStart = (hero: HTMLElement) => {
 function before(scope: HTMLElement) {
   destroy();
   const { clock, hero } = parts(scope);
-  state = { timers: [], els: [clock] };
+  state = { timers: [], els: [clock], stops: [] };
   const d = docStart(hero);
   gsap.set(clock, { x: d.x, y: d.y, opacity: 0, filter: 'blur(10px)' });
 }
@@ -100,6 +102,12 @@ function after(scope: HTMLElement) {
   // ---- the time: each moment's own time as it reaches the reading line (60% down the screen), running
   // evenly in between. The light word and the dusk both follow this time, so they agree with the clock.
   const from = toMin(clock.textContent ?? '19:30');
+  // the hour rolls like the day's times on the home page, three times in the evening; the minutes just tick,
+  // as rolling every minute under a running scroll would never rest
+  const hourEl = clock.querySelector<HTMLElement>('[data-clock-h]');
+  const minuteEl = clock.querySelector<HTMLElement>('[data-clock-m]');
+  const hourOdo = hourEl ? odometer(hourEl) : null;
+  if (hourOdo) me.stops.push(() => hourOdo.stop());
   const light: { from: string; word: string }[] = JSON.parse(word.dataset.light ?? '[]');
   let marks: [number, number][] = [];
   const measureMarks = () => {
@@ -120,8 +128,14 @@ function after(scope: HTMLElement) {
   let lastTxt = '';
   const tick = () => {
     mins = minutesAt(window.scrollY);
-    const t = fmt(Math.round(mins));
-    if (t !== lastTxt) { lastTxt = t; clock.textContent = t; }
+    const whole = Math.round(mins);
+    const t = fmt(whole);
+    if (t !== lastTxt) {
+      const [h, m] = t.split(':');
+      if (hourOdo && h !== hourOdo.value) hourOdo.set(h, Number(h) > Number(hourOdo.value) ? 1 : -1);
+      if (minuteEl) minuteEl.textContent = m;
+      lastTxt = t;
+    }
     const w = [...light].reverse().find((l) => mins >= toMin(l.from))?.word ?? light[0]?.word;
     if (w && word.textContent !== w) swapText(word, w);
   };
@@ -163,11 +177,11 @@ function after(scope: HTMLElement) {
   const fading = [...moments, rail, clock];
   let dark = false;
   let shown = -1;
-  const DUSK_FROM = toMin('19:45'), DUSK_TO = toMin('20:45');
+  const DUSK_FROM = toMin('19:45'), DUSK_TO = toMin('20:15');
   ScrollTrigger.create({
     trigger: scope.querySelector('[data-moments]'), start: 'top bottom', end: 'bottom top',
     onUpdate: () => {
-      // the light goes between 19:45 and 20:45 on the clock
+      // the light goes between 19:45 and 20:15 on the clock
       const p = clamp((mins - DUSK_FROM) / (DUSK_TO - DUSK_FROM)), t = p * p * (3 - 2 * p), k = inkT(t);
       const ground = bg(t);
       sheet.style.backgroundColor = ground;

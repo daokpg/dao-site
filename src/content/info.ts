@@ -41,7 +41,7 @@ export const info: InfoContent = {
       items: [
         { id: 'menu', question: 'Can I see the menu in advance?', answer: 'No. The menu is built from what the morning found, so it is fixed only on the day. The Evening page shows a menu from a past dinner so you know the shape of it; yours will be different.' },
         { id: 'diet', question: 'What if I do not eat meat, or have an allergy?', answer: 'Say so in the note when you book: no meat, fish only, vegetarian, vegan or an allergy. We go over it with you on WhatsApp before the night and the menu is adapted per seat, so nothing needs saying at the table.' },
-        { id: 'wine', question: 'Is there wine, and can I skip it?', answer: 'One wine pairing is poured through the meal, four glasses or five. You can skip it. There is no cocktail bar and no wine list; that is a choice about the evening, not a gap in the offer.' },
+        { id: 'wine', question: 'Is there wine, and can I skip it?', answer: 'One wine pairing is poured through the meal, four glasses or five. You can skip it. There is no cocktail bar and no wine list.' },
       ],
     },
     {

@@ -58,14 +58,14 @@ export const evening: EveningContent = {
   },
   hero: {
     time: service.arrival,
-    line: 'One evening, from the door opening to the last glass. The clock runs as you read.',
+    line: 'One evening, from the door opening to the last glass.',
     corner: 'Five nights a week, one seating',
   },
   rail: {
     light: [
-      { from: '19:30', word: 'Dusk' },
-      { from: '19:50', word: 'Nightfall' },
-      { from: '20:20', word: 'Night' },
+      { from: '19:00', word: 'Dusk' },
+      { from: '19:45', word: 'Nightfall' },
+      { from: '20:15', word: 'Night' },
     ],
     name: 'Arrival',
   },
@@ -92,8 +92,8 @@ export const evening: EveningContent = {
     readAs: 'Read it as',
     choices: { meat: 'Meat & fish', fish: 'Fish' },
     courses: [
-      { name: 'To begin', description: 'Three small things from the garden, eaten with the hands.' },
-      { name: 'From the boat', glass: 4, description: 'This morning’s fish, raw, with lime, chilli and the first herbs.' },
+      { name: 'To begin', glass: 4, description: 'Three small things from the garden, eaten with the hands.' },
+      { name: 'From the boat', description: 'This morning’s fish, raw, with lime, chilli and the first herbs.' },
       { name: 'Bread', glass: 4, description: 'Frena, the Moroccan bread he grew up on, with tahini and burnt tomato.' },
       { name: 'From the fire', glass: 4, meat: 'Lamb over coals, Moroccan spice, greens from the morning.', fish: 'A whole fish over coals, Moroccan spice, greens from the morning.' },
       { name: 'The main', glass: 4, meat: 'Beef cooked slowly with dates, in a broth made from the morning’s bones.', fish: 'Prawns from Chaloklum in a broth made from their own shells.' },
@@ -105,7 +105,7 @@ export const evening: EveningContent = {
   wine: {
     time: '21:00',
     name: 'The wine',
-    lead: 'One pairing is poured through the meal, four glasses or five. There is no cocktail bar and no list. It is a choice about the evening, not a gap in the offer.',
+    lead: 'One pairing is poured through the meal, four glasses or five. There is no cocktail bar and no list.',
     label: 'Pairing',
     choices: { none: 'Without', four: 'Four glasses', five: 'Five glasses' },
     totalNote: 'Per guest, for the evening as you have set it. Water and tea are included. The glasses you chose are marked on the menu above.',
@@ -120,7 +120,7 @@ export const evening: EveningContent = {
   lastGlass: {
     time: '22:00',
     name: 'The last glass',
-    statement: 'The last course is sweet, a pastry the way his grandfather made it. Coffee, tea. Nobody is hurried out.',
+    statement: 'Coffee and tea, and the last glass. Nobody is hurried out.',
     cta: { label: site.labels.reserve, href: '/reserve' },
   },
 };
