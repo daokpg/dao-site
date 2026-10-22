@@ -131,9 +131,9 @@ export function nightHtml([label, open, capacity = TABLE]: Night, state: Pick<Bo
 export const monthHtml = (cfg: Pick<BookingConfig, 'months' | 'copy'>, state: BookingState, past: ReadonlySet<string> = new Set()) =>
   cfg.months[state.month].nights.map((n) => nightHtml(n, state, cfg.copy.waitlistMark, past.has(n[0]))).join('');
 
-/** One button per seat that can be asked for (seatLimit), named "1 seat", "2 seats"… for screen readers. */
+/** One cell per seat that can be asked for (seatLimit), named "1 seat", "2 seats"… for screen readers. */
 export const seatOptionsHtml = (left: number, seats: number, copy: Pick<BookingConfig['copy'], 'seatOne' | 'seatMany'>) =>
-  Array.from({ length: left }, (_, i) => `<button type="button" class="ch" data-seat="${i + 1}" aria-pressed="${seats === i + 1}" aria-label="${esc(fill(i ? copy.seatMany : copy.seatOne, { Seats: i + 1 }))}" style="font:300 clamp(24px,2.4vw,40px)/1 var(--font-display);letter-spacing:-.02em;font-variant-numeric:tabular-nums">${i + 1}</button>`).join('');
+  Array.from({ length: left }, (_, i) => `<button type="button" class="st" data-seat="${i + 1}" aria-pressed="${seats === i + 1}" aria-label="${esc(fill(i ? copy.seatMany : copy.seatOne, { Seats: i + 1 }))}"><span>${i + 1}</span></button>`).join('');
 
 // the team finalises every booking on WhatsApp, so a number is required
 const hasContact = (s: BookingState) =>

@@ -64,7 +64,7 @@ const up = 'M4 26V0M.5 3.5 4 0l3.5 3.5';
       <div data-gate data-live="false" style="display:flex;flex-direction:column;gap:24px">
         <h2 class="step" id="rd-seats-label"><span class="step__n" aria-hidden="true">{pad2(2)}</span>{steps.seats.label}</h2>
         <p data-seats-left class="word" style="font-size:13px;color:var(--ink-2);margin-top:-8px">{v.seatsLeftLine}</p>
-        <div data-seat-options role="group" aria-labelledby="rd-seats-label" style="display:flex;gap:20px 28px;flex-wrap:wrap;align-items:baseline;max-width:640px" set:html={seatOptionsHtml(v.limit, state.seats, config.copy)} />
+        <div data-seat-options role="group" aria-labelledby="rd-seats-label" class="seats" set:html={seatOptionsHtml(v.limit, state.seats, config.copy)} />
         <p class="word" data-measure="m" style="font-size:12px;color:var(--ink-3)">{steps.seats.note}</p>
       </div>
       <div data-gate data-live="false" data-fields style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 24px">
