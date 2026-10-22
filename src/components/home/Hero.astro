@@ -3,12 +3,14 @@
  * Full-screen video under the headline. Stays pinned while the paper sheet slides over
  * it, receding and dimming (systems/recede.ts). The film is the HLS stream (systems/hero-video.ts);
  * the local MP4 (data-mp4, fetched only if the stream cannot play) and the poster are the fallbacks.
+ * The film's pause control sits in the corner opposite the line about the nights; it stays hidden
+ * until the film plays (never without script, never with reduced motion).
  */
 import Cta from '../ui/Cta.astro';
 import { getHome, getSite, pageHref } from '../../lib/content';
 
 const [home, site] = await Promise.all([getHome(), getSite()]);
-const { lines, corner, video } = home.hero;
+const { lines, corner, video, film } = home.hero;
 ---
 <section data-screen-label="Hero" data-hero data-entrance="film" data-recede-panel="[data-sheet]" data-recede-scale="0.88" data-recede-y="24" style="position:sticky;top:0;z-index:1;height:100vh;min-height:640px;overflow:hidden;color:var(--paper);transform-origin:50% 50%">
   <div data-hero-mask style="position:absolute;inset:0;overflow:hidden">
@@ -25,6 +27,9 @@ const { lines, corner, video } = home.hero;
       <Cta label={site.labels.reserve} href={pageHref('reserve')} data-hero-reserve style="color:var(--ink-on-image)" labelAttrs={{ 'data-hero-reserve-label': true }} ruleAttrs={{ 'data-hero-reserve-rule': true }} />
     </div>
   </div>
-  <span data-hero-corner style="position:absolute;right:64px;bottom:40px;font:500 10px/1 var(--font-body);letter-spacing:.22em;text-transform:uppercase;color:rgba(247,244,236,.6)">{corner}</span>
-  <span data-recede-dim class="scrim" style="background:#000;opacity:0"></span>
+  <div data-hero-corner style="position:absolute;left:64px;right:64px;bottom:40px;display:flex;align-items:flex-end;gap:24px;pointer-events:none">
+    <button type="button" data-film-toggle data-play={film.play} data-pause={film.pause} hidden style="margin:-12px 0;padding:12px 0;background:none;border:0;cursor:pointer;pointer-events:auto;font:500 10px/1 var(--font-body);letter-spacing:.22em;text-transform:uppercase;white-space:nowrap;color:var(--meta-on-image)">{film.pause}</button>
+    <span style="margin-left:auto;text-align:right;font:500 10px/1 var(--font-body);letter-spacing:.22em;text-transform:uppercase;color:var(--meta-on-image)">{corner}</span>
+  </div>
+  <span data-recede-dim class="scrim" style="background:var(--void);opacity:0"></span>
 </section>

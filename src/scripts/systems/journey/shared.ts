@@ -2,16 +2,15 @@
 import { gsap, ScrollTrigger } from '../../core/gsap';
 import { E, OPEN, reducedMotion } from '../../core/env';
 import { odometer } from '../../core/odometer';
-import { setNight } from '../../core/tone';
 
 export type Moment = { time: string; label: string; text: string };
 
-/** Everything one start of the options leaves behind, undone in destroy. */
+/** Everything one start of the section leaves behind, undone in destroy. */
 export type State = { tweened: Element[]; cleanups: (() => void)[] };
 
 export const clamp = (v: number, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, v));
 
-/** The moments, as each option's markup writes them into a JSON script tag. */
+/** The moments, as the markup writes them into a JSON script tag. */
 export const readMoments = (section: HTMLElement, sel: string): Moment[] => JSON.parse(section.querySelector(sel)?.textContent ?? '[]');
 
 /**
@@ -72,11 +71,6 @@ export function momentCopy(el: HTMLElement, prefix: string, list: Moment[], me: 
     change(label, list[i].label);
     change(text, list[i].text);
   };
-}
-
-/** The paper turns to charcoal once the section has passed, as the day section ends. */
-export function nightAfter(section: HTMLElement, scope: HTMLElement) {
-  ScrollTrigger.create({ trigger: section, start: 'bottom 60%', onEnter: () => setNight(scope, true), onLeaveBack: () => setNight(scope, false) });
 }
 
 /**

@@ -2,7 +2,8 @@
 /**
  * The evening in four facts, a hairline list (ui/HairList.astro). Each row opens from its centre line on hover to show the moment
  * (fetched when the pointer first comes into the list, systems/hover-images.ts).
- * data-trail-handoff marks the photograph the day section above carries its last one into (systems/journey/handoff.ts).
+ * The text keeps a readable column; a figure too long for what is left wraps, right-aligned.
+ * data-handoff-target marks the photograph the day section above carries its last one into (systems/journey/handoff.ts).
  */
 import MaskImage from '../ui/MaskImage.astro';
 import HairList from '../ui/HairList.astro';
@@ -13,13 +14,13 @@ const { evening, sectionHeadings } = await getHome();
 ---
 <section data-screen-label="The evening" data-container class="g12" style="padding:200px 64px 180px;box-sizing:border-box;align-items:start" aria-labelledby="evening-facts-h">
   <h2 id="evening-facts-h" class="sr-only">{sectionHeadings.evening}</h2>
-  <div data-trail-handoff style="grid-column:1 / span 12;margin-bottom:96px"><MaskImage image={evening.image} aspect="21 / 9" /></div>
+  <div data-handoff-target style="grid-column:1 / span 12;margin-bottom:96px"><MaskImage image={evening.image} aspect="21 / 9" /></div>
   <HairList data-hover-images style="grid-column:1 / span 12;display:flex;flex-direction:column">
     {evening.rows.map((row) => (
-      <HairRow image={row.image} sizes="100vw" rowClass="hr" style="display:grid;grid-template-columns:160px minmax(0,1fr) auto;gap:0 24px;align-items:baseline;padding:28px 0">
+      <HairRow image={row.image} sizes="100vw" rowClass="hr" style="display:grid;grid-template-columns:160px minmax(220px,1fr) minmax(0,auto);gap:0 24px;align-items:baseline;padding:28px 0">
         <span class="meta">{row.label}</span>
         <span class="word" data-measure="l">{row.text}</span>
-        <span class="fig2" style="font-size:clamp(48px,5vw,80px);line-height:1.1">{row.figure}</span>
+        <span class="fig2" style="font-size:clamp(48px,5vw,80px);line-height:1.1;text-align:right;text-wrap:balance">{row.figure}</span>
       </HairRow>
     ))}
   </HairList>

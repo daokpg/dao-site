@@ -19,11 +19,13 @@ import Picture from '../../ui/Picture.astro';
 import { getHome } from '../../../lib/content';
 import { scriptJson } from '../../../lib/json';
 
-const { moments } = (await getHome()).journey;
+const { journey, sectionHeadings } = await getHome();
+const { moments } = journey;
 const frames = moments.flatMap((m, i) => m.ribbon.map((r) => ({ ...r, moment: i })));
 const json = scriptJson(moments.map(({ time, label, text }) => ({ time, label, text })));
 ---
-<section data-screen-label="Spine" data-spine class="jr-spine" aria-label="The day before dinner">
+<section data-screen-label="Spine" data-spine class="jr-spine" aria-labelledby="spine-h">
+  <h2 id="spine-h" class="sr-only">{sectionHeadings.day}</h2>
   <ol class="sr-only">
     {moments.map((m) => <li>{m.time}, {m.label}. {m.text}</li>)}
   </ol>
@@ -51,10 +53,10 @@ const json = scriptJson(moments.map(({ time, label, text }) => ({ time, label, t
       <p class="jr-meta jr-roll" data-ms-label><span>{moments[0].label}</span></p>
       <p class="jr-text jr-swap" data-ms-text><span>{moments[0].text}</span></p>
     </div>
-    <ul class="jr-swipe__rail" data-ms-rail tabindex="0" aria-label="Photographs of the day, swipe for more">
+    <ul class="jr-swipe__rail" data-ms-rail tabindex="0" aria-label={journey.railLabel}>
       {moments.map((m) => (
         <li class="jr-swipe__card" data-ms-card data-spine-reveal>
-          <Picture image={m.image} sizes="135vw" loading="lazy" />
+          <Picture image={m.image} sizes="90vw" loading="lazy" />
         </li>
       ))}
     </ul>

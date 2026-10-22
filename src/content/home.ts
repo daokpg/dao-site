@@ -11,6 +11,8 @@ export interface HomeContent {
     lines: string[];
     corner: string;
     video: { mp4: string; hls: string; poster: string; alt: string };
+    /** The film's pause and play control, as its label reads in each state. */
+    film: { pause: string; play: string };
   };
   intro: string;
   duo: { image: Image; caption: string }[];
@@ -18,9 +20,11 @@ export interface HomeContent {
   journey: {
     /** The day in moments, morning to night. `ribbon`: the photographs of the spine on desktop,
      *  upright (`tall`) or landscape, best alternating; `image`: the moment's one photograph on phones.
-     *  The last ribbon photograph is the evening section's own (`evening.image`): on desktop both
-     *  options end by handing it over to that section. */
+     *  The last ribbon photograph is the evening section's own (`evening.image`): on desktop the
+     *  spine ends by handing it over to that section. */
     moments: { time: string; label: string; text: string; image: Image; ribbon: (Image & { tall?: boolean })[] }[];
+    /** The swiped row of photographs on phones, as screen readers name it. */
+    railLabel: string;
   };
   evening: {
     image: Image;
@@ -34,7 +38,7 @@ export interface HomeContent {
   };
   nir: { name: string; image: Image; text: string; cta: Cta };
   /** Names for the sections that show no heading, read only by screen readers (an sr-only h2). */
-  sectionHeadings: { intro: string; evening: string; sharedTable: string; price: string };
+  sectionHeadings: { intro: string; day: string; evening: string; sharedTable: string; price: string };
   /** A few of the info page's questions (picked by id, written once in info.ts), and the way to all of them. */
   faq: { heading: string; items: FaqItem[]; more: Cta };
 }
@@ -42,6 +46,7 @@ export interface HomeContent {
 export const home: HomeContent = {
   sectionHeadings: {
     intro: 'An evening at Dao',
+    day: 'The day before dinner',
     evening: 'The evening in four facts',
     sharedTable: 'The shared table',
     price: 'Price and wine pairing',
@@ -59,6 +64,7 @@ export const home: HomeContent = {
       poster: '/assets/photos/hero-nir-plating.jpg',
       alt: 'Nir plating in the kitchen during service',
     },
+    film: { pause: 'Pause film', play: 'Play film' },
   },
   intro: 'Everyone arrives at the same hour. The table is already set, the music already playing, the first course already in the making. For the next few hours you are Nir’s guest.',
   duo: [
@@ -106,6 +112,7 @@ export const home: HomeContent = {
         ],
       },
     ],
+    railLabel: 'Photographs of the day, swipe for more',
   },
   evening: {
     image: { src: '/assets/photos/set-table.jpg', alt: '', position: '55% 50%' },

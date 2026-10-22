@@ -1,17 +1,16 @@
 /* Home. Scoped to the Barba container so it cannot reach another page. */
 [data-page="home"]{
   [data-sheet][data-theme="dark"]{background-color:var(--night) !important}
-  [data-press-slot] [data-press-logo]{position:absolute;left:50%;top:50%}
-
-
-
-  @media (max-width: 820px){
-    [data-press-wall]{width:100% !important;gap:16px !important}
-    [data-press-slot]{height:40px !important}
-  }
+  /* each mark centred in its slot at its own size; the press wall only moves it up (systems/press-wall.ts) */
+  [data-press-slot] [data-press-logo]{position:absolute;inset:0;margin:auto}
+  /* the hero film's pause control (systems/hero-video.ts): hover is colour only */
+  [data-film-toggle]{transition:color .75s cubic-bezier(.16,1,.3,1)}
+  [data-film-toggle]:hover{color:var(--ink-on-image) !important}
 
   /* mobile layer: sections collapse to one column */
   @media (max-width: 820px){
+    /* the film control and the line about the nights share the corner; the line drops below when both do not fit */
+    [data-hero-corner]{left:24px !important;flex-wrap:wrap;row-gap:10px}
     [data-container] figure{margin-top:0 !important}
     [data-screen-label="Paragraph"]{padding-top:120px !important;padding-bottom:96px !important}
     [data-screen-label="Duo"]{gap:48px 0 !important;padding-bottom:0 !important}
@@ -20,20 +19,16 @@
     [data-screen-label="The evening"] [data-mask]{aspect-ratio:4 / 5 !important}
     [data-screen-label="The evening"] .lr__in{display:flex !important;flex-direction:column !important;gap:10px !important;padding:24px 0 !important}
     [data-screen-label="The evening"] .hr .meta{order:1}
-    [data-screen-label="The evening"] .hr .fig2{order:2;font-size:44px !important}
+    [data-screen-label="The evening"] .hr .fig2{order:2;font-size:44px !important;text-align:left !important}
     [data-screen-label="The evening"] .hr .word{order:3}
-    [data-screen-label="Price and pairing"] > div{gap:48px !important}
     /* As shipped, one rule stacks both the pairings and the press wall into a single column on phones
        (a later rule asking for three press columns never won). Kept as is; see CLAUDE.md "Known quirks". */
     [data-screen-label="Price and pairing"] [data-pairings],[data-screen-label="Price and pairing"] [data-press-wall]{grid-template-columns:minmax(0,1fr) !important}
     [data-press-wall]{gap:12px !important;width:100% !important}
-    [data-screen-label="Nir"] [data-mask]{width:100%}
+    [data-press-slot]{height:40px !important}
     [data-screen-label="The shared table"] [data-corner]{right:24px !important}
     [data-recede]{height:100svh !important;min-height:0 !important}
     [data-recede] p{font-size:clamp(22px,6vw,28px) !important;width:auto !important}
-  }
-
-  @media (max-width: 820px){
     [data-screen-label="FAQ"] h2{position:static !important;margin-bottom:56px !important}
     [data-screen-label="FAQ"] button{padding-right:44px !important}
   }
@@ -60,19 +55,19 @@
   .jr-spine__ribbon{position:relative;display:flex;flex-direction:column;align-items:center;padding:4vh 0 46vh}
   /* held to the screen while the column passes: the wave is measured from its top */
   .jr-spine__axis{position:sticky;top:0;align-self:stretch;height:100vh;margin-bottom:-100vh;pointer-events:none}
-  .jr-spine__frame{position:relative;margin:0;width:27vw;aspect-ratio:3 / 2;overflow:hidden;will-change:transform}
+  .jr-spine__frame{position:relative;margin:0;width:27vw;aspect-ratio:3 / 2;overflow:hidden}
   .jr-spine__frame.is-tall{width:17vw;aspect-ratio:4 / 5}
   /* the <picture> fills the frame, so the entrance can settle it from a zoom while the wave moves the <img> */
   .jr-spine__frame picture{position:absolute;inset:0;display:block}
-  .jr-spine__frame img{position:absolute;left:0;top:-7%;width:100%;height:114%;object-fit:cover;display:block;will-change:transform}
-
+  .jr-spine__frame img{position:absolute;left:0;top:-7%;width:100%;height:114%;object-fit:cover;display:block}
 
   @media (max-width: 820px){
     [data-only="desktop"]{display:none}
     [data-only="mobile"]{display:block}
     .jr-big{font-size:56px}
-    .jr-text{font-size:19px}
-  
+    /* the longest moment runs to four lines at this width: room for it, so the row below never moves */
+    .jr-text{font-size:19px;min-height:calc(4 * 1.35em)}
+
     /* phones: the moment above a row swiped sideways, one card per swipe (journey/spine-mobile.ts) */
     .jr-spine{padding:96px 0 120px}
     .jr-swipe__copy{display:flex;flex-direction:column;gap:8px;padding:0 24px;margin-bottom:24px}
@@ -81,13 +76,12 @@
     .jr-swipe__rail::-webkit-scrollbar{display:none}
     /* room after the last card so it too can come to rest at the left edge */
     .jr-swipe__rail::after{content:"";flex:0 0 calc(20vw - 36px)}
-    .jr-swipe__card{position:relative;flex:0 0 80vw;aspect-ratio:4 / 5;overflow:hidden;scroll-snap-align:start;scroll-snap-stop:always;transform-origin:0 50%;will-change:transform,opacity}
+    .jr-swipe__card{position:relative;flex:0 0 80vw;aspect-ratio:4 / 5;overflow:hidden;scroll-snap-align:start;scroll-snap-stop:always;transform-origin:0 50%}
     .jr-swipe__card picture{position:absolute;inset:0;display:block}
-    .jr-swipe__card img{position:absolute;top:0;left:-6%;width:112%;height:100%;object-fit:cover;display:block;will-change:transform}
+    .jr-swipe__card img{position:absolute;top:0;left:-6%;width:112%;height:100%;object-fit:cover;display:block}
     .jr-swipe__bar{display:flex;gap:6px;padding:0 24px;margin-top:6px}
     .jr-swipe__bar button{flex:1 1 0;background:none;border:0;padding:14px 0;cursor:pointer}
     .jr-swipe__bar span{display:block;height:1px;background:var(--ink);opacity:.18;transition:opacity .6s cubic-bezier(.16,1,.3,1)}
     .jr-swipe__bar button[data-on] span{opacity:1}
-
   }
 }

@@ -17,18 +17,14 @@ function destroy() {
   state = null;
 }
 
-const options: [string, (section: HTMLElement, me: State, scope: HTMLElement) => void][] = [
-  ['[data-spine]', spine],
-];
-
 function after(scope: HTMLElement) {
   destroy();
   const me: State = (state = { tweened: [], cleanups: [] });
-  for (const [sel, start] of options) scope.querySelectorAll<HTMLElement>(sel).forEach((s) => start(s, me, scope));
+  scope.querySelectorAll<HTMLElement>('[data-spine]').forEach((s) => spine(s, me, scope));
 }
 
 export const system: System = {
-  selector: options.map(([sel]) => sel).join(', '),
+  selector: '[data-spine]',
   after,
   destroy,
 };

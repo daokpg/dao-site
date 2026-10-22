@@ -9,6 +9,7 @@
   --cream:#EDE8DC;          /* ink on dark ground */
   --night:#15130F;          /* the deepest ground: the booking page, the menu, the transition sheet, the home page after dark */
   --cream-bright:#F3EFE5;   /* headlines on the night ground (the home page's questions) */
+  --void:#000;              /* never a ground or an ink: only what shows behind a receding panel, and the dimmer that darkens it */
 
   /* light theme (default) */
   --ground:var(--paper);
