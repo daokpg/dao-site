@@ -1,9 +1,10 @@
 ---
 /**
  * A photograph with its WebP copies (`name-800.webp`, `name-1600.webp`, written next to the JPEG by
- * `npm run photos` and listed in lib/photo-variants.json): a <picture> whose WebP source the
- * browser picks by `sizes`, the original JPEG as the fallback. A photograph without copies is the
- * plain <img>. Extra attributes go on the <img>.
+ * `npm run photos` and listed in lib/photo-variants.json): one srcset of the copies and, where no
+ * copy is at its own width, the original JPEG at that width; the browser picks by `sizes`. It sits
+ * in a <picture> so scripts can move the picture without touching the <img>. A photograph without
+ * copies is the plain <img>. Extra attributes go on the <img>.
  *
  * `defer` renders it without its files (data-srcset / data-src): a script fetches them when they
  * are wanted (loadDeferred in scripts/core/defer.ts), as the menu and the hover rows do.
@@ -22,16 +23,16 @@ interface Props extends Omit<HTMLAttributes<'img'>, 'src' | 'srcset' | 'sizes' |
 
 const { image, sizes, defer = false, alt = image.alt, decoding = 'async', ...attrs } = Astro.props;
 
-const widths: number[] = (variants as Record<string, number[]>)[image.src] ?? [];
-const srcset = widths.map((w) => `${image.src.replace(/\.jpe?g$/i, '')}-${w}.webp ${w}w`).join(', ');
-const source = defer ? { 'data-srcset': srcset } : { srcset };
-const file = defer ? { 'data-src': image.src } : { src: image.src };
+const entry = (variants as Record<string, { width: number; webp: number[] }>)[image.src];
+const files = entry ? entry.webp.map((w) => `${image.src.replace(/\.jpe?g$/i, '')}-${w}.webp ${w}w`) : [];
+if (entry && !entry.webp.includes(entry.width)) files.push(`${image.src} ${entry.width}w`);
+const srcset = files.join(', ');
+const file = defer ? { 'data-srcset': srcset, 'data-src': image.src } : { srcset, src: image.src };
 ---
 {srcset ? (
   <picture>
-    <source type="image/webp" {...source} sizes={sizes} />
-    <img {...file} alt={alt} style={cropStyle(image.position)} decoding={decoding} {...attrs} />
+    <img {...file} sizes={sizes} alt={alt} style={cropStyle(image.position)} decoding={decoding} {...attrs} />
   </picture>
 ) : (
-  <img {...file} alt={alt} style={cropStyle(image.position)} decoding={decoding} {...attrs} />
+  <img src={defer ? undefined : image.src} data-src={defer ? image.src : undefined} alt={alt} style={cropStyle(image.position)} decoding={decoding} {...attrs} />
 )}
