@@ -178,8 +178,6 @@ in git: tags `archive/rows-journey` (two rows carried sideways) and `archive/wav
 ## Known quirks (kept on purpose, ask before "fixing")
 
 These reproduce the shipped design exactly; each looks accidental:
-- Phone menu: a later rule sets `align-items: start` on the menu list, so rows are not
-  full-width taps despite the comment (`styles/chrome.css`, the two mobile blocks).
 - Phone home page: the press wall stacks to one column (`styles/pages/home.css`).
 
 ## Verifying changes

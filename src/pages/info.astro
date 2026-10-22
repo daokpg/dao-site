@@ -22,6 +22,6 @@ const topics = info.topics.map((t) => ({ ...t, items: fillAnswers(t.items, site)
     <Head />
     {topics.map((t, i) => <Topic topic={t} num={i + 1} />)}
     <Close />
-    <Footer current="info" />
+    <Footer current="info" span="3 / span 8" />
   </div>
 </Base>
