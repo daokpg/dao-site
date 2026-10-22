@@ -12,7 +12,7 @@
  * grey-on-grey frame is ever held.
  */
 import { gsap, ScrollTrigger } from '../core/gsap';
-import { E, isMobile } from '../core/env';
+import { E, reducedMotion } from '../core/env';
 import { setTone } from '../core/tone';
 import type { System } from '../core/registry';
 import { pad2 } from '../../lib/format';
@@ -75,10 +75,11 @@ function after(scope: HTMLElement) {
   const moments = Array.from(scope.querySelectorAll<HTMLElement>('[data-moment]'));
   me.els.push(rail, word, name, ...moments);
 
-  // ---- the flight: placeholder to rail as the hero scrolls away
+  // ---- the flight: placeholder to rail as the hero scrolls away. It lands where the rail holds its
+  // place once stuck (the rail's own top and padding), at the size of that place
   const end = () => {
-    const r = target.getBoundingClientRect(), h = hero.getBoundingClientRect();
-    return { x: r.left, y: isMobile() ? 76 : 140, s: r.height / h.height };
+    const r = target.getBoundingClientRect(), cs = getComputedStyle(rail);
+    return { x: r.left, y: (parseFloat(cs.top) || 0) + (parseFloat(cs.paddingTop) || 0), s: r.height / (clock.offsetHeight || 1) };
   };
   // before the hero moves the clock is pinned to its placeholder, so it scrolls with the page like static type
   const seat = (st: ScrollTrigger) => {
@@ -94,22 +95,39 @@ function after(scope: HTMLElement) {
     });
   // layout can still settle after the first measure (fonts, grid); re-seat the clock on the placeholder
   const reseat = () => { flight.invalidate(); ScrollTrigger.refresh(); };
-  me.timers.push(...[300, 900, 1600].map((ms) => window.setTimeout(reseat, ms)));
+  me.timers.push(...[400, 1200].map((ms) => window.setTimeout(reseat, ms)));
 
-  // ---- the time: from the hero time to the last moment's time across the moments
+  // ---- the time: each moment's own time as it reaches the reading line (60% down the screen), running
+  // evenly in between. The light word and the dusk both follow this time, so they agree with the clock.
   const from = toMin(clock.textContent ?? '19:30');
-  const to = toMin(moments[moments.length - 1]?.dataset.time ?? '22:00');
   const light: { from: string; word: string }[] = JSON.parse(word.dataset.light ?? '[]');
+  let marks: [number, number][] = [];
+  const measureMarks = () => {
+    const line = window.innerHeight * 0.6;
+    marks = moments.map((m) => [m.getBoundingClientRect().top + window.scrollY - line, toMin(m.dataset.time ?? '19:30')] as [number, number]);
+    if (marks.length) marks.unshift([marks[0][0] - window.innerHeight * 0.4, from]);
+  };
+  measureMarks();
+  const minutesAt = (y: number) => {
+    if (!marks.length || y <= marks[0][0]) return marks[0]?.[1] ?? from;
+    for (let i = 1; i < marks.length; i++) {
+      const [y0, m0] = marks[i - 1], [y1, m1] = marks[i];
+      if (y < y1) return m0 + (m1 - m0) * ((y - y0) / (y1 - y0));
+    }
+    return marks[marks.length - 1][1];
+  };
+  let mins = from;
   let lastTxt = '';
+  const tick = () => {
+    mins = minutesAt(window.scrollY);
+    const t = fmt(Math.round(mins));
+    if (t !== lastTxt) { lastTxt = t; clock.textContent = t; }
+    const w = [...light].reverse().find((l) => mins >= toMin(l.from))?.word ?? light[0]?.word;
+    if (w && word.textContent !== w) swapText(word, w);
+  };
   ScrollTrigger.create({
-    trigger: scope.querySelector('[data-moments]'), start: 'top 60%', end: 'bottom bottom', scrub: true,
-    onUpdate: (st) => {
-      const mins = from + Math.round(st.progress * (to - from));
-      const t = fmt(mins);
-      if (t !== lastTxt) { lastTxt = t; clock.textContent = t; }
-      const w = [...light].reverse().find((l) => mins >= toMin(l.from))?.word ?? light[0]?.word;
-      if (w && word.textContent !== w) swapText(word, w);
-    },
+    trigger: scope.querySelector('[data-moments]'), start: 'top bottom', end: 'bottom top',
+    onUpdate: tick, onRefresh: () => { measureMarks(); tick(); },
   });
 
   // ---- gone at the footer
@@ -122,8 +140,8 @@ function after(scope: HTMLElement) {
       gsap.to(rail, { opacity: 0, y: -24, filter: 'blur(6px)', duration: 1, ease: E });
     },
     onLeaveBack: () => {
-      clockGone = false;
-      gsap.to(clock, { opacity: 1, filter: 'blur(0px)', duration: 1.1, ease: E });
+      // the dusk takes the clock back only once it has fully returned, so the two never pull at it together
+      gsap.to(clock, { opacity: 1, filter: 'blur(0px)', duration: 1.1, ease: E, onComplete: () => { clockGone = false; } });
       gsap.to(rail, { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1.1, ease: E });
     },
   });
@@ -134,8 +152,9 @@ function after(scope: HTMLElement) {
   // ---- dusk: the sheet, the ink ladder and the rules run from paper to charcoal with the scroll
   // the two palettes come from the colour tokens (styles/tokens/colors.css); the ladders are the same as there
   const token = (name: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  const L = { bg: token('--paper'), ink: token('--ink-warm'), ink2: 'rgba(26,24,21,.7)', ink3: 'rgba(26,24,21,.45)', rule: 'rgba(26,24,21,.16)' };
-  const D = { bg: token('--night'), ink: token('--cream'), ink2: 'rgba(237,232,220,.7)', ink3: 'rgba(237,232,220,.45)', rule: 'rgba(237,232,220,.18)' };
+  const ladder = (ink: string, rule: number) => ({ ink, ink2: `color-mix(in srgb,${ink} 70%,transparent)`, ink3: `color-mix(in srgb,${ink} 45%,transparent)`, rule: `color-mix(in srgb,${ink} ${rule}%,transparent)` });
+  const L = { bg: token('--paper'), ...ladder(token('--ink-warm'), 16) };
+  const D = { bg: token('--night'), ...ladder(token('--cream'), 18) };
   let palette: typeof L | null = null;
   const bg = gsap.utils.interpolate(L.bg, D.bg);
   const clamp = gsap.utils.clamp(0, 1);
@@ -143,17 +162,23 @@ function after(scope: HTMLElement) {
   const inkT = (t: number) => clamp((t - 0.55) / 0.14);
   const fading = [...moments, rail, clock];
   let dark = false;
+  let shown = -1;
+  const DUSK_FROM = toMin('19:45'), DUSK_TO = toMin('20:45');
   ScrollTrigger.create({
-    trigger: scope.querySelector('[data-moments]'), start: 'top 60%', end: 'bottom bottom', scrub: true,
-    onUpdate: (st) => {
-      // the light goes between 19:45 and 20:45
-      const p = clamp((st.progress - 0.12) / 0.4), t = p * p * (3 - 2 * p), k = inkT(t);
+    trigger: scope.querySelector('[data-moments]'), start: 'top bottom', end: 'bottom top',
+    onUpdate: () => {
+      // the light goes between 19:45 and 20:45 on the clock
+      const p = clamp((mins - DUSK_FROM) / (DUSK_TO - DUSK_FROM)), t = p * p * (3 - 2 * p), k = inkT(t);
       const ground = bg(t);
       sheet.style.backgroundColor = ground;
       sheet.style.setProperty('--sheet', ground);
+      // the ground the hairline lists turn their chosen rows to is the page's, as it is now
+      sheet.style.setProperty('--ground', ground);
       document.body.style.backgroundColor = ground;
-      // the ink never mixes: it is dark or cream, swapped at the middle of the flip, and the type dips out and back through it
-      const P = k < 0.5 ? L : D, a = 1 - Math.sin(k * Math.PI);
+      // the ink never mixes: it is dark or cream, swapped at the middle of the flip, and the type dips out and back
+      // through it (with reduced motion it just swaps). One switch decides the ink and the theme together.
+      const d = k >= 0.5;
+      const P = d ? D : L, a = reducedMotion ? 1 : Math.round((1 - Math.sin(k * Math.PI)) * 100) / 100;
       // the ladder is written only when it flips, not every frame (each write restyles the whole sheet)
       if (P !== palette) {
         palette = P;
@@ -163,12 +188,14 @@ function after(scope: HTMLElement) {
         sheet.style.setProperty('--rule', P.rule);
         clock.style.color = P.ink;
       }
-      if (clockGone) return;
-      for (const el of fading) {
-        el.style.opacity = String(a);
-        el.style.filter = a < 0.999 ? `blur(${((1 - a) * 6).toFixed(1)}px)` : 'blur(0px)';
+      // the type's dip is written only when it changes, and fully back it carries no filter at all
+      if (!clockGone && a !== shown) {
+        shown = a;
+        for (const el of fading) {
+          el.style.opacity = String(a); // never cleared: the clock's stylesheet keeps it hidden until the entrance
+          el.style.filter = a < 1 ? `blur(${((1 - a) * 6).toFixed(1)}px)` : '';
+        }
       }
-      const d = k > 0.5;
       if (d !== dark) {
         dark = d;
         sheet.setAttribute('data-theme', d ? 'dark' : 'light');

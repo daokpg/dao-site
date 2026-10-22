@@ -4,7 +4,11 @@
   .course .cn{font:300 clamp(22px,1.9vw,28px)/1.1 var(--font-display);letter-spacing:-.01em;color:var(--ink);margin:0}
   .course .cd{padding-top:.2em}
   .course .cg{justify-self:end;text-align:right;padding-top:.3em;transition:opacity .75s cubic-bezier(.16,1,.3,1),color .6s cubic-bezier(.16,1,.3,1)}
-  .course .cg[data-on="false"]{opacity:0}
+  /* a glass not poured is gone for screen readers too, once it has faded */
+  .course .cg[data-on="false"]{opacity:0;visibility:hidden;transition:opacity .75s cubic-bezier(.16,1,.3,1),visibility 0s .75s,color .6s cubic-bezier(.16,1,.3,1)}
+  /* the choices: the one not chosen is quieter but readable, and its focus ring is full ink */
+  .ch{color:var(--ink-2)}
+  .ch:focus-visible{outline-color:var(--ink)}
 
   /* the clock is the hero: it sits centred at display size, then flies to the rail as the hero scrolls away */
   [data-clock]{position:fixed;left:0;top:0;z-index:60;margin:0;font:300 clamp(110px,21vw,320px)/1 var(--font-display);letter-spacing:-.06em;font-variant-numeric:tabular-nums;color:var(--ink);transform-origin:0 0;pointer-events:none;white-space:nowrap;will-change:transform;max-width:none}
@@ -21,23 +25,22 @@
     [data-rail] > *{position:relative;z-index:1}
     [data-clock-target]{font-size:40px !important;margin-bottom:0 !important;margin-right:6px !important}
     [data-rail-word],[data-rail-name]{font-size:12px !important}
-    [data-moment]{min-height:0 !important;padding:72px 0 !important;gap:32px !important}
+    [data-moment]{min-height:0 !important;padding:96px 0 !important;gap:32px !important}
+    /* the flying clock at the size of its hero placeholder, so it starts on it and lands at the rail's size */
+    [data-clock]{font-size:clamp(88px,26vw,120px) !important}
+    /* the choices wrap as a row of words, never one stranded under the label */
+    [data-menu-choice],[data-pairing-choice]{gap:12px 20px !important}
+    .course{display:flex !important;flex-direction:column !important;gap:8px !important}
     [data-moment-split]{display:flex !important;flex-direction:column !important;gap:32px !important}
     [data-moment-split] > *{margin-top:0 !important}
     [data-moment] figure{width:100% !important}
     .course{padding:18px 0 !important}
     .course .cn{font-size:24px !important}
-    .course .cg{padding-top:0 !important}
+    .course .cg{padding-top:0 !important;text-align:left !important}
     [data-total]{font-size:clamp(44px,14vw,64px) !important}
     [data-clock-hero]{font-size:clamp(88px,26vw,120px) !important}
   }
 
-  @media (max-width: 820px){
-    [data-moments]{padding-top:0 !important}
-    [data-moment]{min-height:0 !important;padding:96px 0 !important}
-    .course{display:flex !important;flex-direction:column !important;gap:8px !important}
-    .course .cg{justify-self:start !important;text-align:left !important}
-  }
 }
 /* before JS seats it, the flying clock is hidden; without JS the static placeholders stand in for it */
 html.js [data-page="evening"] [data-clock]{opacity:0}

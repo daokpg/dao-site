@@ -10,6 +10,8 @@ export interface Course {
   /** Only for courses that change with the menu choice. */
   meat?: string;
   fish?: string;
+  /** The smallest pairing that pours a glass with this course (four or five glasses); none, no glass. */
+  glass?: 4 | 5;
 }
 
 export interface EveningContent {
@@ -91,11 +93,11 @@ export const evening: EveningContent = {
     choices: { meat: 'Meat & fish', fish: 'Fish' },
     courses: [
       { name: 'To begin', description: 'Three small things from the garden, eaten with the hands.' },
-      { name: 'From the boat', description: 'This morning’s fish, raw, with lime, chilli and the first herbs.' },
-      { name: 'Bread', description: 'Frena, the Moroccan bread he grew up on, with tahini and burnt tomato.' },
-      { name: 'From the fire', meat: 'Lamb over coals, Moroccan spice, greens from the morning.', fish: 'A whole fish over coals, Moroccan spice, greens from the morning.' },
-      { name: 'The main', meat: 'Beef cooked slowly with dates, in a broth made from the morning’s bones.', fish: 'Prawns from Chaloklum in a broth made from their own shells.' },
-      { name: 'Sweet', description: 'A Moroccan pastry made the way his grandfather made it, and fruit from the drying trays.' },
+      { name: 'From the boat', glass: 4, description: 'This morning’s fish, raw, with lime, chilli and the first herbs.' },
+      { name: 'Bread', glass: 4, description: 'Frena, the Moroccan bread he grew up on, with tahini and burnt tomato.' },
+      { name: 'From the fire', glass: 4, meat: 'Lamb over coals, Moroccan spice, greens from the morning.', fish: 'A whole fish over coals, Moroccan spice, greens from the morning.' },
+      { name: 'The main', glass: 4, meat: 'Beef cooked slowly with dates, in a broth made from the morning’s bones.', fish: 'Prawns from Chaloklum in a broth made from their own shells.' },
+      { name: 'Sweet', glass: 5, description: 'A Moroccan pastry made the way his grandfather made it, and fruit from the drying trays.' },
     ],
     glassLabel: 'Glass',
     after: 'This menu is gone. Yours is cooked from what the morning finds, adapted per seat from the note you leave when you book. Dietary needs are taken then, not at the table.',

@@ -53,8 +53,8 @@ const moment = (min: string, bottom = 160) => `min-height:${min};padding:0 0 ${b
         <p class="num" style="font-size:12px;color:var(--ink)">{menu.servedOn}</p>
         <p class="word" style="font-size:13px;color:var(--ink-3)">{menu.servedNote}</p>
       </div>
-      <div data-block data-menu-choice style="display:flex;gap:32px;align-items:baseline">
-        <span class="num" style="font-size:12px">{menu.readAs}</span>
+      <div data-block data-menu-choice role="group" aria-labelledby="menu-read-as" style="display:flex;gap:32px;align-items:baseline">
+        <span class="num" id="menu-read-as" style="font-size:12px">{menu.readAs}</span>
         <button type="button" class="ch" aria-pressed="true" data-pick-menu="meat">{menu.choices.meat}</button>
         <button type="button" class="ch" aria-pressed="false" data-pick-menu="fish">{menu.choices.fish}</button>
       </div>
@@ -63,7 +63,7 @@ const moment = (min: string, bottom = 160) => `min-height:${min};padding:0 0 ${b
           <HairRow class="course">
             <p class="cn">{c.name}</p>
             <p class="word cd" data-measure="l" style="font-size:13px" data-course-desc data-meat={c.meat} data-fish={c.fish}>{c.description ?? c.meat}</p>
-            <p class="num cg" data-course-glass data-on="false">{menu.glassLabel}</p>
+            <p class="num cg" data-course-glass data-glass={c.glass} data-on="false">{menu.glassLabel}</p>
           </HairRow>
         ))}
       </HairList>
@@ -73,15 +73,16 @@ const moment = (min: string, bottom = 160) => `min-height:${min};padding:0 0 ${b
     <article data-moment data-time={wine.time} data-name={wine.name} aria-labelledby="moment-wine" style={`${moment('80vh')};gap:48px`}>
       <h2 id="moment-wine" class="sr-only">{wine.name}</h2>
       <p data-reveal-soft data-split="softlines" class="lead" data-measure="lead">{wine.lead}</p>
-      <div data-block data-pairing-choice style="display:flex;gap:32px;align-items:baseline;flex-wrap:wrap">
-        <span class="num" style="font-size:12px">{wine.label}</span>
+      <div data-block data-pairing-choice role="group" aria-labelledby="pairing-label" style="display:flex;gap:32px;align-items:baseline;flex-wrap:wrap">
+        <span class="num" id="pairing-label" style="font-size:12px">{wine.label}</span>
         <button type="button" class="ch" aria-pressed="true" data-pick-pairing="0">{wine.choices.none}</button>
         <button type="button" class="ch" aria-pressed="false" data-pick-pairing="4">{wine.choices.four}</button>
         <button type="button" class="ch" aria-pressed="false" data-pick-pairing="5">{wine.choices.five}</button>
       </div>
       <div data-block style="display:flex;flex-direction:column;gap:12px">
-        <p data-total data-currency={pricing.currency} data-menu-price={pricing.menu} data-four={pricing.pairingFour} data-five={pricing.pairingFive} data-glass-label={menu.glassLabel} style="margin:0;font:300 clamp(56px,7vw,112px)/1 var(--font-display);letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:var(--ink);max-width:none">{money(pricing.menu, pricing.currency)}</p>
+        <p data-total data-currency={pricing.currency} data-menu-price={pricing.menu} data-four={pricing.pairingFour} data-five={pricing.pairingFive} style="margin:0;font:300 clamp(56px,7vw,112px)/1 var(--font-display);letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:var(--ink);max-width:none">{money(pricing.menu, pricing.currency)}</p>
         <p class="word" data-measure="m" style="font-size:13px">{wine.totalNote}</p>
+        <p data-total-say class="sr-only" aria-live="polite"></p>
       </div>
     </article>
 
