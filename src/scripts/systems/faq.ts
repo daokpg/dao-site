@@ -1,6 +1,7 @@
 /**
- * Questions (home and info, components/ui/FaqList.astro). Opening one writes its answer in beside it, character by character,
- * while the row grows with the text as it lands; closing unwinds it from the end. One open
+ * Questions (home and info, components/ui/FaqList.astro). Opening one writes its answer in beside it, word by
+ * word (a fade and a small rise, no blur: per-character blur was too heavy for phones and Safari), while the row
+ * grows with the text as it lands; closing unwinds it from the end. One open
  * at a time. The answers ship in the HTML (for no-JS); this takes them out on entry.
  */
 import { gsap } from '../core/gsap';
@@ -47,49 +48,48 @@ function before(scope: HTMLElement) {
         target.innerHTML = '';
         rule.style.height = '';
         const startH = rule.offsetHeight;
-        // words hold the characters, so the line breaks only at spaces
-        const chars: HTMLElement[] = [];
+        // the answer arrives word by word (a few dozen plain fades, no filters: light on any phone)
+        const words: HTMLElement[] = [];
         text.split(' ').forEach((w, wi, arr) => {
           const word = document.createElement('span');
-          word.style.cssText = 'display:inline-block;white-space:nowrap';
-          for (const c of Array.from(w)) {
-            const s = document.createElement('span');
-            s.className = 'fq-ch';
-            s.textContent = c;
-            word.appendChild(s);
-            chars.push(s);
-          }
+          word.className = 'fq-w';
+          word.textContent = w;
           target.appendChild(word);
+          words.push(word);
           if (wi < arr.length - 1) target.appendChild(document.createTextNode(' '));
         });
-        if (reducedMotion) {
-          track(gsap.timeline()).set(chars, { opacity: 1, filter: 'none' });
+        if (reducedMotion || !words.length) {
+          track(gsap.timeline()).set(words, { opacity: 1, y: 0 });
           return;
         }
-        // measure the full height, then let the row grow with the text as the characters land
+        // where each word ends, measured once now; the row grows to each as it lands, without measuring again
         const fullH = rule.offsetHeight;
+        const top = rule.getBoundingClientRect().top;
+        const pad = padOf('Bottom');
+        const ends = words.map((w) => Math.round(Math.min(fullH, Math.max(startH, w.getBoundingClientRect().bottom - top + pad))));
         rule.style.height = `${startH}px`;
         rule.style.overflow = 'hidden';
-        let targetH = startH;
         const hTo = gsap.quickTo(rule, 'height', { duration: 0.7, ease: E });
-        const grow = () => {
-          let lastC = chars[0];
-          for (const c of chars) { if (Number(gsap.getProperty(c, 'opacity')) >= 0.5) lastC = c; else break; }
-          const bottom = lastC.getBoundingClientRect().bottom - rule.getBoundingClientRect().top + padOf('Bottom');
-          const want = Math.round(Math.max(startH, Math.min(fullH, bottom)));
-          if (want > targetH) { targetH = want; hTo(want); }
-        };
+        const EACH = 0.03, DUR = 0.9;
+        let shown = startH;
         const t = track(gsap.timeline({
           onComplete: () => {
             hTo(fullH);
             me.timers.push(window.setTimeout(() => { rule.style.height = ''; rule.style.overflow = ''; }, 750));
           },
         }));
-        t.to(chars, { opacity: 1, filter: 'blur(0px)', duration: 1.4, ease: E, stagger: { each: 0.005 } }, 0);
-        t.to(rule, { duration: chars.length * 0.005 + 1.4, ease: 'none', onUpdate: grow }, 0);
+        t.to(words, { opacity: 1, y: 0, duration: DUR, ease: E, stagger: { each: EACH } }, 0);
+        // a word counts as landed halfway through its fade
+        t.to({}, {
+          duration: words.length * EACH + DUR, ease: 'none',
+          onUpdate() {
+            const i = Math.min(words.length - 1, Math.floor((this.time() - DUR / 2) / EACH));
+            if (i >= 0 && ends[i] > shown) { shown = ends[i]; hTo(shown); }
+          },
+        }, 0);
       } else {
         el.removeAttribute('data-open');
-        const chars = Array.from(target.querySelectorAll('.fq-ch'));
+        const words = Array.from(target.querySelectorAll('.fq-w'));
         if (reducedMotion) { target.innerHTML = ''; return; }
         const fullH = rule.offsetHeight;
         rule.style.height = `${fullH}px`;
@@ -109,7 +109,7 @@ function before(scope: HTMLElement) {
           return h;
         };
         const t = track(gsap.timeline({ onComplete: () => { target.innerHTML = ''; rule.style.height = ''; rule.style.overflow = ''; } }));
-        t.to(chars.slice().reverse(), { opacity: 0, filter: 'blur(5px)', duration: 0.4, ease: E, stagger: { each: 0.003 } }, 0);
+        t.to(words.slice().reverse(), { opacity: 0, duration: 0.35, ease: E, stagger: { each: 0.008 } }, 0);
         t.to(rule, { height: questionOnly(), duration: 0.8, ease: E }, 0.05);
       }
     };
