@@ -24,6 +24,9 @@ export function spine(section: HTMLElement, me: State, scope: HTMLElement) {
   const axis = section.querySelector<HTMLElement>('[data-spine-axis]')!;
   const items = Array.from(section.querySelectorAll<HTMLElement>('[data-spine-item]'));
   const imgs = items.map((el) => el.querySelector('img'));
+  // how far each picture drifts in its frame (% of the picture): the tall frames further, so the
+  // column reads as layers. The picture runs 15% of its frame past each edge (home.css), so never more
+  const drift = items.map((el) => (el.classList.contains('is-tall') ? 16 : 11));
   const setMoment = momentCopy(section, 'spine', list, me);
   // the frames already on screen as the column reaches the top, before it is held
   const body = section.querySelector<HTMLElement>('.jr-spine__body') ?? section;
@@ -56,7 +59,7 @@ export function spine(section: HTMLElement, me: State, scope: HTMLElement) {
       if (Math.abs(want - x[i]) < 0.1) x[i] = want; else settled = false;
       el.style.transform = `translate3d(${x[i].toFixed(2)}px,0,0)`;
       const img = imgs[i];
-      if (img && !reducedMotion) img.style.transform = `translate3d(0,${((0.5 - mids[i] / H) * 6).toFixed(2)}%,0)`;
+      if (img && !reducedMotion) img.style.transform = `translate3d(0,${(clamp(0.5 - mids[i] / H, -0.7, 0.7) * drift[i]).toFixed(2)}%,0)`;
       if (tops[i] < H * 0.62) active = Number(el.dataset.moment);
     });
     setMoment(active);

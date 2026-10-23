@@ -28,7 +28,7 @@ export function spineMobile(el: HTMLElement, list: Moment[], me: State, scope: H
       c.style.opacity = String(1 - 0.45 * d);
       c.style.transform = `scale(${(1 - 0.06 * d).toFixed(4)})`;
       const img = imgs[i];
-      if (img && !reducedMotion) img.style.transform = `translate3d(${(Math.max(-1, Math.min(1, i - f)) * -5).toFixed(2)}%,0,0)`;
+      if (img && !reducedMotion) img.style.transform = `translate3d(${(Math.max(-1, Math.min(1, i - f)) * -9.5).toFixed(2)}%,0,0)`;
     });
     const i = Math.min(cards.length - 1, Math.max(0, Math.round(f)));
     dots.forEach((d, k) => d.toggleAttribute('data-on', k === i));

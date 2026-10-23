@@ -41,7 +41,7 @@ const json = scriptJson(moments.map(({ time, label, text }) => ({ time, label, t
       <div class="jr-spine__axis" data-spine-axis aria-hidden="true"></div>
       {frames.map((f) => (
         <figure data-spine-item data-spine-reveal data-moment={f.moment} class:list={['jr-spine__frame', { 'is-tall': f.tall }]}>
-          <Picture image={f} sizes="30vw" loading="lazy" />
+          <Picture image={f} sizes="36vw" loading="lazy" />
         </figure>
       ))}
     </div>
@@ -56,7 +56,7 @@ const json = scriptJson(moments.map(({ time, label, text }) => ({ time, label, t
     <ul class="jr-swipe__rail" data-ms-rail tabindex="0" aria-label={journey.railLabel}>
       {moments.map((m) => (
         <li class="jr-swipe__card" data-ms-card data-spine-reveal>
-          <Picture image={m.image} sizes="90vw" loading="lazy" />
+          <Picture image={m.image} sizes="100vw" loading="lazy" />
         </li>
       ))}
     </ul>
