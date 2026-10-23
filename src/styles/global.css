@@ -178,7 +178,10 @@ html.js:not(.ready) :is([data-loader],[data-loader-logo]){animation:dao-failsafe
 [data-odometer-part="strip"]{display:block;white-space:pre;text-align:center;will-change:transform}
 
 /* Questions (home and info, components/ui/FaqList.astro): the answer writes itself in, word by word (systems/faq.ts) */
-.q{font:300 clamp(22px,2.1vw,30px)/1.25 var(--font-display);letter-spacing:-.01em;color:var(--ink);margin:0;max-width:none;text-wrap:pretty}
+/* the line height in whole pixels: at 22px a 1.25 line is 27.5px, every other line falls on a half pixel, and
+   iPhone Safari redrawing an answer as it writes in moved those lines by a device pixel, up and down */
+.q{font:300 clamp(22px,2.1vw,30px)/1.25 var(--font-display);line-height:round(1.25em,1px);letter-spacing:-.01em;color:var(--ink);margin:0;max-width:none;text-wrap:pretty}
+.fq button{line-height:round(1.25em,1px) !important}
 .fq{-webkit-tap-highlight-color:transparent}
 /* the row clips while it grows, so the focus ring sits just inside the question */
 .fq button:focus-visible{outline-offset:-2px}

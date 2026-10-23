@@ -28,9 +28,9 @@ const anchor = (id: string) => (idPrefix ? `${idPrefix}-${id}` : id);
     <li id={anchor(item.id)} class="fq lr" data-fq data-chars style="list-style:none;margin:0">
       <div class="lr__in">
       <h3 class="rule" style="margin:0;padding:0;font:inherit">
-        <button type="button" data-answer={`${anchor(item.id)}-a`} id={`${anchor(item.id)}-q`} style="display:block;width:100%;text-align:left;background:none;border:0;padding:26px 56px 26px 0;margin:0;cursor:pointer;font:inherit;color:inherit;box-sizing:border-box;line-height:1.25">
-          <span class="q" style="display:block;color:var(--fq-ink,var(--ink));line-height:1.25">{item.question} <span class="ansin" aria-hidden="true" style="color:var(--ink-2)"><span class="a" data-chars-text={item.answer} style="font:inherit;color:inherit;max-width:none">{item.answer}</span></span></span>
-          <span style="position:absolute;right:0;top:calc(26px + .625em - 10px);pointer-events:none;font-size:clamp(22px,2.1vw,30px)"><span class="ic ic-a" aria-hidden="true"><i class="h"></i><i class="v"></i></span></span>
+        <button type="button" data-answer={`${anchor(item.id)}-a`} id={`${anchor(item.id)}-q`} style="display:block;width:100%;text-align:left;background:none;border:0;padding:26px 56px 26px 0;margin:0;cursor:pointer;font:inherit;color:inherit;box-sizing:border-box;">
+          <span class="q" style="display:block;color:var(--fq-ink,var(--ink));">{item.question} <span class="ansin" aria-hidden="true" style="color:var(--ink-2)"><span class="a" data-chars-text={item.answer} style="font:inherit;color:inherit;max-width:none">{item.answer}</span></span></span>
+          <span style="position:absolute;right:0;top:round(calc(26px + round(1.25em,1px) / 2 - 10px),1px);pointer-events:none;font-size:clamp(22px,2.1vw,30px)"><span class="ic ic-a" aria-hidden="true"><i class="h"></i><i class="v"></i></span></span>
         </button>
       </h3>
       </div>

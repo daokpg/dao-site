@@ -90,7 +90,8 @@ function before(scope: HTMLElement) {
         rule.style.overflow = 'hidden';
         const EACH = 0.03, DUR = 0.9;
         const t = track(gsap.timeline());
-        t.to(rule, { height: fullH, duration: 0.55, ease: 'power3.out' }, 0);
+        // in whole pixels, so nothing below is ever drawn on a half pixel on the way
+        t.to(rule, { height: fullH, duration: 0.55, ease: 'power3.out', snap: { height: 1 } }, 0);
         const end = fade(words, true, DUR, EACH, 0.1);
         // then the row lets go of its height, and the words of their delays (so a hover recolours them all
         // together); on the timeline, so a new choice cancels both
@@ -137,7 +138,7 @@ function before(scope: HTMLElement) {
         }
         const t = track(gsap.timeline({ onComplete: () => { target.innerHTML = ''; rule.style.height = ''; rule.style.overflow = ''; } }));
         const gone = fade(words.slice().reverse(), false, 0.35, 0.008);
-        t.to(rule, { height: questionOnly(), duration: 0.8, ease: E }, 0.05);
+        t.to(rule, { height: questionOnly(), duration: 0.8, ease: E, snap: { height: 1 } }, 0.05);
         // the words are cleared only once the last has faded
         t.to({}, { duration: 0 }, gone);
       }
