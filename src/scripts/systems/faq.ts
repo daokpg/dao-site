@@ -1,6 +1,7 @@
 /**
  * Questions (home and info, components/ui/FaqList.astro). Opening one writes its answer in beside it, word by
- * word (a fade and a small rise, no blur: per-character blur was too heavy for phones and Safari), into a row
+ * word (a fade in place: no blur, which was too heavy for phones and Safari, and no rise, which made each
+ * word settle with a sub-pixel jolt as it landed), into a row
  * that has opened to the answer's height in one movement; closing unwinds it from the end. One open
  * at a time; when the one closing is above, it fades and then shuts in one step, the page moved by the
  * same amount in the same frame, so the question chosen stays exactly where it was. The answers ship in the HTML (for no-JS); this takes them out on entry.
@@ -69,7 +70,7 @@ function before(scope: HTMLElement) {
           if (wi < arr.length - 1) target.appendChild(document.createTextNode(' '));
         });
         if (reducedMotion || !words.length) {
-          track(gsap.timeline()).set(words, { opacity: 1, y: 0 });
+          track(gsap.timeline()).set(words, { opacity: 1 });
           return;
         }
         // the row opens to the answer's full height in one movement, ahead of the words, which then write
@@ -80,7 +81,7 @@ function before(scope: HTMLElement) {
         const EACH = 0.03, DUR = 0.9;
         const t = track(gsap.timeline());
         t.to(rule, { height: fullH, duration: 0.55, ease: 'power3.out' }, 0);
-        t.to(words, { opacity: 1, y: 0, duration: DUR, ease: E, stagger: { each: EACH } }, 0.1);
+        t.to(words, { opacity: 1, duration: DUR, ease: 'power2.out', stagger: { each: EACH } }, 0.1);
         // then the row lets go of its height (on the timeline, so a new choice cancels it)
         t.call(() => { rule.style.height = ''; rule.style.overflow = ''; }, undefined, 0.6);
       } else {

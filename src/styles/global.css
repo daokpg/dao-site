@@ -195,7 +195,8 @@ html.js:not(.ready) :is([data-loader],[data-loader-logo]){animation:dao-failsafe
 .fq:hover .ic,.fq[data-open] .ic{color:var(--ink)}
 .fq[data-open] .ic-a .h,.fq[data-open] .ic-a .v{transform:translate(-50%,-50%) rotate(45deg)}
 .fq[data-chars]{position:relative}
-.fq[data-chars] .fq-w{display:inline-block;opacity:0;transform:translateY(.3em)}
+/* plain inline text that only fades: it lies exactly where it will stay, so nothing settles as it lands */
+.fq[data-chars] .fq-w{opacity:0}
 @media (max-width: 820px){
   .fq{min-height:56px}
 }
