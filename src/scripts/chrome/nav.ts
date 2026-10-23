@@ -37,6 +37,12 @@ export function showNav() {
   anchorY = lastY = window.scrollY;
 }
 
+/** The page was moved by the site, not the visitor (a question closing above the one chosen): the nav
+ * takes the new position as its starting point instead of reading it as a scroll up. */
+export function syncNav() {
+  anchorY = lastY = window.scrollY;
+}
+
 /** A page whose top band gives the nav a ground (the evening page's clock bar on phones): the nav stays. */
 const hasGround = () => isMobile() && !!document.querySelector('[data-barba="container"] [data-rail]');
 

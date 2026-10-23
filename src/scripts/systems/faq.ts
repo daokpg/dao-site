@@ -2,14 +2,16 @@
  * Questions (home and info, components/ui/FaqList.astro). Opening one writes its answer in beside it, word by
  * word (a fade and a small rise, no blur: per-character blur was too heavy for phones and Safari), into a row
  * that has opened to the answer's height in one movement; closing unwinds it from the end. One open
- * at a time; when the one closing is above, the page is held so the question chosen stays where it was. The answers ship in the HTML (for no-JS); this takes them out on entry.
+ * at a time; when the one closing is above, it fades and then shuts in one step, the page moved by the
+ * same amount in the same frame, so the question chosen stays exactly where it was. The answers ship in the HTML (for no-JS); this takes them out on entry.
  */
 import { gsap } from '../core/gsap';
 import { E, reducedMotion } from '../core/env';
 import { scrollToY } from '../core/lenis';
+import { syncNav } from '../chrome/nav';
 import type { System } from '../core/registry';
 
-type State = { ac: AbortController; tls: Set<gsap.core.Timeline>; timers: number[]; holds: Set<() => void> };
+type State = { ac: AbortController; tls: Set<gsap.core.Timeline>; timers: number[] };
 let state: State | null = null;
 
 function destroy() {
@@ -18,16 +20,15 @@ function destroy() {
   state.ac.abort();
   state.tls.forEach((t) => t.kill());
   state.timers.forEach(clearTimeout);
-  state.holds.forEach((h) => gsap.ticker.remove(h));
   state = null;
 }
 
 function before(scope: HTMLElement) {
   destroy();
   const ac = new AbortController();
-  const me: State = (state = { ac, tls: new Set(), timers: [], holds: new Set() });
+  const me: State = (state = { ac, tls: new Set(), timers: [] });
   const items = Array.from(scope.querySelectorAll<HTMLElement>('[data-chars]'));
-  const runs = new Map<HTMLElement, (open: boolean) => void>();
+  const runs = new Map<HTMLElement, (open: boolean, above?: boolean) => void>();
 
   for (const el of items) {
     const target = el.querySelector<HTMLElement>('[data-chars-text]')!;
@@ -47,7 +48,7 @@ function before(scope: HTMLElement) {
     const track = (t: gsap.core.Timeline) => { if (tl) { tl.kill(); me.tls.delete(tl); } tl = t; me.tls.add(t); return t; };
     const padOf = (side: 'Top' | 'Bottom') => parseFloat(getComputedStyle(btn)[`padding${side}`]);
 
-    const run = (open: boolean) => {
+    const run = (open: boolean, above = false) => {
       btn.setAttribute('aria-expanded', String(open));
       if (region) { if (open) region.removeAttribute('hidden'); else region.setAttribute('hidden', 'until-found'); }
       // whatever was still moving on this row stops here
@@ -103,6 +104,24 @@ function before(scope: HTMLElement) {
           clone.remove();
           return h;
         };
+        if (above) {
+          // above the question chosen: the words go, then the row shuts at once and the page moves up by
+          // the same amount in that frame, so nothing below it (the question chosen) is seen to move
+          const t = track(gsap.timeline());
+          t.to(words.slice().reverse(), { opacity: 0, duration: 0.2, ease: E, stagger: { each: 0.004 } }, 0);
+          t.call(() => {
+            const before = rule.offsetHeight;
+            target.innerHTML = '';
+            rule.style.height = '';
+            rule.style.overflow = '';
+            const shrink = before - rule.offsetHeight;
+            if (shrink > 0) {
+              scrollToY(window.scrollY - shrink, 0);
+              syncNav();
+            }
+          });
+          return;
+        }
         const t = track(gsap.timeline({ onComplete: () => { target.innerHTML = ''; rule.style.height = ''; rule.style.overflow = ''; } }));
         t.to(words.slice().reverse(), { opacity: 0, duration: 0.35, ease: E, stagger: { each: 0.008 } }, 0);
         t.to(rule, { height: questionOnly(), duration: 0.8, ease: E }, 0.05);
@@ -112,18 +131,10 @@ function before(scope: HTMLElement) {
 
     // one open at a time within a list (on the info page, each topic keeps its own)
     const list = el.closest('[data-faq]');
-    // while a question above closes, the page follows it up, so the one chosen does not slide away
-    const hold = () => {
-      const top0 = el.getBoundingClientRect().top;
-      const fix = () => { const d = el.getBoundingClientRect().top - top0; if (Math.abs(d) > 0.5) scrollToY(window.scrollY + d, 0); };
-      gsap.ticker.add(fix);
-      me.holds.add(fix);
-      me.timers.push(window.setTimeout(() => { gsap.ticker.remove(fix); me.holds.delete(fix); }, 950));
-    };
     const openThis = () => {
-      const closing = items.filter((o) => o !== el && o.closest('[data-faq]') === list && o.hasAttribute('data-open'));
-      if (closing.some((o) => o.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING)) hold();
-      closing.forEach((o) => runs.get(o)?.(false));
+      items.forEach((o) => {
+        if (o !== el && o.closest('[data-faq]') === list && o.hasAttribute('data-open')) runs.get(o)?.(false, !!(o.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING));
+      });
       run(true);
     };
     btn.addEventListener('click', () => (el.hasAttribute('data-open') ? run(false) : openThis()), { signal: ac.signal });
