@@ -1,10 +1,9 @@
 /**
  * Questions (home and info, components/ui/FaqList.astro). Opening one writes its answer in beside it, word by
- * word (a fade in place: no blur, which was too heavy for phones and Safari, and no rise, which made each
- * word settle with a sub-pixel jolt as it landed), into a row
- * that has opened to the answer's height in one movement; closing unwinds it from the end. One open
- * at a time; when the one closing is above, it fades and then shuts in one step, the page moved by the
- * same amount in the same frame, so the question chosen stays exactly where it was. The answers ship in the HTML (for no-JS); this takes them out on entry.
+ * word, into a row that has opened to the answer's height in one movement; closing unwinds it from the end.
+ * One open at a time; when the one closing is above, it fades and then shuts in one step, the page moved by
+ * the same amount in the same frame, so the question chosen stays exactly where it was. The answers ship in
+ * the HTML (for no-JS); this takes them out on entry.
  */
 import { gsap } from '../core/gsap';
 import { E, reducedMotion } from '../core/env';
@@ -48,6 +47,17 @@ function before(scope: HTMLElement) {
     let tl: gsap.core.Timeline | null = null;
     const track = (t: gsap.core.Timeline) => { if (tl) { tl.kill(); me.tls.delete(tl); } tl = t; me.tls.add(t); return t; };
     const padOf = (side: 'Top' | 'Bottom') => parseFloat(getComputedStyle(btn)[`padding${side}`]);
+    // A word appears by its colour, from transparent to the answer's ink, a CSS transition each with its own
+    // delay. Not opacity (text drawn at part opacity is rendered another way and shifts as it reaches full)
+    // and not a rise (it settles by a sub-pixel as it lands): the word lies where it stays and is drawn as it
+    // stays, so nothing jumps as it arrives. Returns when the last has finished.
+    const fade = (words: HTMLElement[], on: boolean, dur: number, each: number, start = 0) => {
+      words.forEach((w, i) => {
+        w.style.transition = reducedMotion ? 'none' : `color ${dur}s ${on ? 'cubic-bezier(.33,1,.68,1)' : 'cubic-bezier(.32,0,.67,0)'} ${(start + i * each).toFixed(3)}s`;
+        w.toggleAttribute('data-on', on);
+      });
+      return start + Math.max(0, words.length - 1) * each + dur;
+    };
 
     const run = (open: boolean, above = false) => {
       btn.setAttribute('aria-expanded', String(open));
@@ -70,7 +80,7 @@ function before(scope: HTMLElement) {
           if (wi < arr.length - 1) target.appendChild(document.createTextNode(' '));
         });
         if (reducedMotion || !words.length) {
-          track(gsap.timeline()).set(words, { opacity: 1 });
+          fade(words, true, 0, 0);
           return;
         }
         // the row opens to the answer's full height in one movement, ahead of the words, which then write
@@ -81,12 +91,14 @@ function before(scope: HTMLElement) {
         const EACH = 0.03, DUR = 0.9;
         const t = track(gsap.timeline());
         t.to(rule, { height: fullH, duration: 0.55, ease: 'power3.out' }, 0);
-        t.to(words, { opacity: 1, duration: DUR, ease: 'power2.out', stagger: { each: EACH } }, 0.1);
-        // then the row lets go of its height (on the timeline, so a new choice cancels it)
+        const end = fade(words, true, DUR, EACH, 0.1);
+        // then the row lets go of its height, and the words of their delays (so a hover recolours them all
+        // together); on the timeline, so a new choice cancels both
         t.call(() => { rule.style.height = ''; rule.style.overflow = ''; }, undefined, 0.6);
+        t.call(() => words.forEach((w) => (w.style.transition = '')), undefined, end);
       } else {
         el.removeAttribute('data-open');
-        const words = Array.from(target.querySelectorAll('.fq-w'));
+        const words = Array.from(target.querySelectorAll<HTMLElement>('.fq-w'));
         if (reducedMotion) { target.innerHTML = ''; return; }
         const fullH = rule.offsetHeight;
         rule.style.height = `${fullH}px`;
@@ -109,7 +121,7 @@ function before(scope: HTMLElement) {
           // above the question chosen: the words go, then the row shuts at once and the page moves up by
           // the same amount in that frame, so nothing below it (the question chosen) is seen to move
           const t = track(gsap.timeline());
-          t.to(words.slice().reverse(), { opacity: 0, duration: 0.2, ease: E, stagger: { each: 0.004 } }, 0);
+          const gone = fade(words.slice().reverse(), false, 0.2, 0.004);
           t.call(() => {
             const before = rule.offsetHeight;
             target.innerHTML = '';
@@ -120,12 +132,14 @@ function before(scope: HTMLElement) {
               scrollToY(window.scrollY - shrink, 0);
               syncNav();
             }
-          });
+          }, undefined, gone);
           return;
         }
         const t = track(gsap.timeline({ onComplete: () => { target.innerHTML = ''; rule.style.height = ''; rule.style.overflow = ''; } }));
-        t.to(words.slice().reverse(), { opacity: 0, duration: 0.35, ease: E, stagger: { each: 0.008 } }, 0);
+        const gone = fade(words.slice().reverse(), false, 0.35, 0.008);
         t.to(rule, { height: questionOnly(), duration: 0.8, ease: E }, 0.05);
+        // the words are cleared only once the last has faded
+        t.to({}, { duration: 0 }, gone);
       }
     };
     runs.set(el, run);
