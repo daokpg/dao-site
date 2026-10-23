@@ -47,7 +47,8 @@ html[data-nav-tone="cream"] .nav{color:var(--paper)}
 .pt__num{margin:0;font:400 12px/1 var(--font-body);color:rgba(237,232,220,.55);font-variant-numeric:tabular-nums;opacity:0;transform:translateY(10px);filter:blur(6px)}
 
 /* ---------- footer ---------- */
-.footer{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:0 24px;padding:0 64px 48px;box-sizing:border-box;align-content:end;overflow:hidden}
+/* the sections' 1440 is their content (padding outside it); the footer is border-box, so its max adds the padding back to line up */
+.footer{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:0 24px;padding:0 64px 48px;box-sizing:border-box;max-width:calc(1440px + 128px) !important;align-content:end;overflow:hidden}
 .footer--tall{padding-top:200px;min-height:100vh}
 .footer__strip{grid-column:var(--footer-span,1 / span 12);margin-bottom:96px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px}
 .footer__page{display:flex;flex-direction:column;gap:0;text-decoration:none;color:inherit;border:0}
