@@ -50,8 +50,9 @@ export function change(s: Swap | null, txt: string) {
     gsap.to(out, { yPercent: -110, duration: 0.8, ease: 'expo.out' });
     gsap.fromTo(inn, { yPercent: 110 }, { yPercent: 0, duration: 1, ease: 'expo.out' });
   } else {
-    gsap.to(out, { opacity: 0, y: -6, duration: 0.35, ease: 'power2.in' });
-    gsap.fromTo(inn, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 1, delay: 0.2, ease: E });
+    // the incoming line waits for the outgoing one to be gone, so the two are never read on top of each other
+    gsap.to(out, { opacity: 0, y: -6, duration: 0.25, ease: 'power2.in' });
+    gsap.fromTo(inn, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.9, delay: 0.25, ease: E });
   }
 }
 

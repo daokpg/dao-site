@@ -1,15 +1,15 @@
 /**
  * Questions (home and info, components/ui/FaqList.astro). Opening one writes its answer in beside it, word by
- * word (a fade and a small rise, no blur: per-character blur was too heavy for phones and Safari), while the row
- * grows with the text as it lands; closing unwinds it from the end. One open
- * at a time. The answers ship in the HTML (for no-JS); this takes them out on entry.
+ * word (a fade and a small rise, no blur: per-character blur was too heavy for phones and Safari), into a row
+ * that has opened to the answer's height in one movement; closing unwinds it from the end. One open
+ * at a time; when the one closing is above, the page is held so the question chosen stays where it was. The answers ship in the HTML (for no-JS); this takes them out on entry.
  */
 import { gsap } from '../core/gsap';
 import { E, reducedMotion } from '../core/env';
 import { scrollToY } from '../core/lenis';
 import type { System } from '../core/registry';
 
-type State = { ac: AbortController; tls: Set<gsap.core.Timeline>; timers: number[] };
+type State = { ac: AbortController; tls: Set<gsap.core.Timeline>; timers: number[]; holds: Set<() => void> };
 let state: State | null = null;
 
 function destroy() {
@@ -18,13 +18,14 @@ function destroy() {
   state.ac.abort();
   state.tls.forEach((t) => t.kill());
   state.timers.forEach(clearTimeout);
+  state.holds.forEach((h) => gsap.ticker.remove(h));
   state = null;
 }
 
 function before(scope: HTMLElement) {
   destroy();
   const ac = new AbortController();
-  const me: State = (state = { ac, tls: new Set(), timers: [] });
+  const me: State = (state = { ac, tls: new Set(), timers: [], holds: new Set() });
   const items = Array.from(scope.querySelectorAll<HTMLElement>('[data-chars]'));
   const runs = new Map<HTMLElement, (open: boolean) => void>();
 
@@ -70,30 +71,17 @@ function before(scope: HTMLElement) {
           track(gsap.timeline()).set(words, { opacity: 1, y: 0 });
           return;
         }
-        // where each word ends, measured once now; the row grows to each as it lands, without measuring again
+        // the row opens to the answer's full height in one movement, ahead of the words, which then write
+        // themselves into the room already made (a row growing line by line read as the page shuddering)
         const fullH = rule.offsetHeight;
-        const top = rule.getBoundingClientRect().top;
-        const pad = padOf('Bottom');
-        const ends = words.map((w) => Math.round(Math.min(fullH, Math.max(startH, w.getBoundingClientRect().bottom - top + pad))));
         rule.style.height = `${startH}px`;
         rule.style.overflow = 'hidden';
-        // the row opens ahead of the words, so a new line never rises against its bottom edge
-        const hTo = gsap.quickTo(rule, 'height', { duration: 0.35, ease: 'power2.out' });
-        const EACH = 0.03, DUR = 0.9, LEAD = 0.3;
-        let shown = startH;
+        const EACH = 0.03, DUR = 0.9;
         const t = track(gsap.timeline());
-        t.to(words, { opacity: 1, y: 0, duration: DUR, ease: E, stagger: { each: EACH } }, 0);
-        // the room for a word is made a moment before it starts to rise (LEAD seconds ahead)
-        t.to({}, {
-          duration: words.length * EACH + DUR, ease: 'none',
-          onUpdate() {
-            const i = Math.min(words.length - 1, Math.floor((this.time() + LEAD) / EACH));
-            if (i >= 0 && ends[i] > shown) { shown = ends[i]; hTo(shown); }
-          },
-        }, 0);
-        // the full height, then the row lets go of it (on the timeline, so a new choice cancels both)
-        t.call(() => hTo(fullH));
-        t.call(() => { rule.style.height = ''; rule.style.overflow = ''; }, undefined, '+=0.75');
+        t.to(rule, { height: fullH, duration: 0.55, ease: 'power3.out' }, 0);
+        t.to(words, { opacity: 1, y: 0, duration: DUR, ease: E, stagger: { each: EACH } }, 0.1);
+        // then the row lets go of its height (on the timeline, so a new choice cancels it)
+        t.call(() => { rule.style.height = ''; rule.style.overflow = ''; }, undefined, 0.6);
       } else {
         el.removeAttribute('data-open');
         const words = Array.from(target.querySelectorAll('.fq-w'));
@@ -124,8 +112,18 @@ function before(scope: HTMLElement) {
 
     // one open at a time within a list (on the info page, each topic keeps its own)
     const list = el.closest('[data-faq]');
+    // while a question above closes, the page follows it up, so the one chosen does not slide away
+    const hold = () => {
+      const top0 = el.getBoundingClientRect().top;
+      const fix = () => { const d = el.getBoundingClientRect().top - top0; if (Math.abs(d) > 0.5) scrollToY(window.scrollY + d, 0); };
+      gsap.ticker.add(fix);
+      me.holds.add(fix);
+      me.timers.push(window.setTimeout(() => { gsap.ticker.remove(fix); me.holds.delete(fix); }, 950));
+    };
     const openThis = () => {
-      items.forEach((o) => { if (o !== el && o.closest('[data-faq]') === list && o.hasAttribute('data-open')) runs.get(o)?.(false); });
+      const closing = items.filter((o) => o !== el && o.closest('[data-faq]') === list && o.hasAttribute('data-open'));
+      if (closing.some((o) => o.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING)) hold();
+      closing.forEach((o) => runs.get(o)?.(false));
       run(true);
     };
     btn.addEventListener('click', () => (el.hasAttribute('data-open') ? run(false) : openThis()), { signal: ac.signal });

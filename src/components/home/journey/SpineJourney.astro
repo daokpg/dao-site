@@ -62,6 +62,7 @@ const json = scriptJson(moments.map(({ time, label, text }) => ({ time, label, t
     </ul>
     <div class="jr-swipe__bar" aria-hidden="true">
       {moments.map(() => <button type="button" tabindex="-1" data-ms-dot><span></span></button>)}
+      <span class="jr-swipe__thumb" data-ms-thumb></span>
     </div>
   </div>
 </section>

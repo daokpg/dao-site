@@ -2,7 +2,7 @@
  * The spine on phones: the moment above a row of photographs swiped sideways (native scrolling,
  * one card per swipe). As the finger moves, the card in view is full and its neighbours recede,
  * each picture drifting a little; the moment above follows the card in view. The five lines under
- * the row show where you are and take you to a card.
+ * the row take you to a card; one marker over them moves with the finger, so it is never behind.
  */
 import { ScrollTrigger } from '../../core/gsap';
 import { reducedMotion } from '../../core/env';
@@ -14,11 +14,20 @@ export function spineMobile(el: HTMLElement, list: Moment[], me: State, scope: H
   const cards = Array.from(el.querySelectorAll<HTMLElement>('[data-ms-card]'));
   const imgs = cards.map((c) => c.querySelector('img'));
   const dots = Array.from(el.querySelectorAll<HTMLButtonElement>('[data-ms-dot]'));
+  const thumb = el.querySelector<HTMLElement>('[data-ms-thumb]');
   const setMoment = momentCopy(el, 'ms', list, me);
   // the cards in view; the rest wait off to the side
   revealIn(el.querySelector<HTMLElement>('[data-ms-copy]'), cards, (c) => c.getBoundingClientRect().left < window.innerWidth, me);
   const stepX = () => (cards.length > 1 ? cards[1].offsetLeft - cards[0].offsetLeft : 1);
 
+  // the marker's step and width, measured once and again on resize (never mid-paint)
+  let pitch = -1;
+  const measureBar = () => {
+    if (!thumb || !dots.length) return;
+    const r = dots.map((d) => d.getBoundingClientRect());
+    pitch = r.length > 1 ? r[1].left - r[0].left : 0;
+    thumb.style.width = `${r[0].width}px`;
+  };
   let frame = 0;
   const paint = () => {
     frame = 0;
@@ -31,13 +40,16 @@ export function spineMobile(el: HTMLElement, list: Moment[], me: State, scope: H
       if (img && !reducedMotion) img.style.transform = `translate3d(${(Math.max(-1, Math.min(1, i - f)) * -9.5).toFixed(2)}%,0,0)`;
     });
     const i = Math.min(cards.length - 1, Math.max(0, Math.round(f)));
-    dots.forEach((d, k) => d.toggleAttribute('data-on', k === i));
+    if (thumb && dots.length) {
+      if (pitch < 0) measureBar();
+      thumb.style.transform = `translate3d(${(Math.max(0, Math.min(dots.length - 1, f)) * pitch).toFixed(2)}px,0,0)`;
+    }
     setMoment(i);
   };
   const onScroll = () => { if (!frame) frame = requestAnimationFrame(paint); };
   const ac = new AbortController();
   rail.addEventListener('scroll', onScroll, { passive: true, signal: ac.signal });
-  window.addEventListener('resize', onScroll, { signal: ac.signal });
+  window.addEventListener('resize', () => { pitch = -1; onScroll(); }, { signal: ac.signal });
   dots.forEach((d, i) => d.addEventListener('click', () => rail.scrollTo({ left: i * stepX(), behavior: reducedMotion ? 'auto' : 'smooth' }), { signal: ac.signal }));
   me.cleanups.push(() => {
     ac.abort();
