@@ -167,7 +167,7 @@ html.js:not(.ready) :is([data-loader],[data-loader-logo]){animation:dao-failsafe
 }
 
 @media (prefers-reduced-motion: reduce){
-  .lt [data-c],.lr::before,.ll::after,.lr::after,.lr .hv,.lr .hv img,.lr__in,.lr__in *,.ic i,.fq .ic,.fq .rule{transition:none !important}
+  .lt [data-c],.lr::before,.ll::after,.lr::after,.lr .hv,.lr .hv img,.lr__in,.lr__in *,.ic i,.fq .ic{transition:none !important}
   .lt-host:hover .rl span,.lt-host:focus-visible .rl span,.lt-host.is-pressed .lt{animation:none !important}
 }
 
@@ -182,8 +182,11 @@ html.js:not(.ready) :is([data-loader],[data-loader-logo]){animation:dao-failsafe
 .fq{-webkit-tap-highlight-color:transparent}
 /* the row clips while it grows, so the focus ring sits just inside the question */
 .fq button:focus-visible{outline-offset:-2px}
-.fq .rule{border-top:1px solid var(--rule);transition:border-color .75s cubic-bezier(.16,1,.3,1)}
-.fq:hover .rule,.fq[data-open] .rule{border-top-color:var(--ink)}
+/* each question is a hairline-list row (its line is the row's); the open one keeps its line in full ink,
+   the list has no closing line, and on hover the question's own colour turns with the rest */
+.fq[data-open]::before{background:var(--ink)}
+.fql::after{content:none}
+@media (hover:hover) and (min-width:821px){ .fq.lr:hover .lr__in{--fq-ink:var(--lr-on)} }
 .ic{position:relative;display:block;width:20px;height:20px;flex:0 0 auto}
 .ic i{position:absolute;left:50%;top:50%;display:block;background:currentColor;transition:transform .7s cubic-bezier(.16,1,.3,1)}
 .ic .h{width:20px;height:1px;transform:translate(-50%,-50%) rotate(0deg)}

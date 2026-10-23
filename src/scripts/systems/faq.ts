@@ -77,16 +77,17 @@ function before(scope: HTMLElement) {
         const ends = words.map((w) => Math.round(Math.min(fullH, Math.max(startH, w.getBoundingClientRect().bottom - top + pad))));
         rule.style.height = `${startH}px`;
         rule.style.overflow = 'hidden';
-        const hTo = gsap.quickTo(rule, 'height', { duration: 0.7, ease: E });
-        const EACH = 0.03, DUR = 0.9;
+        // the row opens ahead of the words, so a new line never rises against its bottom edge
+        const hTo = gsap.quickTo(rule, 'height', { duration: 0.35, ease: 'power2.out' });
+        const EACH = 0.03, DUR = 0.9, LEAD = 0.3;
         let shown = startH;
         const t = track(gsap.timeline());
         t.to(words, { opacity: 1, y: 0, duration: DUR, ease: E, stagger: { each: EACH } }, 0);
-        // a word counts as landed halfway through its fade
+        // the room for a word is made a moment before it starts to rise (LEAD seconds ahead)
         t.to({}, {
           duration: words.length * EACH + DUR, ease: 'none',
           onUpdate() {
-            const i = Math.min(words.length - 1, Math.floor((this.time() - DUR / 2) / EACH));
+            const i = Math.min(words.length - 1, Math.floor((this.time() + LEAD) / EACH));
             if (i >= 0 && ends[i] > shown) { shown = ends[i]; hTo(shown); }
           },
         }, 0);
