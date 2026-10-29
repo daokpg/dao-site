@@ -50,7 +50,8 @@
 
   /* The copy hangs from a fixed line while the column passes; a longer sentence only grows downward. */
   .jr-spine{position:relative;padding-top:14vh}
-  .jr-spine__body{position:relative;display:grid;grid-template-columns:minmax(0,30vw) minmax(0,1fr);padding:0 2vw 0 64px}
+  /* the copy starts on the grid's first column at any width: 64px, or where the centred 1440 grid begins */
+  .jr-spine__body{position:relative;display:grid;grid-template-columns:minmax(0,30vw) minmax(0,1fr);padding:0 2vw 0 max(64px,calc((100% - 1440px) / 2))}
   .jr-spine__copy{position:sticky;top:0;height:100vh;box-sizing:border-box;padding-top:calc(50vh - 150px);display:flex;flex-direction:column;gap:16px;align-self:start}
   .jr-spine__ribbon{position:relative;display:flex;flex-direction:column;align-items:center;padding:4vh 0 46vh}
   /* held to the screen while the column passes: the wave is measured from its top */
