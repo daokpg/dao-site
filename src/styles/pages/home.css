@@ -42,7 +42,7 @@
   /* the moment beside the photographs: time, label, sentence */
   .jr-big{font:300 clamp(56px,6vw,96px)/.9 var(--font-display);letter-spacing:-.035em;font-variant-numeric:tabular-nums;color:var(--ink);margin:0 0 6px;max-width:none}
   .jr-meta{font:500 10px/1.4 var(--font-body);letter-spacing:.22em;text-transform:uppercase;color:var(--ink-3);margin:0;max-width:none}
-  .jr-text{font:300 clamp(20px,1.6vw,24px)/1.35 var(--font-display);letter-spacing:-.01em;color:var(--ink);margin:0;max-width:22em;text-wrap:pretty;min-height:calc(3 * 1.35em)}
+  .jr-text{font:300 clamp(20px,1.6vw,24px)/1.35 var(--font-display);letter-spacing:-.01em;color:var(--ink);margin:0;max-width:18em;text-wrap:pretty;min-height:calc(3 * 1.35em)}
   /* copy that changes in place: two layers in one grid cell (journey/shared.ts), so the box never resizes */
   .jr-roll,.jr-swap{display:grid}
   .jr-roll{overflow:hidden;padding-bottom:.1em;margin-bottom:-.1em}
