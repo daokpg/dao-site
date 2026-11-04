@@ -6,23 +6,20 @@
  *
  * What it does
  *   GET  (doGet)   → the nights the website shows, with seats left, from the "Availability" tab.
- *   POST (doPost)  → adds a booking or waitlist request to "Website requests", emails the
- *                    restaurant, and for a booking returns a Stripe page that saves a card.
- *   refreshAvailability() → counts booked seats per night from the weekly board (the Pax column)
+ *   POST (doPost)  → adds a booking or waitlist request to "inbox - new reservations" and emails
+ *                    the restaurant.
+ *   refreshAvailability() → counts booked seats per night from the weekly plannings (the Pax column)
  *                    into "Availability". Runs on every edit and every 5 minutes.
- *   checkCards()   → marks each request's card as saved or missing once the guest is done with
- *                    Stripe. Runs every 10 minutes.
  *
- * The weekly board is only ever read, never written. A website request never takes a seat by
- * itself: seats count once the team has placed the guests on the board.
+ * The weekly plannings are only ever read, never written. A website request never takes a seat by
+ * itself: seats count once the team has placed the guests in the week's planning.
+ *
+ * Cards (Stripe) are not connected yet: no card is asked for and nothing is charged. The earlier
+ * card step (Stripe Checkout in setup mode) is in git history, backend/booking.gs at commit d96b6fa,
+ * for when it returns.
  *
  * Script properties (Project settings → Script properties):
  *   NOTIFY_EMAIL       where new requests are emailed (optional)
- *   SITE_URL           e.g. https://dao.example.com, for Stripe to send guests back (needed for cards)
- *   STRIPE_SECRET_KEY  a *restricted* key (rk_test_… / rk_live_…) allowed only Customers: write,
- *                      Checkout Sessions: write, SetupIntents: read. Anyone who can edit the sheet
- *                      can read script properties, so never a full sk_ key. Optional; without it no
- *                      card is asked for.
  *
  * Time zone: appsscript.json (paste it in with this file) sets the script to Asia/Bangkok, and every
  * date is read through the sheet's time zone, so a night is never taken for the day before.
@@ -33,22 +30,25 @@
  * email quota runs out.
  */
 
-const TABS = { requests: 'Website requests', availability: 'Availability', help: 'How it works' };
+const TABS = { requests: 'inbox - new reservations', availability: 'Availability' };
 const OWN_TABS = Object.values(TABS);
 /** Default seats per night by weekday (1 = Monday … 7 = Sunday). Editable per night in the Availability tab. */
 const CAPACITY = { 1: 16, 2: 16, 3: 16, 4: 16, 6: 14 };
-/** The live board. setupTestCopy() refuses to run on it. */
-const ORIGINAL_BOARD_ID = '1Z97_kIS8euN2z_sv9QK84RePBss-0SVWqI5Wf4NPYvk';
-// Keep the amount in step with the website (src/content/site.ts, pricing.noShowFee).
-const NO_SHOW_POLICY = 'Nothing is charged now. Your card holds your seats and is only charged THB 1,950 per seat if you do not come or cancel within 48 hours of the dinner.';
+/**
+ * The weekly schedule, in two cells beside the Availability table (the team can change them):
+ * which weekdays are open, and how many days ahead those nights are opened for booking.
+ */
+const SETTINGS = { label: 'I1:J3', openDays: 'J2', daysAhead: 'J3' };
+const DEFAULT_OPEN_DAYS = 'Mon, Tue, Wed, Thu, Sat';
+const DEFAULT_DAYS_AHEAD = 60;
+const WEEKDAY_NUMBER = { mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6, sun: 7 };
 /** Requests accepted per ten minutes, all guests together, before the endpoint says it is busy. */
 const POSTS_PER_10_MIN = 30;
 /** The most seats one online request can take. Keep in step with the website (src/content/reserve.ts, onlineMax). */
 const ONLINE_MAX = 11;
 
-const REQUEST_COLS = ['Received', 'Type', 'Status', 'Night', 'Seats', 'Name', 'WhatsApp', 'Email', 'Special occasion', 'Cake', 'Note', 'Card', 'Request ID', 'Stripe customer', 'Stripe session', 'Team notes'];
-const COL = REQUEST_COLS.reduce((o, c, i) => ((o[c] = i + 1), o), {});
-const AVAIL_COLS = ['Night', 'Open', 'Capacity', 'Booked (from the board)', 'Seats left', 'Board tab', 'Updated'];
+const REQUEST_COLS = ['Received', 'Type', 'Status', 'Night', 'Seats', 'Name', 'WhatsApp', 'Email', 'Special occasion', 'Cake', 'Note', 'Request ID', 'Team notes'];
+const AVAIL_COLS = ['Night', 'Open', 'Capacity', 'Booked (from the planning)', 'Seats left', 'Planning tab', 'Updated'];
 
 // ---------------------------------------------------------------- web endpoints
 
@@ -70,11 +70,10 @@ function doPost(e) {
   if (r.error) return json_({ ok: false, reason: r.error });
 
   const cache = CacheService.getScriptCache();
-  // the same number for the same night and seats again (a double press, a retry, Back from Stripe) is
-  // the same request: it gets the same answer, and the same card page while that is still open
+  // the same number for the same night and seats again (a double press, a retry) is the same request
   const dupKey = 'dup:' + r.whatsapp.replace(/\D/g, '') + ':' + r.date + ':' + r.seats + ':' + r.type;
   const dup = cache.get(dupKey);
-  if (dup) return json_(repeat_(JSON.parse(dup)));
+  if (dup) { const d = JSON.parse(dup); return json_({ ok: true, id: d.id, type: d.type }); }
   // a flood (someone posting to this address directly) is refused before it costs anything;
   // counted per fixed ten minutes, so a steady trickle can't keep the count from ever running out
   const bucket = 'posts:' + Math.floor(Date.now() / 6e5);
@@ -84,7 +83,7 @@ function doPost(e) {
 
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(20000)) return json_({ ok: false, reason: 'busy' });
-  let id, row;
+  let id;
   try {
     const night = readNights_().find((n) => n.date === r.date);
     if (!night) return json_({ ok: false, reason: 'closed' });
@@ -96,29 +95,15 @@ function doPost(e) {
     const sh = sheet_(TABS.requests);
     sh.appendRow([
       new Date(), r.type === 'booking' ? 'Booking' : 'Waitlist', 'New', parseDate_(r.date), r.seats, text_(r.name), text_(r.whatsapp),
-      text_(r.email), r.occasion, r.cake ? 'yes' : '', text_(r.note), '', id, '', '', '',
+      text_(r.email), r.occasion, r.cake ? 'yes' : '', text_(r.note), id, '',
     ]);
-    row = sh.getLastRow();
     cache.put(dupKey, JSON.stringify({ id, type: r.type }), 6 * 60 * 60);
   } finally {
     lock.releaseLock();
   }
 
   try { notify_(r, id); } catch (err) { /* the request is saved; a missing email must not fail the guest */ }
-
-  if (r.type !== 'booking') return json_({ ok: true, id, type: 'waitlist' });
-  const card = startCard_(r, id, row);
-  if (card) cache.put(dupKey, JSON.stringify({ id, type: r.type, cardUrl: card.url, session: card.session }), 6 * 60 * 60);
-  return json_({ ok: true, id, type: 'booking', cardUrl: card && card.url });
-}
-
-/** The answer to a repeat: the first request's, with its card page only while Stripe still has it open. */
-function repeat_(d) {
-  let cardUrl = null;
-  if (d.cardUrl) {
-    try { if (stripe_('get', 'checkout/sessions/' + d.session).status === 'open') cardUrl = d.cardUrl; } catch (err) { /* no link; the team sorts the card out on WhatsApp */ }
-  }
-  return { ok: true, id: d.id, type: d.type, cardUrl };
+  return json_({ ok: true, id, type: r.type });
 }
 
 // ---------------------------------------------------------------- availability
@@ -140,7 +125,10 @@ function readNights_() {
 /**
  * Reads every weekly tab: each night is a date merged down column A, and the guests per table
  * are in column C (Pax). Booked = the sum of column C within the night, so a wrong total formula
- * on the board can't mislead the website. Keeps the team's Open/Capacity edits.
+ * in a planning can't mislead the website. Also opens every night of the weekly schedule for the
+ * days ahead set beside the table, keeps nights the team adds by hand (a special date), and keeps the
+ * team's Open/Capacity edits (Open = no closes a single night). A night with no planning yet counts
+ * nothing booked ("not planned yet") until its week's planning exists.
  */
 function refreshAvailability() {
   // one refresh at a time (the 5-minute trigger and an edit can overlap), and never mid-request
@@ -170,16 +158,20 @@ function refresh_() {
   const keep = {};
   if (av.getLastRow() > 1) {
     av.getRange(2, 1, av.getLastRow() - 1, 3).getValues().forEach((v) => {
-      if (v[0] instanceof Date) keep[Utilities.formatDate(v[0], tz, 'yyyy-MM-dd')] = { open: v[1], cap: v[2] };
+      const date = toDate_(v[0], tz);
+      if (date) keep[Utilities.formatDate(date, tz, 'yyyy-MM-dd')] = { date, open: v[1], cap: v[2] };
     });
   }
   const today = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
   const now = new Date();
-  const rows = Object.keys(found).filter((k) => k >= today).sort().map((k) => {
-    const n = found[k], prev = keep[k] || {};
-    const open = prev.open || 'yes', cap = prev.cap || CAPACITY[Utilities.formatDate(n.date, tz, 'u')] || 16;
+  const scheduled = scheduledNights_(av, tz);
+  const keys = Object.keys(Object.assign({}, scheduled, keep, found)).filter((k) => k >= today).sort();
+  const rows = keys.map((k) => {
+    const n = found[k] || { date: (keep[k] || scheduled[k]).date, booked: 0, tab: 'not planned yet' }, prev = keep[k] || {};
+    const open = String(prev.open || 'yes').trim().toLowerCase() === 'no' ? 'no' : 'yes';
+    const cap = Number(prev.cap) || CAPACITY[Utilities.formatDate(n.date, tz, 'u')] || 16;
     // seats left are written with the rest of the row, so a reader never meets a half-written night
-    const left = String(open).toLowerCase() === 'yes' ? Math.max(0, cap - n.booked) : 0;
+    const left = open === 'yes' ? Math.max(0, cap - n.booked) : 0;
     return [n.date, open, cap, n.booked, left, n.tab, now];
   });
   // rows are overwritten in place; only rows left over from nights now gone are cleared
@@ -193,6 +185,35 @@ function refresh_() {
   CacheService.getScriptCache().remove('nights');
 }
 
+/** The schedule's nights from today for the days ahead, keyed yyyy-MM-dd, read from the cells beside the table. */
+function scheduledNights_(av, tz) {
+  const [[days], [ahead]] = [av.getRange(SETTINGS.openDays).getValues()[0], av.getRange(SETTINGS.daysAhead).getValues()[0]];
+  const open = String(days || DEFAULT_OPEN_DAYS).toLowerCase().split(/[^a-z]+/)
+    .map((w) => WEEKDAY_NUMBER[w.slice(0, 3)]).filter(Boolean);
+  // a plain number of days; anything else (empty, a date from the cell's format, "abc") means the default
+  const n = ahead instanceof Date ? NaN : parseInt(String(ahead), 10);
+  const count = Math.min(n >= 0 ? n : DEFAULT_DAYS_AHEAD, 400);
+  const out = {};
+  const [y, m, d] = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd').split('-').map(Number);
+  for (let i = 0; i < count; i++) {
+    const date = new Date(y, m - 1, d + i);
+    if (open.includes(Number(Utilities.formatDate(date, tz, 'u')))) out[Utilities.formatDate(date, tz, 'yyyy-MM-dd')] = { date };
+  }
+  return out;
+}
+
+/** A night typed into Availability: a real date, or text like 16/11/2026, 16/11 or 2026-11-16. */
+function toDate_(v, tz) {
+  if (v instanceof Date) return v;
+  const t = String(v || '').trim();
+  let m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(t);
+  if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
+  m = /^(\d{1,2})[\/.](\d{1,2})(?:[\/.](\d{2,4}))?$/.exec(t); // day first, as the plannings write dates
+  if (!m) return null;
+  const year = m[3] ? (m[3].length === 2 ? 2000 + +m[3] : +m[3]) : +Utilities.formatDate(new Date(), tz, 'yyyy');
+  return new Date(year, +m[2] - 1, +m[1]);
+}
+
 /** [firstRow, lastRow, date] for each night: a date cell in column A, merged down its tables. */
 function nightBlocks_(sh, dates) {
   return sh.getRange(1, 1, dates.length, 1).getMergedRanges()
@@ -200,67 +221,10 @@ function nightBlocks_(sh, dates) {
     .filter((b) => b[2] instanceof Date);
 }
 
-/** Simple trigger: keep Availability fresh while the team edits the board, or Open and Capacity. */
+/** Simple trigger: keep Availability fresh while the team edits a planning, or Open and Capacity. */
 function onEdit(e) {
   const name = e && e.range && e.range.getSheet().getName();
   if (name && (name === TABS.availability || !OWN_TABS.includes(name))) refreshAvailability();
-}
-
-// ---------------------------------------------------------------- Stripe: save a card, charge nothing
-
-function startCard_(r, id, row) {
-  const props = PropertiesService.getScriptProperties();
-  const key = props.getProperty('STRIPE_SECRET_KEY'), site = props.getProperty('SITE_URL');
-  const sh = sheet_(TABS.requests);
-  if (!key || !site) return null; // cards not set up yet: the team handles it on WhatsApp
-  try {
-    const customer = stripe_('post', 'customers', {
-      name: r.name, phone: r.whatsapp, email: r.email || undefined,
-      'metadata[request_id]': id, 'metadata[night]': r.date, 'metadata[seats]': String(r.seats),
-    });
-    const session = stripe_('post', 'checkout/sessions', {
-      mode: 'setup', customer: customer.id, 'payment_method_types[0]': 'card',
-      success_url: `${site}/reserve?request=${id}&card=1`, cancel_url: `${site}/reserve?request=${id}&card=0`,
-      'metadata[request_id]': id, 'setup_intent_data[metadata][request_id]': id,
-      'custom_text[submit][message]': NO_SHOW_POLICY,
-    });
-    sh.getRange(row, COL['Card']).setValue('pending');
-    sh.getRange(row, COL['Stripe customer']).setValue(customer.id);
-    sh.getRange(row, COL['Stripe session']).setValue(session.id);
-    return { url: session.url, session: session.id };
-  } catch (err) {
-    sh.getRange(row, COL['Card']).setValue('missing');
-    sh.getRange(row, COL['Team notes']).setValue('Card link failed: ' + err.message);
-    return null;
-  }
-}
-
-/** Every 10 minutes: pending cards become saved (guest finished) or missing (link expired after 24 h). */
-function checkCards() {
-  const key = PropertiesService.getScriptProperties().getProperty('STRIPE_SECRET_KEY');
-  const sh = sheet_(TABS.requests);
-  if (!key || sh.getLastRow() < 2) return;
-  const vals = sh.getRange(2, 1, sh.getLastRow() - 1, REQUEST_COLS.length).getValues();
-  vals.forEach((v, i) => {
-    if (v[COL['Card'] - 1] !== 'pending' || !v[COL['Stripe session'] - 1]) return;
-    try {
-      const s = stripe_('get', 'checkout/sessions/' + v[COL['Stripe session'] - 1]);
-      const status = s.status === 'complete' ? 'saved' : s.status === 'expired' ? 'missing' : null;
-      if (status) sh.getRange(i + 2, COL['Card']).setValue(status);
-    } catch (err) { /* one failing row must not stop the others; it is tried again next time */ }
-  });
-}
-
-function stripe_(method, path, params) {
-  const payload = {};
-  Object.keys(params || {}).forEach((k) => { if (params[k] !== undefined && params[k] !== '') payload[k] = params[k]; });
-  const res = UrlFetchApp.fetch('https://api.stripe.com/v1/' + path, {
-    method, payload: method === 'post' ? payload : undefined, muteHttpExceptions: true,
-    headers: { Authorization: 'Bearer ' + PropertiesService.getScriptProperties().getProperty('STRIPE_SECRET_KEY') },
-  });
-  const out = JSON.parse(res.getContentText());
-  if (res.getResponseCode() >= 300) throw new Error((out.error && out.error.message) || 'Stripe error');
-  return out;
 }
 
 // ---------------------------------------------------------------- helpers
@@ -310,84 +274,44 @@ function json_(o) { return ContentService.createTextOutput(JSON.stringify(o)).se
 
 // ---------------------------------------------------------------- one-time setup (run from the editor)
 
-/** Adds the website's tabs to a sheet without touching anything else. Safe on the live board. */
+/**
+ * Adds the website's two tabs if they are missing, without touching anything else. The Dao sheet
+ * already has them; this is for setting up another copy.
+ */
 function addWebsiteTabs() {
   const ss = SpreadsheetApp.getActive();
   const make = (name, cols, widths, index) => {
     let sh = ss.getSheetByName(name);
     if (sh) return sh;
     sh = ss.insertSheet(name, index);
-    sh.getRange(1, 1, 1, cols.length).setValues([cols]).setFontWeight('bold').setFontColor('#FFFFFF').setBackground('#1C1A17').setWrap(true).setVerticalAlignment('middle');
+    // the plannings' header look: lavender, bold, centred
+    sh.getRange(1, 1, 1, cols.length).setValues([cols]).setFontWeight('bold').setBackground('#D9D2E9')
+      .setHorizontalAlignment('center').setVerticalAlignment('middle').setWrap(true);
     sh.setFrozenRows(1);
     sh.setRowHeight(1, 34);
     widths.forEach((w, i) => sh.setColumnWidth(i + 1, w));
     return sh;
   };
-  const rq = make(TABS.requests, REQUEST_COLS, [130, 80, 100, 100, 50, 150, 140, 180, 120, 50, 260, 90, 90, 150, 150, 220], 0);
+  const rq = make(TABS.requests, REQUEST_COLS, [140, 85, 105, 120, 55, 160, 150, 190, 125, 55, 280, 100, 240], 0);
   const list = (values) => SpreadsheetApp.newDataValidation().requireValueInList(values, true).build();
   rq.getRange('B2:B').setDataValidation(list(['Booking', 'Waitlist']));
   rq.getRange('C2:C').setDataValidation(list(['New', 'Approved', 'Declined', 'Waitlisted', 'Cancelled']));
-  rq.getRange('L2:L').setDataValidation(list(['pending', 'saved', 'missing', 'charged', 'charge failed']));
   rq.getRange('A2:A').setNumberFormat('d mmm yyyy hh:mm');
   rq.getRange('D2:D').setNumberFormat('ddd d mmm yyyy');
   rq.getRange('F2:K').setNumberFormat('@'); // guest text stays text
   // New rows stand out until the team has dealt with them
   rq.setConditionalFormatRules([
-    SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=$C2="New"').setBackground('#FFF2CC').setRanges([rq.getRange('A2:P')]).build(),
-    SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=$C2="Approved"').setBackground('#D9EAD3').setRanges([rq.getRange('A2:P')]).build(),
+    SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=$C2="New"').setBackground('#FFF2CC').setRanges([rq.getRange('A2:M')]).build(),
+    SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=$C2="Approved"').setBackground('#D9EAD3').setRanges([rq.getRange('A2:M')]).build(),
   ]);
-
-  const av = make(TABS.availability, AVAIL_COLS, [120, 60, 80, 110, 80, 90, 110], 1);
+  const av = make(TABS.availability, AVAIL_COLS, [130, 65, 80, 120, 85, 110, 120], 1);
   av.getRange('B2:B').setDataValidation(list(['yes', 'no']));
-
-  const hw = make(TABS.help, ['How the website works with this sheet'], [900], 2);
-  const help = [
-    '1. A guest requests seats on the website. A row appears in "Website requests" with Status = New (yellow), and an email is sent.',
-    '2. Message the guest on WhatsApp as usual: menus, dietary needs, the occasion.',
-    '3. If it works: add them to the weekly board like any other booking, then set Status = Approved (green).',
-    '   If not: set Status = Declined, or Waitlisted to keep them in mind for another night.',
-    '4. Seats only count once the guests are on the weekly board. A New request never takes a seat by itself.',
-    '',
-    '"Availability" is what the website shows. It updates itself from the weekly board (the Pax column of each night).',
-    '   Open = no hides a night. Capacity is 16 (14 on Saturdays) and can be changed per night; Seats left follows.',
-    '   A night appears on the website once its week is laid out on the board.',
-    '',
-    'Card: every booking saves a card with Stripe (Card = saved). It is only charged for a no-show or a cancellation inside',
-    '   48 hours: find the Stripe customer from the request row in the Stripe dashboard and charge it there.',
-    '',
-    'Waitlist: requests for a full night arrive with Type = Waitlist. No card is asked for.',
-  ];
-  hw.getRange(2, 1, help.length, 1).setValues(help.map((l) => [l]));
+  av.getRange(SETTINGS.label).setValues([['Weekly schedule', ''], ['Open days', DEFAULT_OPEN_DAYS], ['Book ahead (days)', DEFAULT_DAYS_AHEAD]]);
+  av.getRange('I1:J1').setFontWeight('bold').setBackground('#D9D2E9');
 }
 
-/** Runs every 5 minutes and every 10 minutes. Run once after pasting the script. */
+/** Refreshes Availability every 5 minutes. Run once after pasting the script. */
 function installTriggers() {
   ScriptApp.getProjectTriggers().forEach((t) => ScriptApp.deleteTrigger(t));
   ScriptApp.newTrigger('refreshAvailability').timeBased().everyMinutes(5).create();
-  ScriptApp.newTrigger('checkCards').timeBased().everyMinutes(10).create();
-}
-
-/**
- * For the test copy only: keeps the weekly tabs that have a night in the given month, deletes
- * the rest, fixes night totals that don't cover the whole night, and adds the website tabs.
- * Refuses to run on the live board.
- */
-function setupTestCopy(month) {
-  const ss = SpreadsheetApp.getActive();
-  if (ss.getId() === ORIGINAL_BOARD_ID) throw new Error('This is the live board. setupTestCopy only runs on a copy.');
-  const keepMonth = typeof month === 'string' ? month : '2026-10';
-  const tz = ss.getSpreadsheetTimeZone();
-  ss.getSheets().forEach((sh) => {
-    if (OWN_TABS.includes(sh.getName())) return;
-    const last = sh.getLastRow();
-    const blocks = last > 1 ? nightBlocks_(sh, sh.getRange(1, 1, last, 1).getValues()) : [];
-    const inMonth = blocks.some((b) => Utilities.formatDate(b[2], tz, 'yyyy-MM') === keepMonth);
-    if (!inMonth) { if (ss.getSheets().length > 1) ss.deleteSheet(sh); return; }
-    blocks.forEach(([r0, r1]) => {
-      const total = sh.getRange(r1 + 1, 3);
-      if (/^=sum\(/i.test(total.getFormula()) && total.getFormula().toUpperCase() !== `=SUM(C${r0}:C${r1})`) total.setFormula(`=SUM(C${r0}:C${r1})`);
-    });
-  });
-  addWebsiteTabs();
-  refreshAvailability();
 }

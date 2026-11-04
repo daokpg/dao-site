@@ -34,7 +34,14 @@ function makeSheet(name, rows = []) {
   return Object.assign(sh, {
     getName: () => name,
     getLastRow: () => { if (sh.lastRow) return sh.lastRow; for (let i = sh.data.length; i > 0; i--) if ((sh.data[i - 1] || []).some((v) => v !== '' && v != null)) return i; return 0; },
-    getRange: (a, b, c, d) => (typeof a === 'string' ? chain : range(a, b, c, d)),
+    getRange: (a, b, c, d) => {
+      if (typeof a !== 'string') return range(a, b, c, d);
+      // A1 cells and blocks like 'J2' or 'I1:J3'; open-ended ranges ('B2:B') are formatting only
+      const m = /^([A-Z])(\d+)(?::([A-Z])(\d+))?$/.exec(a);
+      if (!m) return chain;
+      const col = (l) => l.charCodeAt(0) - 64;
+      return range(+m[2], col(m[1]), m[4] ? +m[4] - +m[2] + 1 : 1, m[3] ? col(m[3]) - col(m[1]) + 1 : 1);
+    },
     appendRow: (v) => { const r = sh.getLastRow() + 1; v.forEach((x, j) => set(r, j + 1, x)); },
     setFrozenRows: () => chain, setRowHeight: () => chain, setColumnWidth: () => chain, setConditionalFormatRules: () => chain,
   });
@@ -60,10 +67,9 @@ const ss = {
 };
 
 // ---------- fake services
-const props = { NOTIFY_EMAIL: 'team@example.com', SITE_URL: 'http://localhost:4321', STRIPE_SECRET_KEY: 'sk_test_fake' };
+const props = { NOTIFY_EMAIL: 'team@example.com' };
 const cache = new Map();
 let locks = 0;
-let sessionStatus = 'complete'; // what Stripe says of a card page when asked
 const ISO_DAYS = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const ctx = {
   SpreadsheetApp: { getActive: () => ss, newDataValidation: () => chain, newConditionalFormatRule: () => chain },
@@ -81,15 +87,8 @@ const ctx = {
   ContentService: { createTextOutput: (s) => ({ body: s, setMimeType() { return this; } }), MimeType: { JSON: 'json' } },
   MailApp: { sendEmail: (o) => log.push(['mail', o.subject]), getRemainingDailyQuota: () => 100 },
   ScriptApp: { getProjectTriggers: () => [], deleteTrigger: () => {}, newTrigger: () => chain },
-  UrlFetchApp: {
-    fetch: (url, o) => {
-      log.push(['stripe', o.method, url.replace('https://api.stripe.com/v1/', '')]);
-      const body = url.endsWith('/customers') ? { id: 'cus_test' }
-        : url.endsWith('/checkout/sessions') ? { id: 'cs_test_1', url: `http://localhost:4323/fake-stripe?back=${encodeURIComponent(o.payload.success_url)}` }
-        : { id: 'cs_test_1', status: sessionStatus };
-      return { getResponseCode: () => 200, getContentText: () => JSON.stringify(body) };
-    },
-  },
+  // cards aren't connected: the script must not call anything outside the sheet
+  UrlFetchApp: { fetch: (url) => { log.push(['fetch', url]); throw new Error('no outside calls expected'); } },
   console,
 };
 vm.createContext(ctx);
@@ -105,19 +104,23 @@ vm.runInContext(GS, ctx);
 SDate = vm.runInContext('Date', ctx);
 loadFixture();
 
+const Utilities_iso = (d) => ctx.Utilities.formatDate(d, 'Asia/Bangkok', 'yyyy-MM-dd');
 const post = (b) => JSON.parse(ctx.doPost({ postData: { contents: JSON.stringify(b) } }).body);
 const get = () => JSON.parse(ctx.doGet().body);
 
 if (process.argv[2] === 'test') {
   const assert = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) process.exitCode = 1; };
-  ctx.setupTestCopy('2026-10');
+  ctx.addWebsiteTabs();
+  ctx.refreshAvailability();
   const names = ss.getSheets().map((s) => s.name);
-  assert(names.slice(0, 3).join() === 'Website requests,Availability,How it works', 'website tabs added first: ' + names.join(' | '));
-  const f = ss.getSheetByName('12-17/10').formulas['36,3'];
-  assert(f === '=SUM(C20:C35)', 'Tuesday total fixed on the copy: ' + f);
+  assert(names.slice(0, 2).join() === 'inbox - new reservations,Availability', 'website tabs added first: ' + names.join(' | '));
   const nights = get().nights;
   const n = (d) => nights.find((x) => x.date === d);
   assert(nights.length > 15 && nights.every((x) => x.date >= '2026-09-28'), `${nights.length} nights from today on`);
+  // the weekly schedule (beside the table) opens nights with no planning yet: Mon-Thu and Sat, 60 days ahead
+  const sched = (d) => nights.find((x) => x.date === d);
+  assert(sched('2026-11-05') && sched('2026-11-05').left === 16 && sched('2026-11-07').left === 14 && !sched('2026-11-06') && !sched('2026-11-08'), 'the schedule opens unplanned nights (Thu 5 and Sat 7 Nov), not Fridays or Sundays');
+  assert(!sched('2026-11-27') && sched('2026-11-26'), 'the schedule stops 60 days ahead');
   assert(n('2026-10-05').left === 6, '5 Oct: 16 seats, 10 booked → 6 left (' + n('2026-10-05').left + ')');
   assert(n('2026-10-06').left === 2, '6 Oct: 16 seats, 14 booked → 2 left (' + n('2026-10-06').left + ')');
   assert(n('2026-10-17').left === 14, 'Sat 17 Oct: capacity 14, its weekday read in the sheet\'s time zone (' + n('2026-10-17').left + ')');
@@ -125,25 +128,40 @@ if (process.argv[2] === 'test') {
   const av = ss.getSheetByName('Availability');
   assert(locks === 1 && typeof av.data[1][4] === 'number' && !Object.keys(av.formulas).length, 'refresh holds the lock and writes seats left as numbers with the row');
   assert(!n('2026-10-09') && !n('2026-10-11'), 'no Friday or Sunday nights');
+  // a "days ahead" cell formatted as a date (60 shown as 28 Feb 1900) falls back to 60, not to nothing
+  av.data[2][9] = new SDate(1900, 1, 28);
+  ctx.refreshAvailability();
+  assert(get().nights.find((x) => x.date === '2026-11-26'), 'a days-ahead cell holding a date falls back to 60 days');
+  av.data[2][9] = '';
+  // nights added by hand stay (a Friday outside the schedule, and one beyond 60 days typed as text),
+  // a capacity edit is kept, and Open = no closes one scheduled night
+  const avRows = av.getLastRow();
+  av.data[avRows] = [new SDate(SDate.UTC(2026, 10, 20) - 7 * 36e5), 'yes', 12];
+  av.data[avRows + 1] = ['24/12/2026', '', ''];
+  const tue = av.data.findIndex((row) => row[0] instanceof SDate && Utilities_iso(row[0]) === '2026-11-10');
+  av.data[tue][1] = 'no';
+  ctx.onEdit({ range: { getSheet: () => ({ getName: () => 'Availability' }) } });
+  const after = get().nights;
+  const m1 = after.find((x) => x.date === '2026-11-20'), m2 = after.find((x) => x.date === '2026-12-24');
+  assert(m1 && m1.left === 12 && m2 && m2.left === 16 && after.length === nights.length + 1, 'hand-added nights kept (a Friday, and one typed as text), one scheduled night closed: ' + JSON.stringify([m1, m2]));
+  assert(!after.find((x) => x.date === '2026-11-10'), 'Open = no takes a scheduled night off the website');
+  assert(av.data.slice(1).every((row) => row[0] instanceof SDate) && av.data.some((row) => row[5] === 'not planned yet'), 'a night typed as text becomes a date, marked "not planned yet"');
 
   let r = post({ type: 'booking', date: '2026-10-06', seats: 3, name: 'Test Guest', whatsapp: '+66 81 234 5678' });
   assert(!r.ok && r.reason === 'not_enough' && r.left === 2, 'too many seats refused: ' + JSON.stringify(r));
   r = post({ type: 'booking', date: '2026-10-06', seats: 2, name: 'Test Guest', whatsapp: '+66 81 234 5678', occasion: 'birthday', cake: true });
-  assert(r.ok && r.type === 'booking' && /fake-stripe/.test(r.cardUrl), 'booking accepted with a card link: ' + JSON.stringify(r));
-  const rq = ss.getSheetByName('Website requests');
+  assert(r.ok && r.type === 'booking' && /^DAO-/.test(r.id) && !('cardUrl' in r), 'booking accepted, no card asked for: ' + JSON.stringify(r));
+  const rq = ss.getSheetByName('inbox - new reservations');
   const row = rq.data[rq.getLastRow() - 1];
-  assert(row[1] === 'Booking' && row[2] === 'New' && row[4] === 2 && row[8] === 'birthday' && row[9] === 'yes' && row[11] === 'pending' && row[13] === 'cus_test', 'request row written: ' + JSON.stringify(row.slice(1, 15)));
+  assert(row.length === 13 && row[1] === 'Booking' && row[2] === 'New' && row[4] === 2 && row[8] === 'birthday' && row[9] === 'yes' && row[11] === r.id, 'request row written in the inbox: ' + JSON.stringify(row.slice(1, 13)));
   assert(get().nights.find((x) => x.date === '2026-10-06').left === 2, 'a New request does not take seats');
   r = post({ type: 'booking', date: '2026-10-05', seats: 1, name: 'X', whatsapp: '123' });
   assert(!r.ok && r.reason === 'bad_name', 'validation: ' + r.reason);
   r = post({ type: 'waitlist', date: '2026-10-21', seats: 12, name: 'Big Party', whatsapp: '+66 81 000 0012' });
   assert(!r.ok && r.reason === 'bad_seats', 'more than the online maximum (11) refused: ' + r.reason);
-  // Back from Stripe and press again: the same card page while it is open, none once it is done
-  sessionStatus = 'open';
+  // a double press is the same request
   const card = post({ type: 'booking', date: '2026-10-06', seats: 2, name: 'Test Guest', whatsapp: '+66812345678' });
-  assert(card.ok && card.id === rq.data[1][12] && card.cardUrl && card.cardUrl.includes(card.id) && rq.getLastRow() === 2, 'a repeat while the card page is open gets the same page: ' + JSON.stringify(card));
-  sessionStatus = 'complete';
-  assert(post({ type: 'booking', date: '2026-10-06', seats: 2, name: 'Test Guest', whatsapp: '+66812345678' }).cardUrl === null, 'a repeat after the card is saved gets no card page');
+  assert(card.ok && card.id === rq.data[1][11] && rq.getLastRow() === 2, 'a repeat gets the same request, nothing new written: ' + JSON.stringify(card));
   r = post({ type: 'booking', date: '2026-10-06', seats: 1, name: 'Test Guest', whatsapp: '+66 81 234 5678' });
   assert(r.ok && r.id !== card.id && rq.getLastRow() === 3, 'other seats on the same night are a new request');
   r = post({ type: 'waitlist', date: '2026-10-17', seats: 4, name: 'Wait Lister', whatsapp: '+972 50 000 0000' });
@@ -152,8 +170,6 @@ if (process.argv[2] === 'test') {
   assert(!r.ok && r.reason === 'closed', 'closed night refused');
   r = post({ website: 'spam', date: '2026-10-05' });
   assert(r.ok && rq.getLastRow() === 4, 'honeypot: fake OK, nothing written');
-  ctx.checkCards();
-  assert(rq.data[1][11] === 'saved', 'checkCards marks the card saved');
   const rows0 = rq.getLastRow();
   // the team places the guests on the board → seats count
   ss.getSheetByName('5-10/10').data[21][2] = 2; // a table on 6 Oct gets 2 guests
@@ -182,18 +198,15 @@ if (process.argv[2] === 'test') {
   r = post({ type: 'waitlist', date: '2026-10-05', seats: 1, name: 'Again', whatsapp: '+1 555 0100' });
   assert(r.ok && r.id === again.id && cache.get(bucket) === '30', 'a repeat still gets its answer during a flood, and is not counted');
   cache.delete(bucket);
+  assert(!log.some((l) => l[0] === 'fetch'), 'no outside calls (no Stripe)');
   console.log(log.map((l) => l.join(' ')).join('\n'));
 }
 
 if (process.argv[2] === 'serve') {
-  ctx.setupTestCopy('2026-10');
+  ctx.addWebsiteTabs();
+  ctx.refreshAvailability();
   const cors = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' };
   http.createServer((req, res) => {
-    if (req.url.startsWith('/fake-stripe')) {
-      const back = new URL(req.url, 'http://x').searchParams.get('back');
-      res.writeHead(200, { 'Content-Type': 'text/html' });
-      return res.end(`<h1>Fake Stripe: save a card</h1><a id="save" href="${back}">Save card</a> <a id="cancel" href="${back.replace('card=1', 'card=0')}">Cancel</a>`);
-    }
     if (req.method === 'POST') {
       let b = ''; req.on('data', (c) => (b += c));
       req.on('end', () => { const out = ctx.doPost({ postData: { contents: b } }).body; console.log('POST', b, '→', out); res.writeHead(200, cors); res.end(out); });
