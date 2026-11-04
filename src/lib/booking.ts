@@ -39,13 +39,21 @@ const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'Ju
 export function monthsFromNights(nights: ApiNight[]) {
   const months: ReserveContent['months'] = [];
   const isoByLabel: Record<string, string> = {};
-  for (const n of nights) {
-    const [y, m, d] = n.date.split('-').map(Number);
-    const label = `${WEEKDAYS[new Date(y, m - 1, d).getDay()]} ${d} ${MONTH_NAMES[m - 1]}`;
-    isoByLabel[label] = n.date;
+  const add = (date: Date, night: (label: string) => Night) => {
+    const label = `${WEEKDAYS[date.getDay()]} ${date.getDate()} ${MONTH_NAMES[date.getMonth()]}`;
     let month = months[months.length - 1];
-    if (!month || month.name !== MONTH_NAMES[m - 1]) months.push((month = { name: MONTH_NAMES[m - 1], nights: [] }));
-    month.nights.push(n.capacity ? [label, n.left, n.capacity] : [label, n.left]);
+    if (!month || month.name !== MONTH_NAMES[date.getMonth()]) months.push((month = { name: MONTH_NAMES[date.getMonth()], nights: [] }));
+    month.nights.push(night(label));
+    return label;
+  };
+  let prev: Date | null = null;
+  for (const n of [...nights].sort((a, b) => (a.date < b.date ? -1 : 1))) {
+    const [y, m, d] = n.date.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    // the days between two open nights show as closed, so a gap reads as a decision, not a missing night
+    if (prev) for (let c = new Date(prev.getFullYear(), prev.getMonth(), prev.getDate() + 1); c < date; c = new Date(c.getFullYear(), c.getMonth(), c.getDate() + 1)) add(c, (label) => [label, -1]);
+    isoByLabel[add(date, (label) => (n.capacity ? [label, n.left, n.capacity] : [label, n.left]))] = n.date;
+    prev = date;
   }
   return { months, isoByLabel };
 }
@@ -111,18 +119,20 @@ export const seatLimit = (cfg: Pick<BookingConfig, 'months' | 'onlineMax'>, date
 /**
  * One night: a column of marks (one per open seat, yours drawn longer), the weekday and the day.
  * A full night has no marks; it carries the waitlist label instead and can still be picked.
+ * A closed night (-1) is greyed out with its label, and can't be picked.
  */
-export function nightHtml([label, open, capacity = TABLE]: Night, state: Pick<BookingState, 'date' | 'seats'>, copy: Pick<BookingConfig['copy'], 'waitlistMark' | 'nightFull' | 'nightWhole' | 'nightSome'>) {
-  const pressed = state.date === label;
+export function nightHtml([label, open, capacity = TABLE]: Night, state: Pick<BookingState, 'date' | 'seats'>, copy: Pick<BookingConfig['copy'], 'waitlistMark' | 'closedMark' | 'nightClosedAria' | 'nightFull' | 'nightWhole' | 'nightSome'>) {
+  const closed = open < 0;
+  const pressed = !closed && state.date === label;
   const mine = pressed ? state.seats : 0;
-  const [dow, day] = label.split(' ');
-  const marks = open === 0
-    ? `<span class="nt-wait">${esc(copy.waitlistMark)}</span>`
+  const [dow, day, month = ''] = label.split(' ');
+  const marks = closed ? `<span class="nt-closed">${esc(copy.closedMark)}</span>`
+    : open === 0 ? `<span class="nt-wait">${esc(copy.waitlistMark)}</span>`
     : Array.from({ length: open }, (_, i) => `<span class="mk" data-mine="${i < mine}"></span>`).join('');
-  const aria = fill(open === 0 ? copy.nightFull : open === capacity ? copy.nightWhole : copy.nightSome, { date: label, left: open, capacity });
-  return `<button type="button" data-night data-label="${esc(label)}" class="nt" aria-pressed="${pressed}" aria-label="${esc(aria)}"${open === 0 ? ' data-full' : ''} draggable="false" style="display:flex;flex-direction:column;justify-content:flex-end;gap:18px;background:none;border:0;padding:16px;cursor:pointer;user-select:none;text-align:left;min-width:0;height:100%">`
+  const aria = fill(closed ? copy.nightClosedAria : open === 0 ? copy.nightFull : open === capacity ? copy.nightWhole : copy.nightSome, { date: label, left: open, capacity });
+  return `<button type="button" data-night data-label="${esc(label)}" class="nt" aria-pressed="${pressed}" aria-label="${esc(aria)}"${open === 0 ? ' data-full' : ''}${closed ? ' data-closed disabled' : ''} draggable="false" style="display:flex;flex-direction:column;justify-content:flex-end;gap:18px;background:none;border:0;padding:16px;cursor:pointer;user-select:none;text-align:left;min-width:0;height:100%">`
     + `<span data-marks style="display:flex;flex-direction:column;gap:6px;align-items:flex-start">${marks}</span>`
-    + `<span style="display:flex;flex-direction:column;gap:6px"><span class="num" style="font-size:12px;color:inherit;opacity:.6">${esc(dow.slice(0, 3))}</span><span style="font:300 clamp(20px,2vw,32px)/1 var(--font-display);letter-spacing:-.02em;color:inherit;font-variant-numeric:tabular-nums">${esc(day)}</span></span>`
+    + `<span style="display:flex;flex-direction:column;gap:6px"><span class="num" style="font-size:12px;color:inherit;opacity:.6">${esc(dow.slice(0, 3))}</span><span style="font:300 clamp(20px,2vw,32px)/1 var(--font-display);letter-spacing:-.02em;color:inherit;font-variant-numeric:tabular-nums">${esc(day)}</span><span class="num nt-mo" aria-hidden="true">${esc(month.slice(0, 3))}</span></span>`
     + `</button>`;
 }
 
@@ -174,7 +184,8 @@ export function view(s: BookingState, cfg: BookingConfig) {
     hasPrev: s.month > 0,
     hasNext: s.month < months.length - 1,
     seatsLeftLine: s.date ? fill(waitlist ? copy.waitlistSeats : left === capacity ? copy.wholeTableOpen : copy.someSeatsOpen, { date: s.date, left, capacity: word(capacity).toLowerCase() }) : copy.pickFirst,
-    nightLine: s.date ? fill(waitlist ? copy.nightLineFull : left === capacity ? copy.nightLineWhole : copy.nightLineSome, { date: s.date, left, capacity: word(capacity).toLowerCase() }) : '',
+    // the picked night is already named in the ticket and the seats step; this line only carries loading and error messages
+    nightLine: '',
     ticketDate: s.date || copy.datePlaceholder,
     ticketLine: waitlist
       ? (s.seats ? fill(copy.waitlistTicket, { seats: seatPhrase(s.seats).toLowerCase() }) : copy.waitlistTicketEmpty)

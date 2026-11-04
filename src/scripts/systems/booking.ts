@@ -389,6 +389,7 @@ function before(scope: HTMLElement) {
   root.addEventListener('click', (e) => {
     const t = e.target as Element;
     const night = t.closest<HTMLElement>('[data-night]');
+    if (night?.hasAttribute('data-closed')) return; // a closed night isn't a choice
     if (night) {
       if (swallow) { e.preventDefault(); e.stopPropagation(); return; } // a drag is not a pick
       return pick('date', night.dataset.label ?? null);

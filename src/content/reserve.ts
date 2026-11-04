@@ -1,6 +1,7 @@
 import type { Seo } from './types';
 
 /** [label, seats still open, seats that night]. 0 open = full. Seats default to 16 (Saturdays have 14). */
+/** [label, seats still open, capacity]. 0 = full (waitlist); -1 = closed, shown greyed out between open nights. */
 export type Night = [string, number, number?];
 
 export type Occasion = 'birthday' | 'anniversary' | 'engagement';
@@ -39,8 +40,6 @@ export interface ReserveContent {
     pickFirst: string;
     wholeTableOpen: string;
     someSeatsOpen: string;
-    nightLineWhole: string;
-    nightLineSome: string;
     ticketEmpty: string;
     datePlaceholder: string;
     seatOne: string;
@@ -70,9 +69,11 @@ export interface ReserveContent {
     missingNames: { name: string; whatsapp: string; email: string; and: string };
     /** Read out (screen readers) when a choice changes the seats already taken: {seats}. */
     seatsCapped: string;
+    /** A closed night between open ones: the label in place of its marks, and what a screen reader says. */
+    closedMark: string;
+    nightClosedAria: string;
     /** A full night: the label in place of its marks, and the sentences of a waitlist request. */
     waitlistMark: string;
-    nightLineFull: string;
     waitlistSeats: string;
     waitlistTicket: string;
     waitlistTicketEmpty: string;
@@ -118,8 +119,6 @@ export const reserve: ReserveContent = {
     pickFirst: 'Pick a night first.',
     wholeTableOpen: 'The whole table is open on {date}.',
     someSeatsOpen: '{left} of {capacity} seats are still open on {date}.',
-    nightLineWhole: '{date}, the whole table is open.',
-    nightLineSome: '{date}, {left} of {capacity} seats open.',
     ticketEmpty: 'Take your seats below.',
     datePlaceholder: 'Pick a night above',
     seatOne: '{Seats} seat',
@@ -141,8 +140,9 @@ export const reserve: ReserveContent = {
     missingDetails: 'Add your {missing} to send the request.',
     missingNames: { name: 'name', whatsapp: 'WhatsApp number', email: 'email', and: 'and' },
     seatsCapped: 'That night has fewer seats open, so your seats are now {seats}.',
+    closedMark: 'Closed',
+    nightClosedAria: '{date}, closed',
     waitlistMark: 'Waitlist',
-    nightLineFull: '{date} is full. The waitlist is open.',
     waitlistSeats: '{date} is full. Tell us how many seats you would take if they open.',
     waitlistTicket: 'Waitlist, {seats}.',
     waitlistTicketEmpty: 'Waitlist. Take your seats below.',
