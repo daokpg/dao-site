@@ -232,6 +232,9 @@ if (process.argv[2] === 'test') {
   assert(!stripeCalls.some((c) => c.path === 'payment_intents'), 'nothing is charged when the card is saved');
   const again3 = post({ type: 'booking', date: '2026-10-19', seats: 3, name: 'Three Guests', whatsapp: '+66 80 000 0033' });
   assert(again3.id === three.id && again3.cardUrl === three.cardUrl && stripeCalls.filter((c) => c.path === 'checkout/sessions').length === 1, 'a repeat while the card page is open gets the same page, no new customer');
+  const asked = () => stripeCalls.filter((c) => c.path.startsWith('checkout/sessions/')).length;
+  for (let i = 0; i < 20; i++) post({ type: 'booking', date: '2026-10-19', seats: 3, name: 'Three Guests', whatsapp: '+66 80 000 0033' });
+  assert(asked() === 1, 'twenty more repeats ask Stripe about the card page once, not twenty times (it spends the daily quota): ' + asked());
   sessionStatus = 'complete';
   ctx.processCards();
   assert(rowOf(three.id)[C('Card')] === 'saved' && rowOf(three.id)[C('Stripe card')] === 'pm_test_1', 'processCards: a finished card page marks the card saved and keeps its payment method');

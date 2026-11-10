@@ -132,11 +132,21 @@ function doPost(e) {
   return json_({ ok: true, id, type: r.type, cardUrl: card ? card.url : null });
 }
 
-/** The answer to a repeat: the first request's, with its card page only while Stripe still has it open. */
+/**
+ * The answer to a repeat: the first request's, with its card page only while Stripe still has it open.
+ * Repeats are answered even during a flood, so Stripe is asked about a card page at most once a minute
+ * (the answer is kept in between): repeating one request can't spend the script's daily quota of calls.
+ */
 function repeat_(d) {
   let cardUrl = null;
   if (d.cardUrl) {
-    try { if (stripe_('get', 'checkout/sessions/' + d.session).status === 'open') cardUrl = d.cardUrl; } catch (err) { /* no link; the team sorts the card out on WhatsApp */ }
+    const cache = CacheService.getScriptCache(), key = 'open:' + d.session;
+    let open = cache.get(key);
+    if (open === null) {
+      try { open = stripe_('get', 'checkout/sessions/' + d.session).status === 'open' ? 'yes' : 'no'; } catch (err) { open = 'no'; /* no link; the team sorts the card out on WhatsApp */ }
+      cache.put(key, open, 60);
+    }
+    if (open === 'yes') cardUrl = d.cardUrl;
   }
   return { ok: true, id: d.id, type: d.type, cardUrl };
 }
