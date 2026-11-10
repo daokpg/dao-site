@@ -29,7 +29,11 @@ export interface ReserveContent {
       note: string; notePlaceholder: string;
     };
   };
-  ticket: { label: string; hold: string; join: string; waitlistLabel: string; waitlistNote: string };
+  ticket: {
+    label: string; hold: string; join: string; waitlistLabel: string; waitlistNote: string;
+    /** Shown from site.pricing.cardFrom seats: a card is saved at the next step, charged only for a late cancellation or a no-show. */
+    cardTitle: string; cardNote: string; cardPolicy: string;
+  };
   /** Spoken names of the month arrows (screen readers); the month's name follows. */
   monthNav: { prev: string; next: string };
   /**
@@ -113,6 +117,9 @@ export const reserve: ReserveContent = {
     label: 'Your night', hold: 'Request the seats',
     join: 'Join the waitlist', waitlistLabel: 'Nothing to pay now',
     waitlistNote: 'Seats open up when plans change. If they do on your night, we write to the waitlist in the order it was joined.',
+    cardTitle: 'Card details required',
+    cardNote: 'You’ll be asked to add your payment details at checkout. You won’t be charged now. A fee may apply only if you cancel late or don’t show up.',
+    cardPolicy: 'Payment policy',
   },
   monthNav: { prev: 'Previous month', next: 'Next month' },
   copy: {

@@ -6,20 +6,28 @@
  *
  * What it does
  *   GET  (doGet)   → the nights the website shows, with seats left, from the "Availability" tab.
- *   POST (doPost)  → adds a booking or waitlist request to "inbox - new reservations" and emails
- *                    the restaurant.
+ *   POST (doPost)  → adds a booking or waitlist request to "inbox - new reservations", emails the
+ *                    restaurant, and for a booking of CARD_FROM_SEATS or more returns a Stripe page
+ *                    that saves the guest's card (nothing is charged).
  *   refreshAvailability() → counts booked seats per night from the weekly plannings (the Pax column)
  *                    into "Availability". Runs on every edit and every 5 minutes.
+ *   processCards() → every 5 minutes: marks pending cards saved or missing, and charges the
+ *                    no-show fee once to the saved card of every row the team set to "Late Cancel"
+ *                    or "No Show": per guest, for every seat or only the Missing guests the team
+ *                    enters. Running on a timer, not on the edit, leaves a few minutes to undo
+ *                    a status set by mistake; Stripe's idempotency key means a row is never charged twice.
  *
  * The weekly plannings are only ever read, never written. A website request never takes a seat by
  * itself: seats count once the team has placed the guests in the week's planning.
  *
- * Cards (Stripe) are not connected yet: no card is asked for and nothing is charged. The earlier
- * card step (Stripe Checkout in setup mode) is in git history, backend/booking.gs at commit d96b6fa,
- * for when it returns.
- *
  * Script properties (Project settings → Script properties):
  *   NOTIFY_EMAIL       where new requests are emailed (optional)
+ *   SITE_URL           the website's address, e.g. https://dao.example.com (Stripe sends guests back there)
+ *   STRIPE_SECRET_KEY  the client's Stripe *restricted* key (rk_test_… / rk_live_…) with only:
+ *                      Customers: Write, Checkout Sessions: Write, SetupIntents: Read,
+ *                      PaymentIntents: Write. Anyone who can edit the sheet can read script
+ *                      properties, so never a full sk_ key. Without it (or SITE_URL) no card is asked
+ *                      for and bookings still arrive.
  *
  * Time zone: appsscript.json (paste it in with this file) sets the script to Asia/Bangkok, and every
  * date is read through the sheet's time zone, so a night is never taken for the day before.
@@ -46,8 +54,18 @@ const WEEKDAY_NUMBER = { mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6, sun: 7 
 const POSTS_PER_10_MIN = 30;
 /** The most seats one online request can take. Keep in step with the website (src/content/reserve.ts, onlineMax). */
 const ONLINE_MAX = 11;
+/** Bookings of this many seats or more save a card. Keep in step with the website (site.pricing.cardFrom). */
+const CARD_FROM_SEATS = 3;
+/** The fee for a no-show or a same-day cancellation, in THB, per guest. Keep in step with site.pricing.noShowFee. */
+const NO_SHOW_FEE_THB = 1000;
+/** What the guest reads on Stripe's card page, above the button. */
+const CARD_POLICY = 'You won’t be charged now. THB 1,000 per guest is charged to this card only if you cancel on the day of the dinner or don’t come.';
+/** The two statuses that charge the fee. */
+const FEE_STATUSES = ['Late Cancel', 'No Show'];
+const STATUSES = ['New', 'Approved', 'Declined', 'Waitlisted', 'Cancelled', 'Late Cancel', 'No Show'];
 
-const REQUEST_COLS = ['Received', 'Type', 'Status', 'Night', 'Seats', 'Name', 'WhatsApp', 'Email', 'Special occasion', 'Cake', 'Note', 'Request ID', 'Team notes'];
+const REQUEST_COLS = ['Received', 'Type', 'Status', 'Card', 'Fee', 'Missing guests', 'Night', 'Seats', 'Name', 'WhatsApp', 'Email', 'Special occasion', 'Cake', 'Note', 'Request ID', 'Team notes', 'Stripe customer', 'Stripe card', 'Stripe session'];
+const COL = REQUEST_COLS.reduce((o, c, i) => ((o[c] = i + 1), o), {});
 const AVAIL_COLS = ['Night', 'Open', 'Capacity', 'Booked (from the planning)', 'Seats left', 'Planning tab', 'Updated'];
 
 // ---------------------------------------------------------------- web endpoints
@@ -70,10 +88,11 @@ function doPost(e) {
   if (r.error) return json_({ ok: false, reason: r.error });
 
   const cache = CacheService.getScriptCache();
-  // the same number for the same night and seats again (a double press, a retry) is the same request
+  // the same number for the same night and seats again (a double press, a retry, Back from Stripe) is
+  // the same request: it gets the same answer, and the same card page while that is still open
   const dupKey = 'dup:' + r.whatsapp.replace(/\D/g, '') + ':' + r.date + ':' + r.seats + ':' + r.type;
   const dup = cache.get(dupKey);
-  if (dup) { const d = JSON.parse(dup); return json_({ ok: true, id: d.id, type: d.type }); }
+  if (dup) return json_(repeat_(JSON.parse(dup)));
   // a flood (someone posting to this address directly) is refused before it costs anything;
   // counted per fixed ten minutes, so a steady trickle can't keep the count from ever running out
   const bucket = 'posts:' + Math.floor(Date.now() / 6e5);
@@ -83,7 +102,7 @@ function doPost(e) {
 
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(20000)) return json_({ ok: false, reason: 'busy' });
-  let id;
+  let id, row, needsCard;
   try {
     const night = readNights_().find((n) => n.date === r.date);
     if (!night) return json_({ ok: false, reason: 'closed' });
@@ -93,17 +112,33 @@ function doPost(e) {
 
     id = (r.type === 'booking' ? 'DAO-' : 'WL-') + Utilities.getUuid().replace(/-/g, '').slice(0, 8).toUpperCase();
     const sh = sheet_(TABS.requests);
+    needsCard = r.type === 'booking' && r.seats >= CARD_FROM_SEATS;
     sh.appendRow([
-      new Date(), r.type === 'booking' ? 'Booking' : 'Waitlist', 'New', parseDate_(r.date), r.seats, text_(r.name), text_(r.whatsapp),
-      text_(r.email), r.occasion, r.cake ? 'yes' : '', text_(r.note), id, '',
+      new Date(), r.type === 'booking' ? 'Booking' : 'Waitlist', 'New', needsCard ? 'pending' : 'not needed', '', '',
+      parseDate_(r.date), r.seats, text_(r.name), text_(r.whatsapp), text_(r.email), r.occasion, r.cake ? 'yes' : '',
+      text_(r.note), id, '', '', '', '',
     ]);
+    row = sh.getLastRow();
     cache.put(dupKey, JSON.stringify({ id, type: r.type }), 6 * 60 * 60);
   } finally {
     lock.releaseLock();
   }
 
   try { notify_(r, id); } catch (err) { /* the request is saved; a missing email must not fail the guest */ }
-  return json_({ ok: true, id, type: r.type });
+
+  if (!needsCard) return json_({ ok: true, id, type: r.type });
+  const card = startCard_(r, id, row);
+  if (card) cache.put(dupKey, JSON.stringify({ id, type: r.type, cardUrl: card.url, session: card.session }), 6 * 60 * 60);
+  return json_({ ok: true, id, type: r.type, cardUrl: card ? card.url : null });
+}
+
+/** The answer to a repeat: the first request's, with its card page only while Stripe still has it open. */
+function repeat_(d) {
+  let cardUrl = null;
+  if (d.cardUrl) {
+    try { if (stripe_('get', 'checkout/sessions/' + d.session).status === 'open') cardUrl = d.cardUrl; } catch (err) { /* no link; the team sorts the card out on WhatsApp */ }
+  }
+  return { ok: true, id: d.id, type: d.type, cardUrl };
 }
 
 // ---------------------------------------------------------------- availability
@@ -227,6 +262,121 @@ function onEdit(e) {
   if (name && (name === TABS.availability || !OWN_TABS.includes(name))) refreshAvailability();
 }
 
+// ---------------------------------------------------------------- Stripe: save a card, charge only the fee
+
+/** Creates the guest as a Stripe customer and a card page that saves a card without charging it. */
+function startCard_(r, id, row) {
+  const props = PropertiesService.getScriptProperties();
+  const sh = sheet_(TABS.requests);
+  if (!props.getProperty('STRIPE_SECRET_KEY') || !props.getProperty('SITE_URL')) {
+    sh.getRange(row, COL['Card']).setValue('missing');
+    sh.getRange(row, COL['Team notes']).setValue('Cards are not set up yet (no Stripe key in the script).');
+    return null;
+  }
+  const site = props.getProperty('SITE_URL').replace(/\/+$/, '');
+  try {
+    const customer = stripe_('post', 'customers', {
+      name: r.name, phone: r.whatsapp, email: r.email || undefined,
+      'metadata[request_id]': id, 'metadata[night]': r.date, 'metadata[seats]': String(r.seats),
+    });
+    const session = stripe_('post', 'checkout/sessions', {
+      mode: 'setup', customer: customer.id, 'payment_method_types[0]': 'card',
+      success_url: `${site}/reserve?request=${id}&card=1`, cancel_url: `${site}/reserve?request=${id}&card=0`,
+      'metadata[request_id]': id, 'setup_intent_data[metadata][request_id]': id,
+      'custom_text[submit][message]': CARD_POLICY,
+    }, 'card-' + id);
+    sh.getRange(row, COL['Stripe customer']).setValue(customer.id);
+    sh.getRange(row, COL['Stripe session']).setValue(session.id);
+    return { url: session.url, session: session.id };
+  } catch (err) {
+    sh.getRange(row, COL['Card']).setValue('missing');
+    sh.getRange(row, COL['Team notes']).setValue('Card page failed: ' + err.message);
+    return null;
+  }
+}
+
+/**
+ * Every 5 minutes (installTriggers): first, pending cards become saved (the guest finished; the card is
+ * kept for the fee) or missing (the page expired after 24 hours, or the guest left). Then every row set
+ * to Late Cancel or No Show with nothing in Fee is charged the fee once.
+ */
+function processCards() {
+  const sh = sheet_(TABS.requests);
+  if (!PropertiesService.getScriptProperties().getProperty('STRIPE_SECRET_KEY') || sh.getLastRow() < 2) return;
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(30000)) return; // the next run picks up where this one would have
+  try {
+    const rows = sh.getRange(2, 1, sh.getLastRow() - 1, REQUEST_COLS.length).getValues();
+    rows.forEach((v, i) => {
+      const at = (name) => v[COL[name] - 1];
+      const set = (name, value) => sh.getRange(i + 2, COL[name]).setValue(value);
+      try {
+        if (at('Card') === 'pending' && at('Stripe session')) {
+          const sess = stripe_('get', 'checkout/sessions/' + at('Stripe session'), { 'expand[]': 'setup_intent' });
+          if (sess.status === 'complete' && sess.setup_intent && sess.setup_intent.payment_method) {
+            set('Stripe card', sess.setup_intent.payment_method);
+            set('Card', 'saved');
+            v[COL['Card'] - 1] = 'saved';
+            v[COL['Stripe card'] - 1] = sess.setup_intent.payment_method;
+          } else if (sess.status === 'expired') {
+            set('Card', 'missing');
+          }
+        }
+        if (FEE_STATUSES.includes(String(at('Status')).trim()) && !String(at('Fee')).trim()) set('Fee', chargeFee_(v));
+      } catch (err) { /* one failing row must not stop the others; it is tried again next run */ }
+    });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/**
+ * Charges the fee to a row's saved card, once (the request ID is the idempotency key). The fee is per
+ * guest: every seat booked, or only "Missing guests" when the team fills it in (6 booked, 4 came → 2).
+ * Returns what goes in Fee.
+ */
+function chargeFee_(v) {
+  const at = (name) => v[COL[name] - 1];
+  if (at('Card') !== 'saved' || !at('Stripe card') || !at('Stripe customer')) return 'no card saved';
+  const seats = Number(at('Seats')) || 0;
+  const typed = String(at('Missing guests')).trim();
+  const guests = typed === '' ? seats : Number(typed);
+  if (!(Number.isInteger(guests) && guests >= 1 && guests <= seats)) return `failed: Missing guests must be a number from 1 to ${seats} (clear Fee to try again)`;
+  const thb = NO_SHOW_FEE_THB * guests;
+  try {
+    const pi = stripe_('post', 'payment_intents', {
+      amount: String(thb * 100), currency: 'thb', // THB counts in satang
+      customer: at('Stripe customer'), payment_method: at('Stripe card'),
+      off_session: 'true', confirm: 'true',
+      description: `Dao ${String(at('Status')).toLowerCase()} fee, ${guests} of ${seats} guests, ${at('Request ID')}`,
+      'metadata[request_id]': at('Request ID'), 'metadata[reason]': at('Status'), 'metadata[guests]': String(guests),
+    }, 'fee-' + at('Request ID'));
+    const what = `THB ${thb.toLocaleString('en-US')} for ${guests} guest${guests === 1 ? '' : 's'}`;
+    if (pi.status === 'succeeded') return `charged ${what} (${pi.id})`;
+    if (pi.status === 'processing') return `processing ${what} (${pi.id})`;
+    return `failed: ${pi.status} (${pi.id})`;
+  } catch (err) {
+    // a card that needs the guest's approval can't be charged while they're away: send them a payment link
+    return 'failed: ' + err.message;
+  }
+}
+
+/** A call to Stripe. GET params go in the address; a POST can carry an idempotency key. */
+function stripe_(method, path, params, idempotencyKey) {
+  const clean = {};
+  Object.keys(params || {}).forEach((k) => { if (params[k] !== undefined && params[k] !== '') clean[k] = params[k]; });
+  const query = method === 'get' && Object.keys(clean).length
+    ? '?' + Object.keys(clean).map((k) => encodeURIComponent(k) + '=' + encodeURIComponent(clean[k])).join('&') : '';
+  const headers = { Authorization: 'Bearer ' + PropertiesService.getScriptProperties().getProperty('STRIPE_SECRET_KEY') };
+  if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey;
+  const res = UrlFetchApp.fetch('https://api.stripe.com/v1/' + path + query, {
+    method, payload: method === 'post' ? clean : undefined, muteHttpExceptions: true, headers,
+  });
+  const out = JSON.parse(res.getContentText());
+  if (res.getResponseCode() >= 300) throw new Error((out.error && (out.error.decline_code || out.error.code) ? `${out.error.decline_code || out.error.code}: ` : '') + ((out.error && out.error.message) || 'Stripe error'));
+  return out;
+}
+
 // ---------------------------------------------------------------- helpers
 
 function clean_(b) {
@@ -292,17 +442,18 @@ function addWebsiteTabs() {
     widths.forEach((w, i) => sh.setColumnWidth(i + 1, w));
     return sh;
   };
-  const rq = make(TABS.requests, REQUEST_COLS, [140, 85, 105, 120, 55, 160, 150, 190, 125, 55, 280, 100, 240], 0);
+  const rq = make(TABS.requests, REQUEST_COLS, [140, 85, 105, 95, 220, 80, 120, 55, 160, 150, 190, 125, 55, 280, 100, 240, 150, 150, 150], 0);
   const list = (values) => SpreadsheetApp.newDataValidation().requireValueInList(values, true).build();
   rq.getRange('B2:B').setDataValidation(list(['Booking', 'Waitlist']));
-  rq.getRange('C2:C').setDataValidation(list(['New', 'Approved', 'Declined', 'Waitlisted', 'Cancelled']));
+  rq.getRange('C2:C').setDataValidation(list(STATUSES));
   rq.getRange('A2:A').setNumberFormat('d mmm yyyy hh:mm');
-  rq.getRange('D2:D').setNumberFormat('ddd d mmm yyyy');
-  rq.getRange('F2:K').setNumberFormat('@'); // guest text stays text
+  rq.getRange('G2:G').setNumberFormat('ddd d mmm yyyy');
+  rq.getRange('I2:N').setNumberFormat('@'); // guest text stays text
   // New rows stand out until the team has dealt with them
   rq.setConditionalFormatRules([
-    SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=$C2="New"').setBackground('#FFF2CC').setRanges([rq.getRange('A2:M')]).build(),
-    SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=$C2="Approved"').setBackground('#D9EAD3').setRanges([rq.getRange('A2:M')]).build(),
+    SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=$C2="New"').setBackground('#FFF2CC').setRanges([rq.getRange('A2:S')]).build(),
+    SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=$C2="Approved"').setBackground('#D9EAD3').setRanges([rq.getRange('A2:S')]).build(),
+    SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=OR($C2="Late Cancel",$C2="No Show")').setBackground('#F4CCCC').setRanges([rq.getRange('A2:S')]).build(),
   ]);
   const av = make(TABS.availability, AVAIL_COLS, [130, 65, 80, 120, 85, 110, 120], 1);
   av.getRange('B2:B').setDataValidation(list(['yes', 'no']));
@@ -310,8 +461,18 @@ function addWebsiteTabs() {
   av.getRange('I1:J1').setFontWeight('bold').setBackground('#D9D2E9');
 }
 
-/** Refreshes Availability every 5 minutes. Run once after pasting the script. */
+/**
+ * Run once from the editor after adding the Stripe key: Google asks to allow outside connections
+ * (the card step needs them), and the log says whether the key works.
+ */
+function checkStripe() {
+  stripe_('get', 'customers', { limit: '1' });
+  Logger.log('Stripe key works.');
+}
+
+/** Refreshes Availability and processes cards and fees, every 5 minutes each. Run once after pasting the script. */
 function installTriggers() {
   ScriptApp.getProjectTriggers().forEach((t) => ScriptApp.deleteTrigger(t));
   ScriptApp.newTrigger('refreshAvailability').timeBased().everyMinutes(5).create();
+  ScriptApp.newTrigger('processCards').timeBased().everyMinutes(5).create();
 }

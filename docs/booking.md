@@ -1,7 +1,7 @@
 # Reservations & payment
 
 How booking works on the Dao site, how it connects to the restaurant's reservations sheet, and how to set it up.
-Last updated 2026-11-04. Status: **the 2026 sheet is ready; the script is not yet pasted in and deployed** (§8). **Cards are not connected for now** (§7).
+Last updated 2026-11-10. Status: the sheet and script are live on Ran's test setup (§8). **Card step built (2026-11-10)**: it waits for a Stripe key in the script's properties (§7).
 
 ---
 
@@ -13,7 +13,7 @@ Last updated 2026-11-04. Status: **the 2026 sheet is ready; the script is not ye
 - **Seats only count once guests are in a week's planning.** A new request never takes a seat by itself.
 - The website's calendar reads **seats left per night from the weekly plannings** (the Pax column), through the **"Availability" tab** the script keeps up to date.
 - The script never writes to the weekly plannings.
-- **No card for now.** The Stripe card step (save a card, charge only no-shows) comes later; the script and this doc have it switched off.
+- **A card for three guests or more.** After the request, the guest saves a card on a Stripe page; nothing is charged. If the team sets the request to **Late Cancel** or **No Show**, the script charges THB 1,000 per guest to that card within five minutes; if only some didn't come, the team enters how many in **Missing guests** (§7). One or two guests: no card, no fee.
 
 ---
 
@@ -55,10 +55,10 @@ Last updated 2026-11-04. Status: **the 2026 sheet is ready; the script is not ye
 |---|---|---|---|
 | Weekly plannings, "inbox - new reservations", "Availability" | the reservations spreadsheet | client's Google account | free |
 | Booking script (`backend/booking.gs`) | Apps Script attached to that spreadsheet | client's Google account | free |
-| Cards (later) | Stripe | client's Stripe account | fees only on no-show charges (§7) |
+| Cards | Stripe | client's Stripe account | fees only on fees charged (§7) |
 | Website | static files on Cloudflare | client's Cloudflare account | free |
 
-There are no secrets for now. When Stripe returns, its key lives in the script's properties, never in the
+The one secret is the Stripe key. It lives in the script's properties, never in the
 website, and it must be a **restricted key** (`rk_…`), since anyone who can edit the spreadsheet can read them (§7).
 
 **Abuse protection in the script** (the web app's address is public): more than 30 requests in a ten-minute
@@ -68,7 +68,7 @@ guest text is written into the sheet as text, never as a formula (a note startin
 line breaks are taken out of one-line fields; more than 11 seats (the online maximum) are refused; a failed or
 over-quota email never fails the guest; and the
 script may only touch its own spreadsheet (`@OnlyCurrentDoc`). Still recommended before going live: Cloudflare
-Turnstile on `/reserve` (verified in `doPost`), and Stripe Radar rules once cards return. Keep the
+Turnstile on `/reserve` (verified in `doPost`), and Stripe Radar rules. Keep the
 spreadsheets shared as "Restricted".
 
 ---
@@ -92,7 +92,8 @@ spreadsheets shared as "Restricted".
    - refuses if the night isn't open (`closed`) or has fewer seats left than asked (`not_enough`, with the number left, shown to the guest);
    - turns a booking for a night that has just filled into a waitlist request (the page then thanks the guest for joining the waitlist);
    - adds the row to "inbox - new reservations" with Status `New` (yellow), and a request ID (`DAO-…`);
-   - emails the restaurant.
+   - emails the restaurant;
+   - for three seats or more: writes Card = `pending`, creates a Stripe card page for the request and sends the guest to it (§7).
 4. The page shows "Requested. Two seats on …" and that the team will be in touch on WhatsApp.
 
 ### 4.3 A waitlist request
@@ -103,7 +104,8 @@ Same form for a full night. The row gets Type `Waitlist` and ID `WL-…`. The pa
 | Situation | In the sheet |
 |---|---|
 | New request (yellow) | WhatsApp the guest: menus, dietary needs, occasion. If it works, add them to the week's planning like any booking and set Status = **Approved** (green). If not, **Declined**, or **Waitlisted** to keep them in mind |
-| Cancellation | Remove them from the planning, Status = Cancelled |
+| Cancellation the day before or earlier | Remove them from the planning, Status = Cancelled. No fee |
+| Cancellation on the day, or a no-show | Status = **Late Cancel** or **No Show** (red). Leave **Missing guests** empty to charge every seat, or enter how many didn't come (booked 6, came 4 → 2). Within five minutes the script charges THB 1,000 per missing guest to the saved card and writes the result in Fee. Changing your mind within those minutes (set it back) stops the charge |
 | Change which weekdays are open, or how far ahead | "Availability" → the cells beside the table (J2, J3) |
 | Open a special date | "Availability" → a new row with its date (Open and Capacity fill in by themselves) |
 | Close a night | "Availability" → Open = `no` (deleting a scheduled night's row doesn't work: the schedule adds it back) |
@@ -116,7 +118,7 @@ Same form for a full night. The row gets Type `Waitlist` and ID `WL-…`. The pa
 
 **inbox - new reservations** (one row per request; the script adds rows, the team edits Status and Team notes)
 
-Received · Type (Booking / Waitlist) · Status (New / Approved / Declined / Waitlisted / Cancelled) · Night · Seats · Name · WhatsApp · Email · Special occasion · Cake · Note · Request ID · Team notes
+Received · Type (Booking / Waitlist) · Status (New / Approved / Declined / Waitlisted / Cancelled / Late Cancel / No Show) · Card (`not needed` / `pending` / `saved` / `missing`) · Fee (written by the script) · Missing guests (optional: how many didn't come; empty = all) · Night · Seats · Name · WhatsApp · Email · Special occasion · Cake · Note · Request ID · Team notes · Stripe customer · Stripe card · Stripe session (the last three are the script's; don't edit)
 
 **Availability** (one row per night; rebuilt by the script, Open and Capacity editable)
 
@@ -129,15 +131,24 @@ Until the script runs, Availability holds formulas over the 9-14/11 planning; th
 ## 6. The website side
 
 - Form: night → seats → name, WhatsApp, email, special occasion (dropdown: birthday, anniversary, engagement; a birthday offers a cake, THB 400) and a note. No menu or wine: dietary needs go in the note and on WhatsApp; wine is chosen on the night.
-- The panel beside the form shows only the night, the seats and "Request the seats". No price, no card note.
-- Code: `src/lib/booking.ts` (logic, `monthsFromNights()`), `src/scripts/systems/booking.ts` (loading nights, sending, and the Stripe return, unused while cards are off), `src/components/reserve/Booking.astro`, copy in `src/content/reserve.ts`, prices in `src/content/site.ts` (`noShowFee`, `cake`).
+- The panel beside the form shows the night, the seats and "Request the seats". From three seats it adds "Card details required", a line on the fee and a link to the payment policy (`/info#cancel`); on phones the bar shows the title and the link only. The threshold is `pricing.cardFrom` in `src/content/site.ts`, and `CARD_FROM_SEATS` in the script: change both.
+- Code: `src/lib/booking.ts` (logic, `monthsFromNights()`), `src/scripts/systems/booking.ts` (loading nights, sending, and the return from the Stripe card page), `src/components/reserve/Booking.astro`, copy in `src/content/reserve.ts`, prices in `src/content/site.ts` (`noShowFee`, `cake`).
 - **`PUBLIC_BOOKING_API`**: the script's web app address, set at build time. Without it the page runs on the placeholder nights in `src/content/reserve.ts` and "Request the seats" only shows the thank-you message (handy for design work).
 
 ---
 
-## 7. Stripe (later; switched off for now)
+## 7. The card step (Stripe)
 
-Decided 2026-11-04: no card step while the sheet integration is tested. The script asks for no card and calls nothing outside the sheet. The website's copy still mentions a card holding the seats (home page and two FAQ answers); change it if it goes public before Stripe returns. The plan when it returns: a card page in setup mode saves a card and moves no money; the team charges no-shows from the dashboard. The earlier code is in git history (`backend/booking.gs` at commit `d96b6fa`).
+Decided 2026-11-10: bookings of **three seats or more** save a card; nothing is charged at booking. A **late cancellation (on the day of the dinner) or a no-show costs THB 1,000 per guest**, charged by the script when the team sets the status. Card holds were rejected (they expire after about 7 days).
+
+**How it runs**
+1. The request is saved first, always (a failed card step never loses a booking). Card = `pending`.
+2. The script creates a Stripe customer and a Checkout page in **setup mode** (saves a card, moves no money), with the policy written above the button. The site sends the guest there; afterwards they come back to `/reserve`.
+3. Every five minutes `processCards()` checks the pending card pages: saved → Card = `saved` (card id in Stripe card); expired (24 h) or skipped → Card = `missing`, and the team asks on WhatsApp.
+4. A row set to **Late Cancel** or **No Show** with an empty Fee is charged off-session on the saved card: THB 1,000 × Missing guests, or × all seats when Missing guests is empty. Fee shows `charged THB 2,000 for 2 guests (pi_…)`, `failed: …` (card declined, or the bank wants the guest to approve: follow up on WhatsApp) or `no card saved`. A row is charged once: Stripe refuses a second charge for the same request (idempotency key), and a written Fee is never retried. A wrong Missing guests (not a number, or more than the seats) charges nothing and says so in Fee: fix it and clear Fee. A charge the bank declined can't be retried from the sheet the same day (Stripe repeats its first answer for 24 hours): charge it from the dashboard instead (Customers → the guest → Create payment, with the saved card). To change an amount already charged, refund part of it in the dashboard.
+5. Without a Stripe key the booking still goes through; Card = `missing` and Team notes says cards aren't set up.
+
+**Refunds** are made in the Stripe dashboard (Payments → the charge → Refund).
 
 | | Fee per charge |
 |---|---|
@@ -147,7 +158,6 @@ Decided 2026-11-04: no card step while the sheet integration is tested. The scri
 
 - No fee on guests who come. Worth confirming on Stripe's Thailand pricing that saving a card is free.
 - A card hold was rejected: holds expire after about 7 days (5 for some Visa), and bookings are made weeks ahead.
-- A no-show charge can fail (card cancelled, bank asks the guest to approve). The team follows up on WhatsApp.
 - The no-show policy shown on the card page is the evidence against disputes.
 
 Sources: [Stripe Thailand pricing](https://stripe.com/th/pricing) · [Stripe: place a hold](https://docs.stripe.com/payments/place-a-hold-on-a-payment-method) · [Stripe: extended authorizations](https://docs.stripe.com/payments/extended-authorization)
@@ -161,15 +171,16 @@ Sources: [Stripe Thailand pricing](https://stripe.com/th/pricing) · [Stripe: pl
 1. [ ] In the sheet: Extensions → Apps Script, paste `backend/booking.gs`. Then Project settings → tick "Show appsscript.json manifest file in editor", open `appsscript.json` and paste `backend/appsscript.json` (it sets the script's time zone to Asia/Bangkok). Save.
 2. [ ] Run `refreshAvailability` once (approve Google's permission prompt). Availability fills from the 9-14/11 planning.
 3. [ ] Project settings → Script properties: `NOTIFY_EMAIL` (where new requests are emailed).
-4. [ ] Run `installTriggers` once (refresh every 5 minutes).
+4. [ ] Run `installTriggers` once (Availability refresh and `processCards`, every 5 minutes). Run it again after updating to a version with the card step.
 5. [ ] Deploy → New deployment → Web app: execute as **me**, access **anyone**. Copy the web app URL.
    After any later change to the script: Deploy → **Manage deployments** → edit (pencil) → Version: **New version** → Deploy. This keeps the same URL; a *new deployment* would get a new URL, and the site would still call the old code.
 6. [ ] Set `PUBLIC_BOOKING_API` to that URL in the site's build settings (Cloudflare) and redeploy; or locally, `PUBLIC_BOOKING_API=… npm run build`.
-7. [ ] Try it: request seats for a night in 9-14/11, check the row in the inbox, approve it, put the guests in the planning (their number in the Pax column) and watch the night's seats drop on the site.
+7. [ ] Stripe: in the client's Stripe dashboard → Developers → API keys → **Create restricted key**, with **Customers: Write, Checkout Sessions: Write, SetupIntents: Read, PaymentIntents: Write**, nothing else. Use test mode (`rk_test_…`) first. In Script properties add `STRIPE_SECRET_KEY` (that key) and `SITE_URL` (the site's address, e.g. `http://localhost:4321` for local tests; where guests return after the card page). Then run `checkStripe` once from the editor: Google asks to allow connecting to an external service (Stripe), and the log says "Stripe key works." Running other functions doesn't ask for that permission, and until it is given every card page fails with a "script.external_request" error in Team notes. Test card: 4242 4242 4242 4242, any future date, any CVC.
+8. [ ] Try it: request seats for a night in 9-14/11, check the row in the inbox, approve it, put the guests in the planning (their number in the Pax column) and watch the night's seats drop on the site.
 
 **Going live:** move the sheet into the client's Google account (or have them make the copy), paste the script there, and point `PUBLIC_BOOKING_API` at that deployment. Hosting: the site on the client's Cloudflare, code on their GitHub (Ran and Matteo as collaborators), domain in their name.
 
-**Checks:** `node backend/test/harness.mjs test` runs `booking.gs` against the October board's structure with fake Google services, the script in UTC and the sheet in Bangkok (34 checks: setup, availability, time zone, booking into the inbox, waitlist and a booking turned waitlist, refusals, the online maximum, repeats, spam and floods, seats counting once placed, the weekly schedule and its days-ahead fallback, hand-added and closed nights, and no outside calls while cards are off). `serve` runs it as a local backend for the site.
+**Checks:** `node backend/test/harness.mjs test` runs `booking.gs` against the October board's structure with fake Google services, the script in UTC and the sheet in Bangkok (48 checks: setup, availability, time zone, booking into the inbox, waitlist and a booking turned waitlist, refusals, the online maximum, repeats, spam and floods, seats counting once placed, the weekly schedule and its days-ahead fallback, hand-added and closed nights, and the card step: the card page, saved and expired cards, the fee per guest charged once, a partial no-show, no card, a failed charge). `serve` runs it as a local backend for the site.
 
 ---
 
@@ -180,11 +191,11 @@ Sources: [Stripe Thailand pricing](https://stripe.com/th/pricing) · [Stripe: pl
 - [ ] **Email:** the board almost never has one and no email is sent. The site still requires it; the script already treats it as optional. Make it optional?
 - [ ] **Occasions:** add "Honeymoon" and "Other"? Both appear on the board.
 - [ ] **Vegetarian / vegan:** the menu dropdown offers both; the FAQ says fully plant-based menus aren't offered. Which is right?
-- [ ] **No-show fee:** THB 1,950 a seat is carried over from the old deposit idea (in `site.ts` and the FAQ text).
+- [x] **No-show fee:** THB 1,000 per guest, for a same-day cancellation or a no-show, for bookings of three or more; partial no-shows via Missing guests (2026-11-10).
 - [x] **Online maximum:** 11 seats per online request (`onlineMax` in `src/content/reserve.ts`, checked again by the script); 12 or more write in, as the copy says.
-- [ ] **Stripe (later):** confirm their existing account (gift cards were paid via Stripe) and use it when cards return.
+- [ ] **Stripe:** confirm their existing account (gift cards were paid via Stripe) and create the restricted key there (§8.7).
 - [ ] Approve the new copy: booking page, waitlist, card wording on the home page and FAQ.
-- [x] No deposit; a saved card holds every booking (2026-09-28). **On hold:** no card step while the sheet integration is tested (2026-11-04).
+- [x] No deposit; a saved card holds every booking (2026-09-28). Replaced 2026-11-10: a card only from three seats.
 - [x] WhatsApp required; special occasion with birthday cake; no confirmation email (2026-09-28).
 - [x] Menu and wine removed from the form (2026-09-28).
 - [x] Build on `astro-port` (Matteo, 2026-09-28).

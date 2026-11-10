@@ -21,6 +21,8 @@ export interface BookingConfig {
   occasions: Record<Occasion, string>;
   /** The most seats one online request can take (reserve.onlineMax). */
   onlineMax: number;
+  /** Bookings of this many seats or more save a card at the next step (site.pricing.cardFrom). */
+  cardFrom: number;
   contactEmail: string;
   /** The booking backend's web address; empty runs the page on placeholder data. */
   api: string;
@@ -177,6 +179,8 @@ export function view(s: BookingState, cfg: BookingConfig) {
   return {
     left,
     waitlist,
+    // a booking (not the waitlist) of cardFrom seats or more goes on to Stripe to save a card
+    cardRequired: !waitlist && s.seats >= cfg.cardFrom,
     limit: seatLimit(cfg, s.date),
     monthName: months[s.month]?.name ?? '',
     prevName: s.month > 0 ? months[s.month - 1].name : '',

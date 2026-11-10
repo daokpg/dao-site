@@ -68,6 +68,8 @@ const ss = {
 
 // ---------- fake services
 const props = { NOTIFY_EMAIL: 'team@example.com' };
+const stripeCalls = [];
+let sessions = 0, sessionStatus = 'open', chargeFails = false;
 const cache = new Map();
 let locks = 0;
 const ISO_DAYS = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -87,8 +89,23 @@ const ctx = {
   ContentService: { createTextOutput: (s) => ({ body: s, setMimeType() { return this; } }), MimeType: { JSON: 'json' } },
   MailApp: { sendEmail: (o) => log.push(['mail', o.subject]), getRemainingDailyQuota: () => 100 },
   ScriptApp: { getProjectTriggers: () => [], deleteTrigger: () => {}, newTrigger: () => chain },
-  // cards aren't connected: the script must not call anything outside the sheet
-  UrlFetchApp: { fetch: (url) => { log.push(['fetch', url]); throw new Error('no outside calls expected'); } },
+  // a fake Stripe that records every call: customers, card pages (setup mode), and fee charges
+  UrlFetchApp: {
+    fetch: (url, o) => {
+      const path = url.replace('https://api.stripe.com/v1/', '');
+      stripeCalls.push({ path, method: o.method, payload: o.payload, key: o.headers['Idempotency-Key'] });
+      log.push(['stripe', o.method, path.split('?')[0]]);
+      let code = 200, body;
+      if (path === 'customers') body = { id: 'cus_test' };
+      else if (path === 'checkout/sessions') body = { id: 'cs_test_' + ++sessions, url: 'https://checkout.stripe.com/c/pay/cs_test_' + sessions };
+      else if (path.startsWith('checkout/sessions/')) body = { status: sessionStatus, setup_intent: { payment_method: 'pm_test_1' } };
+      else if (path === 'payment_intents') {
+        if (chargeFails) { code = 402; body = { error: { code: 'authentication_required', message: 'This card needs the guest to approve the payment.' } }; }
+        else body = { id: 'pi_test_' + stripeCalls.filter((c) => c.path === 'payment_intents').length, status: 'succeeded' };
+      }
+      return { getResponseCode: () => code, getContentText: () => JSON.stringify(body) };
+    },
+  },
   console,
 };
 vm.createContext(ctx);
@@ -153,7 +170,7 @@ if (process.argv[2] === 'test') {
   assert(r.ok && r.type === 'booking' && /^DAO-/.test(r.id) && !('cardUrl' in r), 'booking accepted, no card asked for: ' + JSON.stringify(r));
   const rq = ss.getSheetByName('inbox - new reservations');
   const row = rq.data[rq.getLastRow() - 1];
-  assert(row.length === 13 && row[1] === 'Booking' && row[2] === 'New' && row[4] === 2 && row[8] === 'birthday' && row[9] === 'yes' && row[11] === r.id, 'request row written in the inbox: ' + JSON.stringify(row.slice(1, 13)));
+  assert(row.length === 19 && row[1] === 'Booking' && row[2] === 'New' && row[3] === 'not needed' && row[7] === 2 && row[11] === 'birthday' && row[12] === 'yes' && row[14] === r.id, 'request row written in the inbox, no card needed for 2: ' + JSON.stringify(row.slice(1, 16)));
   assert(get().nights.find((x) => x.date === '2026-10-06').left === 2, 'a New request does not take seats');
   r = post({ type: 'booking', date: '2026-10-05', seats: 1, name: 'X', whatsapp: '123' });
   assert(!r.ok && r.reason === 'bad_name', 'validation: ' + r.reason);
@@ -161,7 +178,7 @@ if (process.argv[2] === 'test') {
   assert(!r.ok && r.reason === 'bad_seats', 'more than the online maximum (11) refused: ' + r.reason);
   // a double press is the same request
   const card = post({ type: 'booking', date: '2026-10-06', seats: 2, name: 'Test Guest', whatsapp: '+66812345678' });
-  assert(card.ok && card.id === rq.data[1][11] && rq.getLastRow() === 2, 'a repeat gets the same request, nothing new written: ' + JSON.stringify(card));
+  assert(card.ok && card.id === rq.data[1][14] && rq.getLastRow() === 2, 'a repeat gets the same request, nothing new written: ' + JSON.stringify(card));
   r = post({ type: 'booking', date: '2026-10-06', seats: 1, name: 'Test Guest', whatsapp: '+66 81 234 5678' });
   assert(r.ok && r.id !== card.id && rq.getLastRow() === 3, 'other seats on the same night are a new request');
   r = post({ type: 'waitlist', date: '2026-10-17', seats: 4, name: 'Wait Lister', whatsapp: '+972 50 000 0000' });
@@ -183,12 +200,12 @@ if (process.argv[2] === 'test') {
   // abuse: guest text never becomes a formula, a repeat is the same request, a flood is refused
   r = post({ type: 'waitlist', date: '2026-10-05', seats: 1, name: '=HYPERLINK("https://evil.example","x")', whatsapp: '+1 555 0100', note: '-no nuts\n=IMAGE("x")' });
   const inj = rq.data[rq.getLastRow() - 1];
-  assert(r.ok && inj[5].startsWith("'=") && inj[10].startsWith("'-"), 'formula-like text stored as text: ' + JSON.stringify([inj[5], inj[10]]));
+  assert(r.ok && inj[8].startsWith("'=") && inj[13].startsWith("'-"), 'formula-like text stored as text: ' + JSON.stringify([inj[8], inj[13]]));
   const rows = rq.getLastRow();
   const again = post({ type: 'waitlist', date: '2026-10-05', seats: 1, name: 'Again', whatsapp: '+1 (555) 0100' });
   assert(again.ok && again.id === r.id && rq.getLastRow() === rows, 'the same number for the same night is the same request');
   r = post({ type: 'waitlist', date: '2026-10-05', seats: 1, name: 'Bad\r\nBcc: x@y.z', whatsapp: '+1 555 0199' });
-  const hdr = rq.data[rq.getLastRow() - 1][5];
+  const hdr = rq.data[rq.getLastRow() - 1][7];
   assert(r.ok && !/[\r\n]/.test(hdr), 'line breaks taken out of one-line fields: ' + JSON.stringify(hdr));
   // ten minutes counted in fixed blocks; a repeat is answered before it is counted
   const bucket = vm.runInContext("'posts:' + Math.floor(Date.now() / 6e5)", ctx);
@@ -198,7 +215,67 @@ if (process.argv[2] === 'test') {
   r = post({ type: 'waitlist', date: '2026-10-05', seats: 1, name: 'Again', whatsapp: '+1 555 0100' });
   assert(r.ok && r.id === again.id && cache.get(bucket) === '30', 'a repeat still gets its answer during a flood, and is not counted');
   cache.delete(bucket);
-  assert(!log.some((l) => l[0] === 'fetch'), 'no outside calls (no Stripe)');
+  assert(!stripeCalls.length, 'no Stripe call for bookings of 1 or 2 seats, or waitlists');
+
+  // ---- cards: 3 seats or more save a card; the fee is charged from the inbox status
+  const C = (name) => ['Received', 'Type', 'Status', 'Card', 'Fee', 'Missing guests', 'Night', 'Seats', 'Name', 'WhatsApp', 'Email', 'Special occasion', 'Cake', 'Note', 'Request ID', 'Team notes', 'Stripe customer', 'Stripe card', 'Stripe session'].indexOf(name);
+  const rowOf = (id) => rq.data.find((x) => x && x[C('Request ID')] === id);
+  // without a Stripe key the booking still arrives, marked for the team
+  r = post({ type: 'booking', date: '2026-10-05', seats: 3, name: 'No Key', whatsapp: '+66 80 000 0003' });
+  assert(r.ok && !r.cardUrl && rowOf(r.id)[C('Card')] === 'missing' && /not set up/.test(rowOf(r.id)[C('Team notes')]) && !stripeCalls.length, 'without a Stripe key: request saved, Card = missing, no card page');
+  props.STRIPE_SECRET_KEY = 'rk_test_fake'; props.SITE_URL = 'https://dao.example/';
+  const three = post({ type: 'booking', date: '2026-10-19', seats: 3, name: 'Three Guests', whatsapp: '+66 80 000 0033' });
+  const t = rowOf(three.id);
+  const sess = stripeCalls.find((c) => c.path === 'checkout/sessions');
+  assert(three.ok && /^https:\/\/checkout\.stripe\.com\//.test(three.cardUrl) && t[C('Card')] === 'pending' && t[C('Stripe customer')] === 'cus_test' && t[C('Stripe session')] === 'cs_test_1', '3 seats: card page returned, row pending with the Stripe customer and session: ' + JSON.stringify(three));
+  assert(sess.payload.mode === 'setup' && sess.payload.success_url === `https://dao.example/reserve?request=${three.id}&card=1` && sess.payload.cancel_url.endsWith('&card=0') && /THB 1,000 per guest/.test(sess.payload['custom_text[submit][message]']) && sess.key === 'card-' + three.id, 'the card page saves a card (setup mode), comes back to /reserve, states the fee, has an idempotency key');
+  assert(!stripeCalls.some((c) => c.path === 'payment_intents'), 'nothing is charged when the card is saved');
+  const again3 = post({ type: 'booking', date: '2026-10-19', seats: 3, name: 'Three Guests', whatsapp: '+66 80 000 0033' });
+  assert(again3.id === three.id && again3.cardUrl === three.cardUrl && stripeCalls.filter((c) => c.path === 'checkout/sessions').length === 1, 'a repeat while the card page is open gets the same page, no new customer');
+  sessionStatus = 'complete';
+  ctx.processCards();
+  assert(rowOf(three.id)[C('Card')] === 'saved' && rowOf(three.id)[C('Stripe card')] === 'pm_test_1', 'processCards: a finished card page marks the card saved and keeps its payment method');
+  // the team sets No Show: the next run charges THB 1,000 per guest (3 seats → 3,000), once
+  rowOf(three.id)[C('Status')] = 'No Show';
+  ctx.processCards();
+  const charge = stripeCalls.filter((c) => c.path === 'payment_intents');
+  assert(charge.length === 1 && charge[0].payload.amount === '300000' && charge[0].payload.currency === 'thb' && charge[0].payload.off_session === 'true' && charge[0].payload.confirm === 'true' && charge[0].payload.payment_method === 'pm_test_1' && charge[0].key === 'fee-' + three.id, 'No Show charges THB 1,000 per guest (3 × 100000 satang) off-session to the saved card, keyed on the request: ' + JSON.stringify(charge[0] && charge[0].payload));
+  assert(/^charged THB 3,000 for 3 guests \(pi_test_1\)$/.test(rowOf(three.id)[C('Fee')]), 'Fee says what was charged: ' + rowOf(three.id)[C('Fee')]);
+  ctx.processCards();
+  assert(stripeCalls.filter((c) => c.path === 'payment_intents').length === 1, 'the next runs never charge the same row again');
+  // Late Cancel on a booking with no card (2 seats): nothing charged, the team is told
+  rq.data[1][C('Status')] = 'Late Cancel';
+  ctx.processCards();
+  assert(rq.data[1][C('Fee')] === 'no card saved' && stripeCalls.filter((c) => c.path === 'payment_intents').length === 1, 'Late Cancel without a saved card: Fee = no card saved, no charge');
+  // a pending card page that expires becomes missing
+  sessionStatus = 'open';
+  const four = post({ type: 'booking', date: '2026-10-19', seats: 4, name: 'Four Guests', whatsapp: '+66 80 000 0044' });
+  sessionStatus = 'expired';
+  ctx.processCards();
+  assert(rowOf(four.id)[C('Card')] === 'missing', 'an expired card page marks the card missing');
+  // a charge the bank refuses (needs the guest's approval) is reported, not retried every run
+  sessionStatus = 'complete';
+  const five = post({ type: 'booking', date: '2026-10-19', seats: 5, name: 'Five Guests', whatsapp: '+66 80 000 0055' });
+  ctx.processCards();
+  chargeFails = true;
+  rowOf(five.id)[C('Status')] = 'Late Cancel';
+  ctx.processCards();
+  const failed = rowOf(five.id)[C('Fee')];
+  ctx.processCards();
+  assert(/^failed: authentication_required/.test(failed) && stripeCalls.filter((c) => c.path === 'payment_intents').length === 2, 'a refused charge is written in Fee and not tried again: ' + failed);
+  // partial no-show: 6 booked, 4 came → the team enters 2 in Missing guests → THB 2,000
+  chargeFails = false;
+  const six = post({ type: 'booking', date: '2026-10-19', seats: 6, name: 'Six Guests', whatsapp: '+66 80 000 0066' });
+  ctx.processCards();
+  rowOf(six.id)[C('Missing guests')] = 9;
+  rowOf(six.id)[C('Status')] = 'No Show';
+  ctx.processCards();
+  assert(/^failed: Missing guests must be a number from 1 to 6/.test(rowOf(six.id)[C('Fee')]) && stripeCalls.filter((c) => c.path === 'payment_intents').length === 2, 'more missing guests than seats: nothing charged, the team is told: ' + rowOf(six.id)[C('Fee')]);
+  rowOf(six.id)[C('Missing guests')] = 2;
+  rowOf(six.id)[C('Fee')] = '';
+  ctx.processCards();
+  const part = stripeCalls.filter((c) => c.path === 'payment_intents');
+  assert(part.length === 3 && part[2].payload.amount === '200000' && /^charged THB 2,000 for 2 guests/.test(rowOf(six.id)[C('Fee')]), 'Missing guests = 2 of 6: THB 2,000 charged: ' + rowOf(six.id)[C('Fee')]);
   console.log(log.map((l) => l.join(' ')).join('\n'));
 }
 

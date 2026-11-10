@@ -131,7 +131,7 @@ export const home: HomeContent = {
   price: {
     note: 'Per guest, the full menu. Water and tea are included.',
     pairingLabels: { four: 'Wine pairing, four glasses', five: 'Wine pairing, five glasses' },
-    details: 'Nothing is paid at booking. A card holds your seats and is only charged if you do not come or cancel within 48 hours. No dress code, it is a warm island evening. Sri Thanu, west coast, ten minutes by scooter from Thong Sala; the exact pin comes on WhatsApp. Dietary needs are taken at booking, not at the table.',
+    details: 'Nothing is paid at booking. For three guests or more, a card holds the seats and is only charged if you cancel on the day or do not come. No dress code, it is a warm island evening. Sri Thanu, west coast, ten minutes by scooter from Thong Sala; the exact pin comes on WhatsApp. Dietary needs are taken at booking, not at the table.',
   },
   nir: {
     name: 'Nir Mesika',

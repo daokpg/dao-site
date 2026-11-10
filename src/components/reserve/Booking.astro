@@ -9,7 +9,7 @@
  */
 import Letters from '../ui/Letters.astro';
 import { fill, money, pad2 } from '../../lib/format';
-import { getReserve, getSite } from '../../lib/content';
+import { getReserve, getSite, pageHref } from '../../lib/content';
 import { scriptJson } from '../../lib/json';
 import { initialState, monthHtml, seatGridStyle, seatOptionsHtml, view, type BookingConfig } from '../../lib/booking';
 
@@ -20,6 +20,7 @@ const config: BookingConfig = {
   copy: reserve.copy,
   occasions: reserve.steps.fields.occasions,
   onlineMax: reserve.onlineMax,
+  cardFrom: site.pricing.cardFrom,
   contactEmail: site.contact.email,
   // the Apps Script web app inside the reservations sheet (docs/booking.md); unset = placeholder data
   api: import.meta.env.PUBLIC_BOOKING_API ?? '',
@@ -91,6 +92,11 @@ const up = 'M4 26V0M.5 3.5 4 0l3.5 3.5';
         <span class="num" style="font-size:12px;margin-bottom:12px">{ticket.label}</span>
         <span data-ticket-date style="font:300 clamp(28px,2.6vw,40px)/1.1 var(--font-display);letter-spacing:-.02em;color:var(--ink)">{v.ticketDate}</span>
         <span data-ticket-line class="word" style="font-size:13px;margin-top:8px">{v.ticketLine}</span>
+      </div>
+      <div data-card-note hidden style="display:flex;flex-direction:column;gap:10px;padding-top:24px;border-top:1px solid var(--rule)">
+        <span class="word" style="font-size:13px">{ticket.cardTitle}</span>
+        <span class="word" data-measure="s" style="font-size:12px;color:var(--ink-3)">{ticket.cardNote}</span>
+        <a class="word card-policy" href={`${pageHref('info')}#cancel`} style="font-size:12px">{ticket.cardPolicy}</a>
       </div>
       <div data-when="full" style="flex-direction:column;gap:10px;padding-top:24px;border-top:1px solid var(--rule)">
         <span class="word" style="font-size:13px">{ticket.waitlistLabel}</span>

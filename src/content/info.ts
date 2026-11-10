@@ -48,13 +48,13 @@ export const info: InfoContent = {
       id: 'booking-and-paying',
       title: 'Booking and paying',
       items: [
-        { id: 'cost', question: 'How much does it cost?', answer: '{menu} per guest for the menu. The wine pairing is {pairingFour} for four glasses or {pairingFive} for five. Water and tea are included. Everything is paid on the night. A card holds your seats when you book, and is only charged if you do not come or cancel within 48 hours.' },
-        { id: 'how-to-book', question: 'How does booking work?', answer: 'Choose a night and the number of seats on the Reserve page and send the request. We confirm it with you on WhatsApp, where we also go over menus, dietary needs and any occasion. A card is saved to hold the seats; nothing is charged.' },
+        { id: 'cost', question: 'How much does it cost?', answer: '{menu} per guest for the menu. The wine pairing is {pairingFour} for four glasses or {pairingFive} for five. Water and tea are included. Everything is paid on the night. For three guests or more, a card holds the seats when you book; it is charged {noShowFee} a guest only if you cancel on the day or do not come.' },
+        { id: 'how-to-book', question: 'How does booking work?', answer: 'Choose a night and the number of seats on the Reserve page and send the request. We confirm it with you on WhatsApp, where we also go over menus, dietary needs and any occasion. For three guests or more, a card is saved to hold the seats; nothing is charged.' },
         { id: 'nights', question: 'Which nights are you open?', answer: 'Monday to Thursday, and Saturday. Closed on Friday and Sunday.' },
         { id: 'full', question: 'What if the night I want is full?', answer: 'Join the waitlist for that night on the Reserve page. If seats open up, we message the waitlist on WhatsApp, in order.' },
         { id: 'groups', question: 'Can I book for a group or the whole table?', answer: 'Up to eleven seats can be booked online. Twelve or more take the whole table, so write to us and we will hold the night for you.' },
         { id: 'occasion', question: 'Can you mark a birthday or an anniversary?', answer: 'Choose the occasion when you book (a birthday, an anniversary or an engagement) and we will talk it through on WhatsApp. For a birthday you can add a cake, {cake}, paid on the night.' },
-        { id: 'cancel', question: 'What if I need to cancel?', answer: 'Cancel more than 48 hours before the evening and nothing is charged. Inside 48 hours the seat is hard to fill, so the card that holds it is charged {noShowFee} per seat, unless we can fill it for you. The same applies if you do not come.' },
+        { id: 'cancel', question: 'What if I need to cancel?', answer: 'Cancel any day before the dinner and nothing is charged. For bookings of three guests or more, a cancellation on the day of the dinner, or not coming, is charged {noShowFee} for each guest who does not come, to the card saved when you booked: by then the seats are hard to fill. Bookings of one or two guests save no card and pay no fee.' },
       ],
     },
     {

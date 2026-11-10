@@ -67,10 +67,13 @@ export interface Pricing {
   pairingFour: number;
   pairingFive: number;
   /**
-   * Nothing is paid at booking: a card is saved with Stripe to hold the seats, and charged this
-   * much per seat only for a no-show or a cancellation inside 48 hours.
+   * Nothing is paid at booking. From `cardFrom` seats a card is saved with Stripe, and charged this
+   * much per missing guest only for a no-show or a cancellation on the day. The team charges it by
+   * setting the inbox status to Late Cancel or No Show (and Missing guests, if only some didn't come). Keep in step with backend/booking.gs.
    */
   noShowFee: number;
+  /** Bookings of this many seats or more save a card. Keep in step with backend/booking.gs (CARD_FROM_SEATS). */
+  cardFrom: number;
   /** A birthday cake, offered when the occasion is a birthday. Paid on the night. */
   cake: number;
 }

@@ -82,6 +82,7 @@ function before(scope: HTMLElement) {
     cakeBox: q<HTMLInputElement>('[data-cake-box]'),
     honeypot: q<HTMLInputElement>('[data-honeypot]'),
     holdError: q('[data-hold-error]'),
+    cardNote: q('[data-card-note]'),
     holdMissing: q('[data-hold-missing]'),
     announce: q('[data-announce]'),
     pickFirst: q<HTMLButtonElement>('[data-pick-first]'),
@@ -133,6 +134,7 @@ function before(scope: HTMLElement) {
       n.setAttribute('aria-pressed', String(mine));
       n.querySelectorAll('.mk').forEach((mk, i) => mk.setAttribute('data-mine', String(mine && i < s.seats)));
     });
+    el.cardNote.hidden = !v.cardRequired;
     el.seatsLeft.textContent = v.seatsLeftLine;
     if (v.limit !== shownLeft) { el.seatOptions.innerHTML = seatOptionsHtml(v.limit, s.seats, cfg.copy); shownLeft = v.limit; }
     qa('[data-seat]').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.seat) === s.seats)));
