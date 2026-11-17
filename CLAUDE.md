@@ -20,13 +20,25 @@ npm run check     # astro + TypeScript checks
 
 ## Deploy
 
-Cloudflare Workers (static assets), Worker name `dao-design`, connected to this GitHub repo.
-**A push to `main` deploys to production.** Work on a branch and merge when it is right.
+Code: https://github.com/daokpg/dao-site (the client's GitHub; Matteo's `matteofabbiani/dao-design`
+is the archived earlier home). Hosting: Cloudflare Workers (static assets) on the client's account
+(`Dao@daokpg.com's Account`), Worker name `dao-design`. Work on a branch and merge when it is right.
 `wrangler.jsonc` runs `npm run build` itself before deploying and serves `dist/`, so
-Cloudflare's deploy command `npx wrangler deploy` is all that is needed. Other branches get
+Cloudflare's deploy command `npx wrangler deploy` is all that is needed.
+
+**Deploys are manual for now**: the Worker is not yet connected to the GitHub repo (that needs the
+Cloudflare GitHub app installed on `daokpg` by its owner, then the repo connected to the Worker in
+the dashboard, with `SITE_URL` and `PUBLIC_BOOKING_API` added as build variables). Until then, deploy
+from a clean checkout of `main` with the variables in the environment:
+
+```bash
+CLOUDFLARE_ACCOUNT_ID=745e4ba665701cb1548a201993b72b31 SITE_URL=https://dao-design.daokpg.workers.dev PUBLIC_BOOKING_API=<the /exec URL> npx wrangler deploy
+```
+
+Once the repo is connected, **a push to `main` deploys to production** and other branches get
 preview builds.
 
-No domain is attached yet: `main` is served at https://dao-design.dry-forest-5ebe.workers.dev,
+No domain is attached yet: `main` is served at https://dao-design.daokpg.workers.dev,
 which the team uses as **staging**. Going public means adding the real domain to the
 `dao-design` Worker in Cloudflare (and replacing the placeholder `daokohphangan.com` email), and
 setting two build variables in Cloudflare: `SITE_URL` (the domain, for canonical links, share

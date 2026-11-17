@@ -7,7 +7,7 @@ const env = loadEnv(process.env.NODE_ENV ?? 'production', process.cwd(), '');
 
 // The site's address, for canonical links, share previews and the sitemap. Set SITE_URL to the real
 // domain when it is attached (and INDEXABLE=true to let search engines in); until then it is staging.
-const site = env.SITE_URL || 'https://dao-design.dry-forest-5ebe.workers.dev';
+const site = env.SITE_URL || 'https://dao-design.daokpg.workers.dev';
 
 // A public build (INDEXABLE=true) must name its own address and a real booking backend: without the
 // backend, "Request the seats" only shows the confirmation, which no guest should ever see.
