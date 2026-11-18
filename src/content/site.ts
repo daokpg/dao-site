@@ -1,14 +1,14 @@
 import type { SiteSettings } from './types';
 
-// Operational values here (prices, dates, contact) are placeholders from the design phase
-// and not client-confirmed. Replace them before launch.
+// Operational values here (prices, dates) are placeholders from the design phase
+// and not client-confirmed; contact details are the real ones (2026-11-18).
 export const site: SiteSettings = {
   name: 'Dao',
   place: 'Koh Phangan',
   tagline: 'The path of food & hospitality',
   contact: {
-    email: 'hello@daokohphangan.com',
-    phone: '+66 00 000 0000',
+    email: 'dao@daokpg.com',
+    phone: '+66 61 062 3734',
     address: 'Koh Phangan, Surat Thani, Thailand',
     area: 'Sri Thanu, Koh Phangan',
   },

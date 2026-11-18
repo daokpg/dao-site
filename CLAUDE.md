@@ -40,7 +40,8 @@ preview builds.
 
 No domain is attached yet: `main` is served at https://dao-design.daokpg.workers.dev,
 which the team uses as **staging**. Going public means adding the real domain to the
-`dao-design` Worker in Cloudflare (and replacing the placeholder `daokohphangan.com` email), and
+`dao-design` Worker in Cloudflare (the move from Wix is planned step by step in the doc
+"Dao: moving daokpg.com to the new site"), and
 setting two build variables in Cloudflare: `SITE_URL` (the domain, for canonical links, share
 previews and the sitemap) and `INDEXABLE=true` (until then every page is `noindex` and robots.txt
 closes the site, so staging with placeholder prices never reaches search engines).
@@ -169,13 +170,15 @@ design export); the mobile layer overrides it with `!important` rules keyed on `
 attributes, so keep those attributes when restyling. Do not use Astro scoped `<style>` for
 anything JS creates at runtime (scoped rules never reach runtime-created nodes).
 
-## Before launch (placeholders from the design phase)
+## Before launch
 
-- **Fonts**: `public/fonts/SeasonMixTRIAL-*.otf` are trial cuts; replace with licensed woff2.
-- **Operational values** (prices, times, seat counts, deposit rule, availability, phone
-  `+66 00 000 0000`) were invented for design and are not client-confirmed.
-- **Photography** is a placeholder set.
-- **Press**: publications and years are real; any quote must be pulled verbatim.
+Settled (2026-11-18): contact details (`dao@daokpg.com`, `+66 61 062 3734`); the Season Mix fonts
+(`public/fonts/SeasonMixTRIAL-*.otf`), which the foundry has allowed for this project; photography
+and press quotes are final.
+
+- **Operational values** (prices, times, seat counts, deposit rule) were invented for design and
+  are not yet client-confirmed.
+- **Old Wix addresses** redirect to the home page (`public/_redirects`).
 - **Booking**: without `PUBLIC_BOOKING_API`, "Request the seats" only shows the confirmation and
   the nights are placeholders (`src/content/reserve.ts`). Setting up the backend: docs/booking.md.
 
