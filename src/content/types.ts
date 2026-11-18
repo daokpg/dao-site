@@ -93,7 +93,7 @@ export interface SiteSettings {
   copyright: string;
   /** The evening's facts the copy repeats: read from here, written once. */
   service: {
-    /** Everyone arrives at this time ("19:30"). */
+    /** Everyone arrives at this time ("20:30"). */
     arrival: string;
     /** Seats at the one table (Saturdays have fewer; the booking backend sends each night's). */
     seats: number;

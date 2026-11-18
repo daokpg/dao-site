@@ -101,7 +101,7 @@ function after(scope: HTMLElement) {
 
   // ---- the time: each moment's own time as it reaches the reading line (60% down the screen), running
   // evenly in between. The light word and the dusk both follow this time, so they agree with the clock.
-  const from = toMin(clock.textContent ?? '19:30');
+  const from = toMin(clock.textContent ?? '20:30');
   // the hour rolls like the day's times on the home page, three times in the evening; the minutes just tick,
   // as rolling every minute under a running scroll would never rest
   const hourEl = clock.querySelector<HTMLElement>('[data-clock-h]');
@@ -112,7 +112,7 @@ function after(scope: HTMLElement) {
   let marks: [number, number][] = [];
   const measureMarks = () => {
     const line = window.innerHeight * 0.6;
-    marks = moments.map((m) => [m.getBoundingClientRect().top + window.scrollY - line, toMin(m.dataset.time ?? '19:30')] as [number, number]);
+    marks = moments.map((m) => [m.getBoundingClientRect().top + window.scrollY - line, toMin(m.dataset.time ?? '20:30')] as [number, number]);
     if (marks.length) marks.unshift([marks[0][0] - window.innerHeight * 0.4, from]);
   };
   measureMarks();
@@ -177,11 +177,11 @@ function after(scope: HTMLElement) {
   const fading = [...moments, rail, clock];
   let dark = false;
   let shown = -1;
-  const DUSK_FROM = toMin('19:45'), DUSK_TO = toMin('20:15');
+  const DUSK_FROM = toMin('20:45'), DUSK_TO = toMin('21:15');
   ScrollTrigger.create({
     trigger: scope.querySelector('[data-moments]'), start: 'top bottom', end: 'bottom top',
     onUpdate: () => {
-      // the light goes between 19:45 and 20:15 on the clock
+      // the light goes between 20:45 and 21:15 on the clock (the Nightfall and Night words in evening.ts)
       const p = clamp((mins - DUSK_FROM) / (DUSK_TO - DUSK_FROM)), t = p * p * (3 - 2 * p), k = inkT(t);
       const ground = bg(t);
       sheet.style.backgroundColor = ground;

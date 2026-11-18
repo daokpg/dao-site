@@ -54,7 +54,7 @@ export interface EveningContent {
 export const evening: EveningContent = {
   seo: {
     title: 'The evening, Dao',
-    description: 'One evening at Dao, from the door opening at half past seven to the last glass. Six courses, one wine pairing, one table.',
+    description: 'One evening at Dao, from the door opening at half past eight to the last glass. Six courses, one wine pairing, one table.',
   },
   hero: {
     time: service.arrival,
@@ -63,28 +63,28 @@ export const evening: EveningContent = {
   },
   rail: {
     light: [
-      { from: '19:00', word: 'Dusk' },
-      { from: '19:45', word: 'Nightfall' },
-      { from: '20:15', word: 'Night' },
+      { from: '20:00', word: 'Dusk' },
+      { from: '20:45', word: 'Nightfall' },
+      { from: '21:15', word: 'Night' },
     ],
     name: 'Arrival',
   },
   arrival: {
     time: service.arrival,
     name: 'Arrival',
-    lead: 'The door on the soi opens at half past seven. Sixteen names on sixteen cards, and the seat next to yours belongs to someone you have not met.',
+    lead: 'The door on the soi opens at half past eight. Sixteen names on sixteen cards, and the seat next to yours belongs to someone you have not met.',
     image: { src: '/assets/photos/door-dao.jpg', alt: 'The door on the soi', position: '50% 50%' },
-    caption: 'The door, half past seven.',
+    caption: 'The door, half past eight.',
     body: 'Nothing to order and nothing to decide. Water is poured, the first glass if you have chosen the pairing, and the room fills in around you.',
   },
   nir: {
-    time: '19:45',
+    time: '20:45',
     name: 'Nir comes out',
     statement: 'The kitchen goes quiet for a minute. Nir comes out, says where the fish was this morning, who made the plates, and why nobody orders. Then the first course.',
     body: 'This is the moment the table stops being a room full of strangers. It has not been photographed, on purpose.',
   },
   menu: {
-    time: '20:00',
+    time: '21:00',
     name: 'The menu',
     lead: 'Six courses, walked to the table one at a time. The menu is never announced; it is decided by the morning. Below is one that was served, so you know the shape of it. Yours will be different.',
     servedOn: 'Served on Thursday 10 September 2026',
@@ -103,7 +103,7 @@ export const evening: EveningContent = {
     after: 'This menu is gone. Yours is cooked from what the morning finds, adapted per seat from the note you leave when you book. Dietary needs are taken then, not at the table.',
   },
   wine: {
-    time: '21:00',
+    time: '22:00',
     name: 'The wine',
     lead: 'One pairing is poured through the meal, four glasses or five. There is no cocktail bar and no list.',
     label: 'Pairing',
@@ -111,14 +111,14 @@ export const evening: EveningContent = {
     totalNote: 'Per guest, for the evening as you have set it. Water and tea are included. The glasses you chose are marked on the menu above.',
   },
   music: {
-    time: '21:30',
+    time: '22:30',
     name: 'The music',
     lead: 'The music is Nir\'s, chosen for the room. It starts low and comes up as the table does.',
     image: { src: '/assets/photos/nir-guest.jpg', alt: 'Nir with a guest at the table', position: '50% 40%' },
-    caption: 'The table around half past nine.',
+    caption: 'The table around half past ten.',
   },
   lastGlass: {
-    time: '22:00',
+    time: '23:00',
     name: 'The last glass',
     statement: 'Coffee and tea, and the last glass. Nobody is hurried out.',
     cta: { label: site.labels.reserve, href: '/reserve' },

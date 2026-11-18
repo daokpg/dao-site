@@ -14,7 +14,7 @@ export const site: SiteSettings = {
   },
   copyright: '© Dao, 2026',
   service: {
-    arrival: '19:30',
+    arrival: '20:30',
     seats: 16,
     days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Saturday'],
   },

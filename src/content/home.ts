@@ -117,7 +117,7 @@ export const home: HomeContent = {
   evening: {
     image: { src: '/assets/photos/set-table.jpg', alt: '', position: '55% 50%' },
     rows: [
-      { label: 'Arrival', text: 'Everyone arrives together. The door opens at half past seven.', figure: service.arrival, image: { src: '/assets/photos/facade.jpg', alt: '', position: '55% 50%' } },
+      { label: 'Arrival', text: 'Everyone arrives together. The door opens at half past eight.', figure: service.arrival, image: { src: '/assets/photos/facade.jpg', alt: '', position: '55% 50%' } },
       { label: 'Duration', text: 'Nobody is hurried out.', figure: '~3 h', image: { src: '/assets/photos/last-garnish.jpg', alt: '', position: '60% 50%' } },
       { label: 'Seats', text: 'One table. Singles, pairs and groups sit together.', figure: '16', image: { src: '/assets/photos/table-guests.jpg', alt: '', position: '40% 50%' } },
       { label: 'Menu', text: 'Tell us in the note when you book.', figure: 'Meat, fish or plant-based', image: { src: '/assets/photos/dish-slate.jpg', alt: '', position: '50% 50%' } },
